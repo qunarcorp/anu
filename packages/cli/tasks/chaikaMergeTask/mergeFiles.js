@@ -9,7 +9,7 @@ const shelljs = require('shelljs');
 const mergeDir = path.join(cwd, '.CACHE/nanachi');
 let mergeFilesQueue = require('./mergeFilesQueue');
 let diff = require('deep-diff');
-const buildType = process.argv[2].split(':')[1];
+const buildType = process.argv.length > 2 ? process.argv[2].split(':')[1] : 'wx';
 const ignoreExt = ['.tgz'];
 const ANU_ENV = buildType
     ? buildType === 'h5'
