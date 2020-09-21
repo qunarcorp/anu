@@ -1,6 +1,7 @@
 import template from '@babel/template';
 import * as t from '@babel/types';
 import { Node, NodePath, PluginObj } from '@babel/core';
+import globalConfig from '../../../config/config';
 const importedPagesTemplatePrefixCode: any = template(`
 import ReactDOM from 'react-dom';
 import PageWrapper from '@internalComponents/PageWrapper';
@@ -20,6 +21,22 @@ import QunarDefaultLoading from '@qunar-default-loading';
         plugins: ['dynamicImport']
     }
 ); */
+
+
+const hack360Share: any = template(`
+    if (global && global.qh) {
+        // 隐藏自带的分享按钮
+        qh.hideShareMenu();
+        const isShare = qh.getChannelQuerySync('from') === 'share';
+        if (isShare) {
+            let path = decodeURIComponent(qh.getChannelQuerySync('path'));
+            path = path.replace(/^#/, '').replace(/^(web)/, '')
+            React.api.navigateTo({
+                url: path
+            });
+        }
+    }
+`)();
 
 const domRender: any = template(`
 window.onload = function (){
@@ -194,6 +211,14 @@ module.exports = function(): PluginObj {
                             find = true;
                             p.node.body.body.push(...registerApp);
                         }
+
+                        
+                        if (globalConfig['360mode']) {
+                            if (p.type === 'ClassMethod' && p.node.key.name === 'onLaunch') {
+                                p.node.body.body.push(hack360Share);
+                            }
+                        }
+                        //config
                     });
                     if (!find) {
                         astPath.node.body.push(
