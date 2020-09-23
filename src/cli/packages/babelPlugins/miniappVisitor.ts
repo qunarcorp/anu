@@ -6,6 +6,7 @@ import * as path from 'path';
 import fs from 'fs-extra';
 import utils from '../utils';
 import calculateComponentsPath from '../utils/calculateComponentsPath';
+import globalStore from '../utils/globalStore';
 import config from '../../config/config';
 import transformConfig from './transformConfig';
 const buildType = config['buildType'];
@@ -267,7 +268,6 @@ const visitor:babel.Visitor = {
         if (modules.componentType !== 'App') {
             specifiers.forEach(item => {
                 //重点，保持所有引入的组件名及它们的路径，用于<import />
-    
                 modules.importComponents[item.local.name] = {
                     astPath: astPath,
                     source: source,
@@ -333,6 +333,10 @@ const visitor:babel.Visitor = {
             if (buildType == 'quick') {
                 var obj = quickFiles[modules.sourcePath];
                 if (obj) {
+                    if (modules.pageRoute) {
+                        // @ts-ignore
+                        globalStore.quickPageDisplayConifg[modules.pageRoute] = json.pageDisplay || {};
+                    }
                     quickConfig(json, modules, modules.queue, utils);
                     obj.config = Object.assign({}, json);
                 }

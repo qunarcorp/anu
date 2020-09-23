@@ -13,9 +13,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const timer_1 = __importDefault(require("../packages/utils/timer"));
+const fs_extra_1 = __importDefault(require("fs-extra"));
+const path_1 = __importDefault(require("path"));
 const index_1 = require("../packages/utils/logger/index");
+const config_1 = __importDefault(require("../config/config"));
+const globalStore_1 = __importDefault(require("../packages/utils/globalStore"));
 const setWebView = require('../packages/utils/setWebVeiw');
+const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
+function rebuildManifest(manifestJson, quickPageDisplayConifg) {
+    const allPages = manifestJson.router.pages;
+    const parentDisplay = manifestJson.display || {};
+    const displayRoutes = Object.keys(quickPageDisplayConifg);
+    displayRoutes.forEach(route => {
+        const routeLevel = route.split('/');
+        const matchKey = routeLevel.slice(0, routeLevel.length - 1).join('/');
+        if (allPages[matchKey]) {
+            parentDisplay.pages = parentDisplay.pages || {};
+            parentDisplay.pages[matchKey] = quickPageDisplayConifg[route];
+        }
+    });
+    return manifestJson;
+}
 class NanachiWebpackPlugin {
     constructor({ platform = 'wx', compress = false, beta = false, betaUi = false } = {}) {
         this.timer = new timer_1.default();
@@ -54,6 +73,16 @@ class NanachiWebpackPlugin {
             this.timer.end();
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);
             index_1.timerLog(this.timer);
+            if (config_1.default.buildType === 'quick') {
+                const filePath = path_1.default.join(cwd, 'src/manifest.json');
+                const originManifestJson = require(filePath);
+                const newMenifest = rebuildManifest(originManifestJson, globalStore_1.default.quickPageDisplayConifg);
+                fs_extra_1.default.writeFile(filePath, JSON.stringify(newMenifest, null, 4), (err) => {
+                    if (err) {
+                        throw err;
+                    }
+                });
+            }
         });
     }
 }

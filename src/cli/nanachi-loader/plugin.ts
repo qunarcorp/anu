@@ -1,10 +1,15 @@
 import Timer from '../packages/utils/timer';
+import fs from 'fs-extra';
+import path from 'path';
 import { resetNum, timerLog } from '../packages/utils/logger/index';
+import config from '../config/config';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { NanachiOptions } from '../index';
+import globalStore from '../packages/utils/globalStore';
 import webpack = require('webpack');
 const setWebView = require('../packages/utils/setWebVeiw');
+const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
 // const pageConfig = require('../packages/h5Helpers/pageConfig');
 
@@ -12,6 +17,27 @@ interface NanachiCompiler extends webpack.Compiler {
     NANACHI?: {
         webviews?: Array<any>
     }
+}
+
+
+// https://doc.quickapp.cn/framework/manifest.html
+function rebuildManifest(manifestJson:object, quickPageDisplayConifg:object) {
+    // @ts-ignore
+    const allPages = manifestJson.router.pages;
+    const parentDisplay = manifestJson.display || {};
+    const displayRoutes = Object.keys(quickPageDisplayConifg);
+    displayRoutes.forEach(route => {
+        const routeLevel = route.split('/');
+        const matchKey = routeLevel.slice(0, routeLevel.length -1).join('/');
+        // 确认当前路由有效
+        if (allPages[matchKey]) {
+           parentDisplay.pages = parentDisplay.pages || {};
+           // @ts-ignore
+           parentDisplay.pages[matchKey] = quickPageDisplayConifg[route];
+        }
+    });
+
+    return manifestJson;
 }
 
 class NanachiWebpackPlugin implements webpack.Plugin {
@@ -74,12 +100,19 @@ class NanachiWebpackPlugin implements webpack.Plugin {
         });
         
         compiler.hooks.done.tap(id, () => {
-
             this.timer.end();
-            
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);
-
             timerLog(this.timer);
+            if (config.buildType === 'quick') {
+                const filePath = path.join(cwd, 'src/manifest.json');
+                const originManifestJson = require(filePath);
+                const newMenifest =  rebuildManifest(originManifestJson, globalStore.quickPageDisplayConifg)
+                fs.writeFile(filePath, JSON.stringify(newMenifest, null, 4), (err) => {
+                    if (err) {
+                        throw err;
+                    }
+                })
+            }
         });
      
     }
