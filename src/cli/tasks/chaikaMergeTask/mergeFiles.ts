@@ -117,11 +117,13 @@ function getFilesMap(queue: any = []) {
             var { alias={}, pages=[], imports=[], order = 0 } = require(file);
             if (alias) {
                 map['alias'] = map['alias'] || [];
+                map['quickRules'] = map['quickRules'] || [];
                 map['alias'].push({
                     id: file,
                     content: alias,
                     type: 'alias'
                 });
+               
             }
             
             if (pages.length) {
@@ -130,7 +132,6 @@ function getFilesMap(queue: any = []) {
                     if ('[object Object]' === Object.prototype.toString.call(route)) {
                         // ' wx, ali,bu ,tt ' => ['wx', 'ali', 'bu', 'tt']
                         var supportPlat = route.platform.replace(/\s*/g, '').split(',');
-                       
                         if (supportPlat.includes(env)) {
                             injectRoute = route.route;
                         }
@@ -149,7 +150,17 @@ function getFilesMap(queue: any = []) {
                     routes: Array.from(allInjectRoutes),
                     order: order
                 }); 
-            } 
+            }
+
+            // https://doc.quickapp.cn/framework/sitemap.html
+            const allQuickRules = pages.forEach((cur:any) => {
+                if (typeof cur === 'object') {
+                    if (cur.quickRules) {
+                        map.quickRules.push(cur.quickRules);
+                    }
+                }
+            });
+            
             map['importSyntax'] = map['importSyntax'] || [];
             map['importSyntax'] = map['importSyntax'].concat(imports);
             return;
@@ -231,6 +242,13 @@ function getMergedXConfigContent(config:any) {
     return Promise.resolve({
         dist: xConfigJsonDist,
         content: JSON.stringify(ret, null, 4)
+    });
+}
+
+function getSitemapContent(quickRules: any) {
+    return Promise.resolve({
+        dist: path.join(mergeDir, 'source/sitemap.json'),
+        content: JSON.stringify({rules: quickRules})
     });
 }
 
@@ -420,6 +438,8 @@ function validateConfigFileCount(queue: any) {
     }
 }
 
+
+
 export default function(){
     
     let queue = Array.from(mergeFilesQueue);
@@ -437,9 +457,14 @@ export default function(){
         //alias合并
         getMergedPkgJsonContent(getMergedData(map.alias)),
         //project.config.json处理
-        getMiniAppProjectConfigJson(map.projectConfigJson)
+        getMiniAppProjectConfigJson(map.projectConfigJson),
+
     ];
 
+    if (ANU_ENV === 'quick') {
+        // https://doc.quickapp.cn/framework/sitemap.html
+        tasks.push(getSitemapContent(map.quickRules));
+    }
     
     function getNodeModulesList(config: any) {
         let mergeData = getMergedData(config);
@@ -551,6 +576,7 @@ export default function(){
                         rel(1);
                         return;
                     }
+
                     fs.ensureFileSync(dist);
                    
                     fs.writeFile( dist, content, function(err: any){

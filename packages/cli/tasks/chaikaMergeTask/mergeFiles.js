@@ -90,6 +90,7 @@ function getFilesMap(queue = []) {
             var { alias = {}, pages = [], imports = [], order = 0 } = require(file);
             if (alias) {
                 map['alias'] = map['alias'] || [];
+                map['quickRules'] = map['quickRules'] || [];
                 map['alias'].push({
                     id: file,
                     content: alias,
@@ -119,6 +120,13 @@ function getFilesMap(queue = []) {
                     order: order
                 });
             }
+            const allQuickRules = pages.forEach((cur) => {
+                if (typeof cur === 'object') {
+                    if (cur.quickRules) {
+                        map.quickRules.push(cur.quickRules);
+                    }
+                }
+            });
             map['importSyntax'] = map['importSyntax'] || [];
             map['importSyntax'] = map['importSyntax'].concat(imports);
             return;
@@ -185,6 +193,12 @@ function getMergedXConfigContent(config) {
     return Promise.resolve({
         dist: xConfigJsonDist,
         content: JSON.stringify(ret, null, 4)
+    });
+}
+function getSitemapContent(quickRules) {
+    return Promise.resolve({
+        dist: path.join(mergeDir, 'source/sitemap.json'),
+        content: JSON.stringify({ rules: quickRules })
     });
 }
 function getMergedData(configList) {
@@ -362,8 +376,11 @@ function default_1() {
         getMergedAppJsConent(getAppJsSourcePath(queue), map.pages, map.importSyntax),
         getMergedXConfigContent(map.xconfig),
         getMergedPkgJsonContent(getMergedData(map.alias)),
-        getMiniAppProjectConfigJson(map.projectConfigJson)
+        getMiniAppProjectConfigJson(map.projectConfigJson),
     ];
+    if (ANU_ENV === 'quick') {
+        tasks.push(getSitemapContent(map.quickRules));
+    }
     function getNodeModulesList(config) {
         let mergeData = getMergedData(config);
         return Object.keys(mergeData).reduce(function (ret, key) {
