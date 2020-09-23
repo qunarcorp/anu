@@ -87,6 +87,21 @@ function getQuickPkgFile() {
     return ret;
 }
 
+// copy sitemap 文件
+// https://doc.quickapp.cn/framework/sitemap.html#sitemap-%E9%85%8D%E7%BD%AE
+function getCopyFiles() {
+    const files = [
+        'sitemap.json'
+    ];
+    return files.map(fileName => ({
+        id: path.join(cwd, 'source', fileName),
+        dist: process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
+        ? path.join(cwd, '../../src/', fileName)
+        : path.join(cwd, 'src', fileName),
+        ACTION_TYPE: 'COPY'
+    }))
+}
+
 //copy 快应用构建的基础依赖
 function getQuickBuildConfigFile(){
     const baseDir = path.join(cliRoot, 'packages/quickHelpers/quickInitConfig');
@@ -342,7 +357,7 @@ export default async function runTask({ platform: buildType, beta, betaUi, compr
     
     //快应用下需要copy babel.config.js, 合并package.json等
     if (isQuick) {
-        tasks = tasks.concat(getQuickBuildConfigFile(), getQuickPkgFile());
+        tasks = tasks.concat(getQuickBuildConfigFile(), getQuickPkgFile(), getCopyFiles());
         if (needInstallHapToolkit()) {
             //获取package.json中hap-toolkit版本，并安装
             let toolName = 'hap-toolkit@latest';
