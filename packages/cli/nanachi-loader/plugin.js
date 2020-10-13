@@ -21,6 +21,41 @@ const globalStore_1 = __importDefault(require("../packages/utils/globalStore"));
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
+function getNanachiConfig() {
+    try {
+        return require(path_1.default.join(cwd, 'nanachi.config.js'));
+    }
+    catch (err) {
+        return {};
+    }
+}
+const nanachiUserConfig = getNanachiConfig();
+function callAfterCompileOnce() {
+    let afterComileOneceLock = false;
+    return function (nanachiUserConfig) {
+        if (afterComileOneceLock)
+            return;
+        typeof nanachiUserConfig.afterCompileOnce === 'function' && nanachiUserConfig.afterCompileOnce();
+        afterComileOneceLock = true;
+    };
+}
+function beforeCompileOnce() {
+    let beforeCompileOnceLock = false;
+    return function (nanachiUserConfig) {
+        if (beforeCompileOnceLock)
+            return;
+        typeof nanachiUserConfig.beforeCompileOnce === 'function' && nanachiUserConfig.beforeCompileOnce();
+        beforeCompileOnceLock = true;
+    };
+}
+const callAfterCompileOnceFn = callAfterCompileOnce();
+const callBeforeCompileOnceFn = beforeCompileOnce();
+function callAfterCompileFn(nanachiUserConfig) {
+    typeof nanachiUserConfig.afterCompile === 'function' && nanachiUserConfig.afterCompile();
+}
+function callBeforeCompileFn(nanachiUserConfig) {
+    typeof nanachiUserConfig.beforeCompile === 'function' && nanachiUserConfig.beforeCompile();
+}
 function rebuildManifest(manifestJson, quickPageDisplayConifg) {
     const allPages = manifestJson.router.pages;
     const parentDisplay = manifestJson.display || {};
@@ -64,6 +99,11 @@ class NanachiWebpackPlugin {
             index_1.resetNum();
             callback();
         }));
+        compiler.hooks.beforeCompile.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
+            callBeforeCompileFn(nanachiUserConfig);
+            callBeforeCompileOnceFn(nanachiUserConfig);
+            callback();
+        }));
         compiler.hooks.watchRun.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
             this.timer.start();
             index_1.resetNum();
@@ -83,6 +123,8 @@ class NanachiWebpackPlugin {
                     }
                 });
             }
+            callAfterCompileFn(nanachiUserConfig);
+            callAfterCompileOnceFn(nanachiUserConfig);
         });
     }
 }

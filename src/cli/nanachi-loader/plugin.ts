@@ -13,10 +13,52 @@ const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
 // const pageConfig = require('../packages/h5Helpers/pageConfig');
 
+
+
+function getNanachiConfig(){
+    try {
+        return require(path.join(cwd, 'nanachi.config.js'));
+    } catch (err) {
+        return {};
+    }
+}
+
 interface NanachiCompiler extends webpack.Compiler {
     NANACHI?: {
         webviews?: Array<any>
     }
+}
+
+// beforeCompile, afterCompile, beforeCompileOnce, afterCompileOnce
+const nanachiUserConfig = getNanachiConfig();
+
+function callAfterCompileOnce() {
+    let afterComileOneceLock = false;
+    return function(nanachiUserConfig:any) {
+        if (afterComileOneceLock) return;
+        typeof nanachiUserConfig.afterCompileOnce === 'function' && nanachiUserConfig.afterCompileOnce();
+        afterComileOneceLock = true;
+    }
+}
+
+function beforeCompileOnce() {
+    let beforeCompileOnceLock = false;
+    return function(nanachiUserConfig:any) {
+        if (beforeCompileOnceLock) return;
+        typeof nanachiUserConfig.beforeCompileOnce === 'function' && nanachiUserConfig.beforeCompileOnce();
+        beforeCompileOnceLock = true;
+    }
+}
+
+const callAfterCompileOnceFn = callAfterCompileOnce();
+const callBeforeCompileOnceFn = beforeCompileOnce();
+
+function callAfterCompileFn(nanachiUserConfig:any) {
+    typeof nanachiUserConfig.afterCompile === 'function' && nanachiUserConfig.afterCompile();
+}
+
+function callBeforeCompileFn(nanachiUserConfig:any) {
+    typeof nanachiUserConfig.beforeCompile === 'function' && nanachiUserConfig.beforeCompile();
 }
 
 
@@ -93,6 +135,12 @@ class NanachiWebpackPlugin implements webpack.Plugin {
             callback();
         });
 
+        compiler.hooks.beforeCompile.tapAsync(id, async (compilation, callback) => {
+            callBeforeCompileFn(nanachiUserConfig);
+            callBeforeCompileOnceFn(nanachiUserConfig);
+            callback();
+        });
+
         compiler.hooks.watchRun.tapAsync(id, async (compilation, callback) => {
             this.timer.start();
             resetNum();
@@ -113,6 +161,10 @@ class NanachiWebpackPlugin implements webpack.Plugin {
                     }
                 })
             }
+
+            callAfterCompileFn(nanachiUserConfig);
+            callAfterCompileOnceFn(nanachiUserConfig);
+
         });
      
     }
