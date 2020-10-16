@@ -35,7 +35,7 @@ cli.addCommand(
     'description: 安装拆库模块. 文档: https://rubylouvre.github.io/nanachi/documents/chaika.html',
     {
         'remote': {
-            desc: '一键获取远程业务包。示例 nanachi install -r quick --huawei',
+            desc: '获取发布平台(mportal)最新的一次发布的相关联的各个业务模块。示例 nanachi install -r quick --huawei',
             args: 'wx|ali|bu|quick',
             alias: 'r'
         },
