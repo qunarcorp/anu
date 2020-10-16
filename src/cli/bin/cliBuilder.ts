@@ -35,8 +35,9 @@ class CliBuilder implements CliBuilderInterface {
         }
         Object.keys(options).forEach((key: string) => {
             const optionName: CmdOption = options[key];
-            const optionAlias = `${optionName.alias ? '-' + optionName.alias + ' ,' : ''}`;
-            cmd.option(`${optionAlias}--${key} [optionName]`, optionName.desc);
+            const optionAlias = `${optionName.alias ? '-' + optionName.alias + ', ' : '    '}`;
+            const arg = optionName.args ? `[${optionName.args}]` : ''
+            cmd.option(`${optionAlias}--${key} ${arg}`, optionName.desc);
         });
         cmd.action(callback);
     }
