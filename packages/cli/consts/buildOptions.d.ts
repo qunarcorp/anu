@@ -1,5 +1,6 @@
 export interface CmdOption {
     readonly desc: string;
+    readonly args?: string;
     readonly alias?: string;
 }
 export interface CmdMap {
