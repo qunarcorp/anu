@@ -153,16 +153,16 @@ function downLoadPkgDepModule() {
             downLoadGitRepo(gitRepo, depModules[key]);
         }
         else if (isOldChaikaConfig(`${key}@${depModules[key]}`)) {
-            const patch = require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'));
-            patch.patchOldChaikaDownLoad(`${key}@${depModules[key]}`, downLoadGitRepo, downLoadBinaryLib);
+            const patchOldChaikaDownLoad = require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'));
+            patchOldChaikaDownLoad(`${key}@${depModules[key]}`, downLoadGitRepo, downLoadBinaryLib);
         }
         else {
         }
     });
 }
 function handleRemote(opts) {
-    const patch = require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'));
-    patch.getBizModule(opts, (historyInfos) => __awaiter(this, void 0, void 0, function* () {
+    const remote = require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch/remote'));
+    remote.getBizModule(opts, (historyInfos) => __awaiter(this, void 0, void 0, function* () {
         const depModules = [
             {
                 app_code: 'nnc_home_qunar',
@@ -202,7 +202,8 @@ function handleRemote(opts) {
         });
         const willInstallModules = [].concat(answers.selectedModules, depModuleNames);
         willInstallModules.forEach((name) => {
-            patch.patchOldChaikaDownLoad(name, downLoadGitRepo, downLoadBinaryLib);
+            const patchOldChaikaDownLoad = require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'));
+            patchOldChaikaDownLoad(name, downLoadGitRepo, downLoadBinaryLib);
         });
     }));
 }
@@ -226,8 +227,8 @@ function default_1(name, opts) {
         };
     }
     if (isOldChaikaConfig(name)) {
-        const patch = require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'));
-        patch.patchOldChaikaDownLoad(name, downLoadGitRepo, downLoadBinaryLib);
+        const patchOldChaikaDownLoad = require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'));
+        patchOldChaikaDownLoad(name, downLoadGitRepo, downLoadBinaryLib);
         return;
     }
     if (/\.git$/.test(name) && opts.branch && typeof opts.branch === 'string') {
