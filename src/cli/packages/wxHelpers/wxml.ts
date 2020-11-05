@@ -26,7 +26,8 @@ const quickTextContainer: {
     a: 1,
     span: 1,
     label: 1,
-    option: 1
+    option: 1,
+    richtext: 1
 };
 /**
  * 必须符合babel-transfrom-xxx的格式，使用declare声明

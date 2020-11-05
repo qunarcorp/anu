@@ -33,7 +33,8 @@ const quickTextContainer = {
     a: 1,
     span: 1,
     label: 1,
-    option: 1
+    option: 1,
+    richtext: 1
 };
 function wxml(code, modules) {
     let result = core_1.transform(code, {
