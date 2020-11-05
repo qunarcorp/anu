@@ -384,7 +384,7 @@ export default async function runTask({ platform: buildType, beta, betaUi, compr
 
         await Promise.all(tasks.map(function(task){
             if (helpers[task.ACTION_TYPE]) {
-                return helpers[task.ACTION_TYPE](task);
+                return helpers[task.ACTION_TYPE](task).catch(() => {})
             }
         }));
     } catch (err) {

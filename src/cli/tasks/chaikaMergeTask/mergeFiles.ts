@@ -114,16 +114,14 @@ function getFilesMap(queue: any = []) {
             return;
         }
         if (/\/app\.json$/.test(file)) {
-            var { alias={}, pages=[], imports=[], order = 0 } = require(file);
+            var { alias={}, pages=[], rules=[], imports=[], order = 0 } = require(file);
             if (alias) {
                 map['alias'] = map['alias'] || [];
-                map['quickRules'] = map['quickRules'] || [];
                 map['alias'].push({
                     id: file,
                     content: alias,
                     type: 'alias'
                 });
-               
             }
             
             if (pages.length) {
@@ -152,15 +150,20 @@ function getFilesMap(queue: any = []) {
                 }); 
             }
 
-            // https://doc.quickapp.cn/framework/sitemap.html
-            const allQuickRules = pages.forEach((cur:any) => {
-                if (typeof cur === 'object') {
-                    if (cur.quickRules) {
-                        map.quickRules.push(cur.quickRules);
+            if (rules.length) {
+                map['quickRules'] = map['quickRules'] || new Map();
+                rules.forEach((curRule:any) => {
+                    const selector = JSON.stringify(curRule);
+                    if (map['quickRules'].has(selector)) {
+                        console.log(chalk.yellow(`无法合并, ${file.split('download/').pop()} 中已经存在规则：\n${JSON.stringify(curRule, null ,4)}\n`));
+                        return;
                     }
-                }
-            });
-            
+                    map['quickRules'].set(selector, 1);
+                })
+               
+                
+            }
+
             map['importSyntax'] = map['importSyntax'] || [];
             map['importSyntax'] = map['importSyntax'].concat(imports);
             return;
@@ -246,9 +249,19 @@ function getMergedXConfigContent(config:any) {
 }
 
 function getSitemapContent(quickRules: any) {
+    if (!quickRules) {
+        return Promise.resolve({
+            content: ''
+        });
+    }
+    const rulesList = Array.from(quickRules).map((el:any)=>{
+        return el[0]; 
+    });
+   
+    const content = JSON.stringify({rules: rulesList});
     return Promise.resolve({
         dist: path.join(mergeDir, 'source/sitemap.json'),
-        content: JSON.stringify({rules: quickRules})
+        content
     });
 }
 

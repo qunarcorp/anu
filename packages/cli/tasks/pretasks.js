@@ -325,7 +325,7 @@ function runTask({ platform: buildType, beta, betaUi, compress }) {
             }));
             yield Promise.all(tasks.map(function (task) {
                 if (helpers[task.ACTION_TYPE]) {
-                    return helpers[task.ACTION_TYPE](task);
+                    return helpers[task.ACTION_TYPE](task).catch(() => { });
                 }
             }));
         }
