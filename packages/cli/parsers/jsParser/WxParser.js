@@ -13,7 +13,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const JavascriptParser_1 = __importDefault(require("./JavascriptParser"));
+const config_1 = __importDefault(require("../../config/config"));
 const thePathHasCommon = /\bcommon\b/;
+const buildType = config_1.default.buildType;
 class WxParser extends JavascriptParser_1.default {
     constructor(props) {
         super(props);
@@ -49,6 +51,7 @@ class WxParser extends JavascriptParser_1.default {
                 ...this.filterCommonFile,
                 require('@babel/plugin-proposal-optional-chaining'),
                 ...require('../../packages/babelPlugins/patchAsyncAwait'),
+                ...(buildType === 'wx' ? [require('../../packages/babelPlugins/collectCommonCode')] : [])
             ]
         };
     }

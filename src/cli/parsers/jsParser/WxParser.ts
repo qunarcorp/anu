@@ -1,6 +1,9 @@
 import JavascriptParser, { BabelRes } from './JavascriptParser';
 import { parserOptions } from './JavascriptParserFactory';
+import config from '../../config/config';
 const thePathHasCommon = /\bcommon\b/;
+const buildType = config.buildType;
+
 
 class WxParser extends JavascriptParser{
     constructor(props: parserOptions) {
@@ -45,6 +48,7 @@ class WxParser extends JavascriptParser{
                 ...this.filterCommonFile,
                 require('@babel/plugin-proposal-optional-chaining'),
                 ...require('../../packages/babelPlugins/patchAsyncAwait'),
+                ...(buildType === 'wx' ? [require('../../packages/babelPlugins/collectCommonCode')] : [])
             ]
         };
     }

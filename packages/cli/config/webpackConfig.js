@@ -40,6 +40,7 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
     if (platform === 'h5') {
         externals.push(...H5AliasList);
     }
+    externals.push(/runtimecommon\.js/);
     let aliasMap = require('../packages/utils/calculateAliasConfig')();
     let distPath = '';
     if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {

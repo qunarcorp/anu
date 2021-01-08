@@ -61,6 +61,8 @@ export default function({
     if (platform === 'h5') {
         externals.push(...H5AliasList);
     }
+
+    externals.push(/runtimecommon\.js/);
     
     let aliasMap = require('../packages/utils/calculateAliasConfig')();
     let distPath = '';
