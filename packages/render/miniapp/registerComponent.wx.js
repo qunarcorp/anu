@@ -6,6 +6,8 @@ export function registerComponent(type, name) {
     type.isMPComponent = true;
     registeredComponents[name] = type;
     type.reactInstances = [];
+    const pageLifetimes = (type.prototype.pageLifetimes || function() { return {} })();
+    let instance = null;
     let config = {
         data: {
             props: {},
@@ -13,6 +15,26 @@ export function registerComponent(type, name) {
             context: {}
         },
         options: type.options,
+        pageLifetimes: {
+            show: function() {
+              const wx = this;
+              const uuid = wx.dataset.instanceUid || null;
+              if (typeof pageLifetimes.show === 'function') {
+                const args = Array.from(arguments);
+                instance = instance || type.reactInstances.find(el => el.instanceUid === uuid);
+                pageLifetimes.show.apply(instance || this, args);
+              }
+            },
+            hide: function() {
+              const wx = this;
+              const uuid = wx.dataset.instanceUid || null;
+              if (typeof pageLifetimes.hide === 'function') {
+                const args = Array.from(arguments);
+                instance = instance || type.reactInstances.find(el => el.instanceUid === uuid)
+                pageLifetimes.hide.apply(instance || this, args);
+              }
+            }
+        },
         lifetimes: {
             // 微信需要lifetimes, methods
             attached: function attached() {
