@@ -60,11 +60,14 @@ module.exports = async function(code: string, map: any, meta: any) {
     }
     var ctx = this;
     // 处理第三方模块中的环境变量，如process.env.NODE_ENV
+
+
     code = babel.transformSync(code, {
         configFile: false,
         babelrc: false,
         plugins: [
             ...require('../../packages/babelPlugins/transformEnv'),
+            require('../../packages/babelPlugins/transformIfImport'),
             patchMobx.bind(this)
         ]
     }).code;
