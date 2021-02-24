@@ -2,7 +2,7 @@
 /node_modules/*
 /md/*
 /coverage/
-package-lock.json
+/package-lock.json
 node_modules/
 chromedriver
 selenium-server-*
