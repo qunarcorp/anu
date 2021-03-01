@@ -64,8 +64,8 @@ function getFilesMap(queue = []) {
     queue.forEach(function (file) {
         file = file.replace(/\\/g, '/');
         if (/\/package\.json$/.test(file)) {
-            let { dependencies = {}, devDependencies = {} } = require(file);
-            if (dependencies) {
+            let { dependencies = {}, devDependencies = {}, nanachi = {} } = require(file);
+            if (Object.keys(dependencies).length) {
                 delete dependencies['@qnpm/chaika-patch'];
                 map['pkgDependencies'] = map['pkgDependencies'] || [];
                 map['pkgDependencies'].push({
@@ -74,7 +74,7 @@ function getFilesMap(queue = []) {
                     type: 'dependencies'
                 });
             }
-            if (devDependencies) {
+            if (Object.keys(devDependencies).length) {
                 delete devDependencies['node-sass'];
                 delete devDependencies['@qnpm/chaika-patch'];
                 map['pkgDevDep'] = map['pkgDevDep'] || [];
@@ -84,6 +84,8 @@ function getFilesMap(queue = []) {
                     type: 'devDependencies'
                 });
             }
+            map.ignoreInstallPkg = map.ignoreInstallPkg || [];
+            map.ignoreInstallPkg = map.ignoreInstallPkg.concat(nanachi.ignoreInstalledNpm || []);
             return;
         }
         if (/\/app\.json$/.test(file)) {
@@ -416,12 +418,10 @@ function default_1() {
             return dep;
         });
     }
-    if (process.env.JENKINS_URL) {
-        const blockList = ['babel-eslint', 'eslint', 'eslint-plugin-react', 'pre-commit', 'chokidar', 'shelljs'];
-        installList = installList.filter((dep) => {
-            const depLevel = dep.split('@');
-            const depName = depLevel[0] ? depLevel[0] : depLevel[1];
-            return !blockList.includes(depName);
+    if (process.env.JENKINS_URL && map.ignoreInstallPkg.length) {
+        const ignoreInstallReg = new RegExp(map.ignoreInstallPkg.join('|'));
+        installList = installList.filter(function (el) {
+            return !ignoreInstallReg.test(el);
         });
     }
     var installPkgList = installList.reduce(function (needInstall, pkg) {
@@ -449,7 +449,7 @@ function default_1() {
             installMsg = `🚚 正在从 ${npmRegistry} 安装拆库依赖, 请稍候...\n${installListLog}`;
         }
         else {
-            cmd = `npm install ${installList} --no-save`;
+            cmd = `npm install --prefer-offline ${installList} --no-save`;
             installMsg = `🚚 正在安装拆库依赖, 请稍候...\n${installListLog}`;
         }
         console.log(chalk.bold.green(installMsg));

@@ -32,6 +32,7 @@ const H5AliasList = ['react', '@react', 'react-dom', 'react-loadable', '@qunar-d
 const isChaikaMode = function () {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 };
+const WebpackBar = require('webpackbar');
 const quickConfigFileName = config_1.default.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
     ? "quickConfig.huawei.json"
     : "quickConfig.json";
@@ -76,15 +77,7 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
     const mergeRule = [].concat({
         test: /\.[jt]sx?$/,
-        use: [].concat(fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, {
-            loader: require.resolve('eslint-loader'),
-            options: {
-                configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
-                failOnError: utils.isMportalEnv(),
-                allowInlineConfig: false,
-                useEslintrc: false
-            }
-        }, typescript ? {
+        use: [].concat(fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
@@ -154,7 +147,10 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
         module: {
             rules: mergeRule
         },
-        plugins: mergePlugins,
+        plugins: [
+            new WebpackBar(),
+            ...mergePlugins
+        ],
         resolve: {
             alias: aliasMap,
             extensions: [

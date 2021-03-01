@@ -33,9 +33,6 @@ class StyleParser {
         this.platform = platform;
         this.relativePath = this.getRelativePath(filepath);
         this._postcssPlugins = [
-            require('stylelint')({
-                configFile: require.resolve(`../../config/stylelint/.stylelint-${this.platform}.config.js`)
-            }),
             require('../../packages/postcssPlugins/postCssPluginReport')
         ];
         this._postcssOptions = {};

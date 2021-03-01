@@ -1,7 +1,9 @@
 import Timer from '../packages/utils/timer';
 import fs from 'fs-extra';
 import path from 'path';
+import chalk from 'chalk';
 import { resetNum, timerLog } from '../packages/utils/logger/index';
+import lintQueue from '../packages/utils/lintQueue';
 import config from '../config/config';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
@@ -11,9 +13,8 @@ import webpack = require('webpack');
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
+
 // const pageConfig = require('../packages/h5Helpers/pageConfig');
-
-
 
 function getNanachiConfig(){
     try {
@@ -150,7 +151,7 @@ class NanachiWebpackPlugin implements webpack.Plugin {
         compiler.hooks.done.tap(id, () => {
             this.timer.end();
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);
-            timerLog(this.timer);
+            // timerLog(this.timer);
             if (config.buildType === 'quick') {
                 const filePath = path.join(cwd, 'src/manifest.json');
                 const originManifestJson = require(filePath);
@@ -164,6 +165,17 @@ class NanachiWebpackPlugin implements webpack.Plugin {
 
             callAfterCompileFn(nanachiUserConfig);
             callAfterCompileOnceFn(nanachiUserConfig);
+
+            while (lintQueue.length) {
+                const log = lintQueue.shift();
+                if (log.type === 'warn') {
+                    console.log(chalk.yellow(`[warn] ${log.msg}`));
+                }
+                if (log.type === 'error') {
+                    console.log(chalk.red(`[error] ${log.msg}`));
+                }
+            }
+            
 
         });
      
