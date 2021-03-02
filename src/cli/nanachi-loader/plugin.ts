@@ -163,19 +163,18 @@ class NanachiWebpackPlugin implements webpack.Plugin {
                 })
             }
 
-            callAfterCompileFn(nanachiUserConfig);
-            callAfterCompileOnceFn(nanachiUserConfig);
-
             while (lintQueue.length) {
                 const log = lintQueue.shift();
-                if (log.type === 'warn') {
+                if (log.level === 'warn') {
                     console.log(chalk.yellow(`[warn] ${log.msg}`));
                 }
-                if (log.type === 'error') {
+                if (log.level === 'error') {
                     console.log(chalk.red(`[error] ${log.msg}`));
                 }
             }
-            
+
+            callAfterCompileFn(nanachiUserConfig);
+            callAfterCompileOnceFn(nanachiUserConfig);
 
         });
      

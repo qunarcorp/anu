@@ -124,17 +124,17 @@ class NanachiWebpackPlugin {
                     }
                 });
             }
-            callAfterCompileFn(nanachiUserConfig);
-            callAfterCompileOnceFn(nanachiUserConfig);
             while (lintQueue_1.default.length) {
                 const log = lintQueue_1.default.shift();
-                if (log.type === 'warn') {
+                if (log.level === 'warn') {
                     console.log(chalk_1.default.yellow(`[warn] ${log.msg}`));
                 }
-                if (log.type === 'error') {
+                if (log.level === 'error') {
                     console.log(chalk_1.default.red(`[error] ${log.msg}`));
                 }
             }
+            callAfterCompileFn(nanachiUserConfig);
+            callAfterCompileOnceFn(nanachiUserConfig);
         });
     }
 }
