@@ -308,7 +308,8 @@ module.exports = function quickConfig(config: any, modules: any) {
     //配置titlebar
     setTitleBar(config);
     if (isHuaweiPlatform) {
-        manifest.minPlatformVersion = 1040;
+        // onPageNotFound
+        manifest.minPlatformVersion = 1060;
     }
     //配置name, permissions, config, subpackages, 各支付签名
     setOtherConfig();

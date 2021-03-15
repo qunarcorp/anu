@@ -249,7 +249,7 @@ module.exports = function quickConfig(config, modules) {
     setRouter(config);
     setTitleBar(config);
     if (isHuaweiPlatform) {
-        manifest.minPlatformVersion = 1040;
+        manifest.minPlatformVersion = 1060;
     }
     setOtherConfig();
     modules.queue.push({
