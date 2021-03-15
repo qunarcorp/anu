@@ -17,6 +17,7 @@ const core_1 = require("@babel/core");
 const utils_1 = __importDefault(require("../utils"));
 const config_1 = __importDefault(require("../../config/config"));
 const js_beautify_1 = __importDefault(require("js-beautify"));
+const lintQueue_1 = __importDefault(require("../utils/lintQueue"));
 const buildType = config_1.default.buildType;
 const helper = config_1.default[buildType].helpers;
 const attrNameHelper = require(`../${helper}/attrName`);
@@ -63,6 +64,7 @@ let visitor = {
         exit: function (astPath, state) {
             var callee = astPath.node.callee;
             let modules = utils_1.default.getAnu(state);
+            let p = modules.sourcePath.split(/\/source\//).pop();
             if (modules.isInAttribute) {
                 if (!modules.isInTag) {
                     return;
@@ -76,7 +78,10 @@ let visitor = {
             if (callee.type === 'MemberExpression' && callee.property.name === 'map') {
             }
             else {
-                console.log(chalk_1.default.red("请不要在JSX中调用函数 " + generator_1.default(astPath.node).code + "\n\n"));
+                lintQueue_1.default.push({
+                    level: 'warn',
+                    msg: `${p} 请不要在 JSX 中调用函数, wxml属性不支持函数调用 ${generator_1.default(astPath.node).code}`
+                });
             }
         }
     },
@@ -134,6 +139,7 @@ let visitor = {
             let attrName = astPath.node.name.name;
             let attrValue = astPath.node.value;
             let modules = utils_1.default.getAnu(state);
+            const p = modules.sourcePath.split(/\/source\//).pop();
             modules.isInAttribute = attrName;
             if (attrName === 'key') {
                 let value;
@@ -144,7 +150,10 @@ let visitor = {
                     value = generator_1.default(attrValue.expression).code;
                     if ((buildType === 'qq' || buildType === 'wx') && value.indexOf('+') > 0) {
                         var fixKey = value.replace(/\+.+/, '').trim();
-                        console.log(chalk_1.default.cyan(`微信/QQ小程序的key不支持加号表达式${value}-->${fixKey}`));
+                        lintQueue_1.default.push({
+                            level: 'warn',
+                            msg: `${p} 里微信/QQ小程序的 key 不支持加号表达式${value}-->${fixKey}.`
+                        });
                         value = fixKey;
                     }
                 }

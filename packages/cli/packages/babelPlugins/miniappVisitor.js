@@ -220,7 +220,7 @@ const visitor = {
                 json.pages = modules.pages;
                 delete modules.pages;
             }
-            helpers.configName(json, modules.componentType);
+            helpers.configName(json, modules.componentType, modules.sourcePath);
             var keys = Object.keys(modules.usedComponents), usings;
             if (keys.length) {
                 usings = json.usingComponents || (json.usingComponents = {});

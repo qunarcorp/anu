@@ -15,7 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const timer_1 = __importDefault(require("../packages/utils/timer"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
+const chalk_1 = __importDefault(require("chalk"));
 const index_1 = require("../packages/utils/logger/index");
+const lintQueue_1 = __importDefault(require("../packages/utils/lintQueue"));
 const config_1 = __importDefault(require("../config/config"));
 const globalStore_1 = __importDefault(require("../packages/utils/globalStore"));
 const setWebView = require('../packages/utils/setWebVeiw');
@@ -112,7 +114,6 @@ class NanachiWebpackPlugin {
         compiler.hooks.done.tap(id, () => {
             this.timer.end();
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);
-            index_1.timerLog(this.timer);
             if (config_1.default.buildType === 'quick') {
                 const filePath = path_1.default.join(cwd, 'src/manifest.json');
                 const originManifestJson = require(filePath);
@@ -122,6 +123,15 @@ class NanachiWebpackPlugin {
                         throw err;
                     }
                 });
+            }
+            while (lintQueue_1.default.length) {
+                const log = lintQueue_1.default.shift();
+                if (log.level === 'warn') {
+                    console.log(chalk_1.default.yellow(`[warn] ${log.msg}`));
+                }
+                if (log.level === 'error') {
+                    console.log(chalk_1.default.red(`[error] ${log.msg}`));
+                }
             }
             callAfterCompileFn(nanachiUserConfig);
             callAfterCompileOnceFn(nanachiUserConfig);

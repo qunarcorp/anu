@@ -4,6 +4,8 @@ import SizePlugin from '../nanachi-loader/sizePlugin';
 import QuickPlugin from '../nanachi-loader/quickPlugin';
 import ChaikaPlugin from '../nanachi-loader/chaika-plugin/chaikaPlugin';
 import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
+
+
 import { NanachiOptions } from '../index';
 import * as path from 'path';
 import webpack from 'webpack';
@@ -34,6 +36,8 @@ const isChaikaMode = function() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 }
 
+
+const WebpackBar = require('webpackbar');
 // json 配置文件名
 const quickConfigFileName: string =
   config.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
@@ -128,15 +132,15 @@ export default function({
                 postJsLoaders,
                 platform !== 'h5' ? aliasLoader: [], 
                 nanachiLoader,
-                {
-                    loader: require.resolve('eslint-loader'),
-                    options: {
-                        configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
-                        failOnError: utils.isMportalEnv(),
-                        allowInlineConfig: false, // 不允许使用注释配置eslint规则
-                        useEslintrc: false // 不使用用户自定义eslintrc配置
-                    }
-                },
+                // {
+                //     loader: require.resolve('eslint-loader'),
+                //     options: {
+                //         configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
+                //         failOnError: utils.isMportalEnv(),
+                //         allowInlineConfig: false, // 不允许使用注释配置eslint规则
+                //         useEslintrc: false // 不使用用户自定义eslintrc配置
+                //     }
+                // },
                 typescript ? {
                     loader: require.resolve('ts-loader'),
                     options: {
@@ -252,7 +256,10 @@ export default function({
         module: {
             rules: mergeRule
         },
-        plugins: mergePlugins,
+        plugins: [
+            new WebpackBar(),
+            ...mergePlugins
+        ],
         resolve: {
             alias: aliasMap,
             extensions: [

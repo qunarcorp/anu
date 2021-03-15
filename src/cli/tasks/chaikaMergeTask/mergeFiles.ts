@@ -15,6 +15,8 @@ let diff = require('deep-diff');
 
 const buildType = process.argv[2].split(':')[1];
 const ignoreExt = ['.tgz'];
+
+
 // 默认微信，如果是h5，则为web
 const ANU_ENV = buildType
     ? buildType === 'h5'
@@ -91,8 +93,8 @@ function getFilesMap(queue: any = []) {
     queue.forEach(function(file: any){
         file = file.replace(/\\/g, '/');
         if (/\/package\.json$/.test(file)) {
-            let { dependencies = {}, devDependencies = {} } = require(file);
-            if ( dependencies ) {
+            let { dependencies = {}, devDependencies = {}, nanachi = {} } = require(file);
+            if ( Object.keys(dependencies).length ) {
                 delete dependencies['@qnpm/chaika-patch'];
                 map['pkgDependencies'] = map['pkgDependencies'] || [];
                 map['pkgDependencies'].push({
@@ -101,7 +103,7 @@ function getFilesMap(queue: any = []) {
                     type: 'dependencies'
                 });
             }
-            if ( devDependencies ) {
+            if ( Object.keys(devDependencies).length ) {
                 delete devDependencies['node-sass'];
                 delete devDependencies['@qnpm/chaika-patch'];
                 map['pkgDevDep'] = map['pkgDevDep'] || [];
@@ -111,6 +113,11 @@ function getFilesMap(queue: any = []) {
                     type: 'devDependencies'
                 });
             }
+
+
+            map.ignoreInstallPkg = map.ignoreInstallPkg || [];
+            map.ignoreInstallPkg = map.ignoreInstallPkg.concat(nanachi.ignoreInstalledNpm || []);
+
             return;
         }
         if (/\/app\.json$/.test(file)) {
@@ -488,6 +495,7 @@ export default function(){
     }
 
 
+
     //['cookie@^0.3.1', 'regenerator-runtime@0.12.1']
     var installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
     
@@ -509,22 +517,15 @@ export default function(){
     }
 
     // 集成环境上过滤这些没用的包安装
-    if (process.env.JENKINS_URL) {
-        const blockList = ['babel-eslint', 'eslint', 'eslint-plugin-react', 'pre-commit', 'chokidar', 'shelljs'];
-        installList = installList.filter((dep) => {
-            const depLevel = dep.split('@');
-            // @scope/moduleName@version
-            // moduleName@version
-            const depName = depLevel[0] ? depLevel[0] : depLevel[1];
-            return !blockList.includes(depName);
-        });
+    if (process.env.JENKINS_URL && map.ignoreInstallPkg.length) {
+       
+
+        const ignoreInstallReg = new RegExp(map.ignoreInstallPkg.join('|'));
+        installList = installList.filter(function(el) {
+            return !ignoreInstallReg.test(el);
+        })
     }
    
-
-    
-
-    
-
     //semver.satisfies('1.2.9', '~1.2.3')
     var installPkgList = installList.reduce(function(needInstall, pkg){
         //@xxx/yyy@1.0.0 => xxx
@@ -563,16 +564,18 @@ export default function(){
             cmd = `npm install ${installList} --no-save --registry=${npmRegistry}`;
             installMsg = `🚚 正在从 ${npmRegistry} 安装拆库依赖, 请稍候...\n${installListLog}`;
         } else {
-            cmd = `npm install ${installList} --no-save`;
+            cmd = `npm install --prefer-offline ${installList} --no-save`;
             installMsg = `🚚 正在安装拆库依赖, 请稍候...\n${installListLog}`;
         }
-        
+    
+
         console.log(chalk.bold.green(installMsg));
 
         // eslint-disable-next-line
         let std = shelljs.exec(cmd, {
             silent: false
         });
+
        
         if (/npm ERR/.test(std.stderr)) {
             // eslint-disable-next-line

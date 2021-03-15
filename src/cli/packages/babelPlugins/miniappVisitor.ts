@@ -316,8 +316,9 @@ const visitor:babel.Visitor = {
                 json.pages = modules.pages;
                 delete modules.pages;
             }
+            
             //支付宝在这里会做属性名转换
-            helpers.configName(json, modules.componentType);
+            helpers.configName(json, modules.componentType, modules.sourcePath);
             
             
             var keys = Object.keys(modules.usedComponents),
