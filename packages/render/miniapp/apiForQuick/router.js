@@ -3,7 +3,7 @@ var router = require('@system.router');
 import { getCurrentPages } from '../getCurrentPages.quick';
 import { _getApp } from "../utils";
 var rQuery = /\?(.*)/
-var urlReg = /(((http|https)\:\/\/)|(www)){1}[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z0-9\&\.\/\?\:@\-_=#])*/g;
+var urlReg = /^(((http|https)\:\/\/)|(www)){1}[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z0-9\&\.\/\?\:@\-_=#])*/g;
 
 export function getQueryFromUri(uri, query) {
     return uri.replace(rQuery, function (a, b) {
@@ -20,7 +20,6 @@ function createRouter(name) {
         var app = _getApp();
         if (name === 'push' || name === 'replace') {
             if (typeof app.onNavigate === 'function') {
-                var onNavigateRet = app.onNavigate(obj);
                 obj = app.onNavigate(obj) || obj;
             }
         }

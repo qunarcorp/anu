@@ -1428,7 +1428,7 @@ function getCurrentPages$1() {
 
 var router = require('@system.router');
 var rQuery = /\?(.*)/;
-var urlReg = /(((http|https)\:\/\/)|(www)){1}[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z0-9\&\.\/\?\:@\-_=#])*/g;
+var urlReg = /^(((http|https)\:\/\/)|(www)){1}[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z0-9\&\.\/\?\:@\-_=#])*/g;
 function getQueryFromUri(uri, query) {
     return uri.replace(rQuery, function (a, b) {
         b.split('&').forEach(function (param) {
@@ -1443,7 +1443,6 @@ function createRouter(name) {
         var app = _getApp();
         if (name === 'push' || name === 'replace') {
             if (typeof app.onNavigate === 'function') {
-                var onNavigateRet = app.onNavigate(obj);
                 obj = app.onNavigate(obj) || obj;
             }
         }
