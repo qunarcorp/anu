@@ -17,6 +17,14 @@ export function getQueryFromUri(uri, query) {
 
 function createRouter(name) {
     return function (obj, inner) {
+        var app = _getApp();
+        if (name === 'push' || name === 'replace') {
+            if (typeof app.onNavigate === 'function') {
+                var onNavigateRet = app.onNavigate(obj);
+                obj = app.onNavigate(obj) || obj;
+            }
+        }
+        
         var uri = "", params = {}, delta = 0;
         if (name === 'back') {
             delta = Object(obj).delta
