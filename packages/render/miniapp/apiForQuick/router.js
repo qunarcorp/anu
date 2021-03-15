@@ -1,7 +1,7 @@
 import { runCallbacks } from '../utils.js';
 var router = require('@system.router');
 import { getCurrentPages } from '../getCurrentPages.quick';
-
+import { _getApp } from "../utils";
 var rQuery = /\?(.*)/
 var urlReg = /(((http|https)\:\/\/)|(www)){1}[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z0-9\&\.\/\?\:@\-_=#])*/g;
 

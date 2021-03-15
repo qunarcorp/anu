@@ -680,7 +680,7 @@ var fakeApp = {
         globalData: {}
     }
 };
-function _getApp$1() {
+function _getApp() {
     if (isFn(getApp)) {
         return getApp();
     }
@@ -698,10 +698,10 @@ function getWrappedComponent(fiber, instance) {
     return instance;
 }
 if (typeof getApp === 'function') {
-    _getApp$1 = getApp;
+    _getApp = getApp;
 }
 function callGlobalHook(method, e) {
-    var app = _getApp$1();
+    var app = _getApp();
     if (app && app[method]) {
         return app[method](e);
     }
@@ -710,7 +710,7 @@ var delayMounts = [];
 var usingComponents = [];
 var registeredComponents = {};
 function getCurrentPage() {
-    var app = _getApp$1();
+    var app = _getApp();
     return app.$$page && app.$$page.reactInstance;
 }
 function updateMiniApp(instance) {
@@ -732,7 +732,7 @@ function refreshComponent(instances, wx, uuid) {
     if (wx.disposed) {
         return;
     }
-    var pagePath = Object(_getApp$1()).$$pagePath;
+    var pagePath = Object(_getApp()).$$pagePath;
     for (var i = 0, n = instances.length; i < n; i++) {
         var instance = instances[i];
         if (instance.$$pagePath === pagePath && !instance.wx && instance.instanceUid === uuid) {
@@ -1191,7 +1191,7 @@ function setNavigationBarTitle(_ref) {
         fail = _ref.fail,
         complete = _ref.complete;
     runCallbacks(function () {
-        var currentPage = _getApp$1().$$page;
+        var currentPage = _getApp().$$page;
         currentPage.$page.setTitleBar({ text: title });
     }, success, fail, complete);
 }
@@ -1417,7 +1417,7 @@ function pushOff() {
 
 function getCurrentPages$1() {
     console.warn('getCurrentPages存在严重的平台差异性，不建议再使用');
-    var globalData = _getApp$1().globalData;
+    var globalData = _getApp().globalData;
     var c = globalData.__currentPages;
     if (!c || !c.length) {
         var router = require('@system.router');
@@ -3272,7 +3272,7 @@ var Renderer$1 = createRenderer({
     onBeforeRender: function onBeforeRender(fiber) {
         var type = fiber.type;
         var instance = fiber.stateNode;
-        var app = _getApp$1();
+        var app = _getApp();
         if (type.reactInstances) {
             var uuid = fiber.props['data-instance-uid'] || null;
             if (!instance.instanceUid) {
@@ -3280,7 +3280,7 @@ var Renderer$1 = createRenderer({
             }
             if (type.isMPComponent) {
                 if (!instance.wx) {
-                    instance.$$pagePath = Object(_getApp$1()).$$pagePath;
+                    instance.$$pagePath = Object(_getApp()).$$pagePath;
                     type.reactInstances.push(instance);
                 }
             }
@@ -3408,7 +3408,7 @@ function _getGlobalApp(app) {
 }
 
 function onLoad(PageClass, path, query, isLoad) {
-    var app = _getApp$1();
+    var app = _getApp();
     var container = this.reactContainer || {
         type: "page",
         props: {},
@@ -3453,7 +3453,7 @@ function onLoad(PageClass, path, query, isLoad) {
     return pageInstance;
 }
 function onReady() {
-    var app = _getApp$1();
+    var app = _getApp();
     app.$$pageIsReady = true;
     var el = void 0;
     while (el = delayMounts.pop()) {
@@ -3520,7 +3520,7 @@ function getQuery(wx, huaweiHack) {
             return query;
         }
     }
-    var data = _getApp$1().globalData;
+    var data = _getApp().globalData;
     var routerQuery = data && data.__quickQuery && data.__quickQuery[page.path] || query;
     if (huaweiHack && Object.keys(huaweiHack).length) {
         for (var _i in huaweiHack) {
@@ -3531,7 +3531,7 @@ function getQuery(wx, huaweiHack) {
 }
 function registerPage(PageClass, path) {
     PageClass.reactInstances = [];
-    var def = _getApp$1().$def;
+    var def = _getApp().$def;
     var appInner = def.innerQuery;
     var appOuter = def.outerQuery;
     var pageInner = PageClass.innerQuery;
@@ -3581,7 +3581,7 @@ function registerPage(PageClass, path) {
     Array('onShow', 'onHide', 'onMenuPress', "onBackPress").forEach(function (pageHook) {
         config[pageHook] = function (e) {
             var instance = this.reactInstance,
-                app = _getApp$1(),
+                app = _getApp(),
                 query = e;
             if (pageHook === 'onShow') {
                 query = instance.props.query = getQuery(this, duplicate);
@@ -3653,7 +3653,7 @@ var React = getWindow().React = {
     registerComponent: registerComponent,
     getCurrentPage: getCurrentPage,
     getCurrentPages: getCurrentPages$1,
-    getApp: _getApp$1,
+    getApp: _getApp,
     registerPage: registerPage,
     toStyle: toStyle,
     useState: useState,
