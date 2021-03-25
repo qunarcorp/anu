@@ -13,9 +13,65 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const timer_1 = __importDefault(require("../packages/utils/timer"));
+const fs_extra_1 = __importDefault(require("fs-extra"));
+const path_1 = __importDefault(require("path"));
+const chalk_1 = __importDefault(require("chalk"));
 const index_1 = require("../packages/utils/logger/index");
+const lintQueue_1 = __importDefault(require("../packages/utils/lintQueue"));
+const config_1 = __importDefault(require("../config/config"));
+const globalStore_1 = __importDefault(require("../packages/utils/globalStore"));
 const setWebView = require('../packages/utils/setWebVeiw');
+const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
+function getNanachiConfig() {
+    try {
+        return require(path_1.default.join(cwd, 'nanachi.config.js'));
+    }
+    catch (err) {
+        return {};
+    }
+}
+const nanachiUserConfig = getNanachiConfig();
+function callAfterCompileOnce() {
+    let afterComileOneceLock = false;
+    return function (nanachiUserConfig) {
+        if (afterComileOneceLock)
+            return;
+        typeof nanachiUserConfig.afterCompileOnce === 'function' && nanachiUserConfig.afterCompileOnce();
+        afterComileOneceLock = true;
+    };
+}
+function beforeCompileOnce() {
+    let beforeCompileOnceLock = false;
+    return function (nanachiUserConfig) {
+        if (beforeCompileOnceLock)
+            return;
+        typeof nanachiUserConfig.beforeCompileOnce === 'function' && nanachiUserConfig.beforeCompileOnce();
+        beforeCompileOnceLock = true;
+    };
+}
+const callAfterCompileOnceFn = callAfterCompileOnce();
+const callBeforeCompileOnceFn = beforeCompileOnce();
+function callAfterCompileFn(nanachiUserConfig) {
+    typeof nanachiUserConfig.afterCompile === 'function' && nanachiUserConfig.afterCompile();
+}
+function callBeforeCompileFn(nanachiUserConfig) {
+    typeof nanachiUserConfig.beforeCompile === 'function' && nanachiUserConfig.beforeCompile();
+}
+function rebuildManifest(manifestJson, quickPageDisplayConifg) {
+    const allPages = manifestJson.router.pages;
+    const parentDisplay = manifestJson.display || {};
+    const displayRoutes = Object.keys(quickPageDisplayConifg);
+    displayRoutes.forEach(route => {
+        const routeLevel = route.split('/');
+        const matchKey = routeLevel.slice(0, routeLevel.length - 1).join('/');
+        if (allPages[matchKey]) {
+            parentDisplay.pages = parentDisplay.pages || {};
+            parentDisplay.pages[matchKey] = quickPageDisplayConifg[route];
+        }
+    });
+    return manifestJson;
+}
 class NanachiWebpackPlugin {
     constructor({ platform = 'wx', compress = false, beta = false, betaUi = false } = {}) {
         this.timer = new timer_1.default();
@@ -45,6 +101,11 @@ class NanachiWebpackPlugin {
             index_1.resetNum();
             callback();
         }));
+        compiler.hooks.beforeCompile.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
+            callBeforeCompileFn(nanachiUserConfig);
+            callBeforeCompileOnceFn(nanachiUserConfig);
+            callback();
+        }));
         compiler.hooks.watchRun.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
             this.timer.start();
             index_1.resetNum();
@@ -53,7 +114,27 @@ class NanachiWebpackPlugin {
         compiler.hooks.done.tap(id, () => {
             this.timer.end();
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);
-            index_1.timerLog(this.timer);
+            if (config_1.default.buildType === 'quick') {
+                const filePath = path_1.default.join(cwd, 'src/manifest.json');
+                const originManifestJson = require(filePath);
+                const newMenifest = rebuildManifest(originManifestJson, globalStore_1.default.quickPageDisplayConifg);
+                fs_extra_1.default.writeFile(filePath, JSON.stringify(newMenifest, null, 4), (err) => {
+                    if (err) {
+                        throw err;
+                    }
+                });
+            }
+            while (lintQueue_1.default.length) {
+                const log = lintQueue_1.default.shift();
+                if (log.level === 'warn') {
+                    console.log(chalk_1.default.yellow(`[warn] ${log.msg}`));
+                }
+                if (log.level === 'error') {
+                    console.log(chalk_1.default.red(`[error] ${log.msg}`));
+                }
+            }
+            callAfterCompileFn(nanachiUserConfig);
+            callAfterCompileOnceFn(nanachiUserConfig);
         });
     }
 }

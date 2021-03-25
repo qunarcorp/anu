@@ -24,7 +24,7 @@ var manifest = {
     name: 'nanachi转快应用',
     versionName: '1.0.0',
     versionCode: 1,
-    minPlatformVersion: 1030,
+    minPlatformVersion: 1060,
     icon: '/assets/logo.png',
     features: [
         { name: 'system.webview' },
@@ -249,7 +249,7 @@ module.exports = function quickConfig(config, modules) {
     setRouter(config);
     setTitleBar(config);
     if (isHuaweiPlatform) {
-        manifest.minPlatformVersion = 1040;
+        manifest.minPlatformVersion = 1060;
     }
     setOtherConfig();
     modules.queue.push({

@@ -60,6 +60,7 @@ module.exports = function (code, map, meta) {
             babelrc: false,
             plugins: [
                 ...require('../../packages/babelPlugins/transformEnv'),
+                require('../../packages/babelPlugins/transformIfImport'),
                 patchMobx.bind(this)
             ]
         }).code;

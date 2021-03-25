@@ -64,8 +64,8 @@ function getFilesMap(queue = []) {
     queue.forEach(function (file) {
         file = file.replace(/\\/g, '/');
         if (/\/package\.json$/.test(file)) {
-            let { dependencies = {}, devDependencies = {} } = require(file);
-            if (dependencies) {
+            let { dependencies = {}, devDependencies = {}, nanachi = {} } = require(file);
+            if (Object.keys(dependencies).length) {
                 delete dependencies['@qnpm/chaika-patch'];
                 map['pkgDependencies'] = map['pkgDependencies'] || [];
                 map['pkgDependencies'].push({
@@ -74,7 +74,7 @@ function getFilesMap(queue = []) {
                     type: 'dependencies'
                 });
             }
-            if (devDependencies) {
+            if (Object.keys(devDependencies).length) {
                 delete devDependencies['node-sass'];
                 delete devDependencies['@qnpm/chaika-patch'];
                 map['pkgDevDep'] = map['pkgDevDep'] || [];
@@ -84,10 +84,12 @@ function getFilesMap(queue = []) {
                     type: 'devDependencies'
                 });
             }
+            map.ignoreInstallPkg = map.ignoreInstallPkg || [];
+            map.ignoreInstallPkg = map.ignoreInstallPkg.concat(nanachi.ignoreInstalledNpm || []);
             return;
         }
         if (/\/app\.json$/.test(file)) {
-            var { alias = {}, pages = [], imports = [], order = 0 } = require(file);
+            var { alias = {}, pages = [], rules = [], imports = [], order = 0 } = require(file);
             if (alias) {
                 map['alias'] = map['alias'] || [];
                 map['alias'].push({
@@ -117,6 +119,17 @@ function getFilesMap(queue = []) {
                 map['pages'].push({
                     routes: Array.from(allInjectRoutes),
                     order: order
+                });
+            }
+            if (rules.length) {
+                map['quickRules'] = map['quickRules'] || new Map();
+                rules.forEach((curRule) => {
+                    const selector = JSON.stringify(curRule);
+                    if (map['quickRules'].has(selector)) {
+                        console.log(chalk.yellow(`无法合并, ${file.split('download/').pop()} 中已经存在规则：\n${JSON.stringify(curRule, null, 4)}\n`));
+                        return;
+                    }
+                    map['quickRules'].set(selector, 1);
                 });
             }
             map['importSyntax'] = map['importSyntax'] || [];
@@ -185,6 +198,21 @@ function getMergedXConfigContent(config) {
     return Promise.resolve({
         dist: xConfigJsonDist,
         content: JSON.stringify(ret, null, 4)
+    });
+}
+function getSitemapContent(quickRules) {
+    if (!quickRules) {
+        return Promise.resolve({
+            content: ''
+        });
+    }
+    const rulesList = Array.from(quickRules).map((el) => {
+        return el[0];
+    });
+    const content = JSON.stringify({ rules: rulesList });
+    return Promise.resolve({
+        dist: path.join(mergeDir, 'source/sitemap.json'),
+        content
     });
 }
 function getMergedData(configList) {
@@ -362,8 +390,11 @@ function default_1() {
         getMergedAppJsConent(getAppJsSourcePath(queue), map.pages, map.importSyntax),
         getMergedXConfigContent(map.xconfig),
         getMergedPkgJsonContent(getMergedData(map.alias)),
-        getMiniAppProjectConfigJson(map.projectConfigJson)
+        getMiniAppProjectConfigJson(map.projectConfigJson),
     ];
+    if (ANU_ENV === 'quick') {
+        tasks.push(getSitemapContent(map.quickRules));
+    }
     function getNodeModulesList(config) {
         let mergeData = getMergedData(config);
         return Object.keys(mergeData).reduce(function (ret, key) {
@@ -387,12 +418,10 @@ function default_1() {
             return dep;
         });
     }
-    if (process.env.JENKINS_URL) {
-        const blockList = ['babel-eslint', 'eslint', 'eslint-plugin-react', 'pre-commit', 'chokidar', 'shelljs'];
-        installList = installList.filter((dep) => {
-            const depLevel = dep.split('@');
-            const depName = depLevel[0] ? depLevel[0] : depLevel[1];
-            return !blockList.includes(depName);
+    if (process.env.JENKINS_URL && map.ignoreInstallPkg.length) {
+        const ignoreInstallReg = new RegExp(map.ignoreInstallPkg.join('|'));
+        installList = installList.filter(function (el) {
+            return !ignoreInstallReg.test(el);
         });
     }
     var installPkgList = installList.reduce(function (needInstall, pkg) {
@@ -420,7 +449,7 @@ function default_1() {
             installMsg = `🚚 正在从 ${npmRegistry} 安装拆库依赖, 请稍候...\n${installListLog}`;
         }
         else {
-            cmd = `npm install ${installList} --no-save`;
+            cmd = `npm install --prefer-offline ${installList} --no-save`;
             installMsg = `🚚 正在安装拆库依赖, 请稍候...\n${installListLog}`;
         }
         console.log(chalk.bold.green(installMsg));

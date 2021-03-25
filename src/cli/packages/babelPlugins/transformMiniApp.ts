@@ -42,6 +42,10 @@ let miniAppPlugin = function(): PluginObj{
                     obj = quickFiles[modules.sourcePath] = {};
                 }
                 obj.type = modules.componentType;
+
+                if (modules.componentType === 'Page') {
+                    modules.pageRoute = modules.current.replace(/^\/source\//, '').replace(/\.js$/, '');
+                }
             }
         }
     };

@@ -87,6 +87,18 @@ function getQuickPkgFile() {
     }
     return ret;
 }
+function getCopyFiles() {
+    const files = [
+        'sitemap.json'
+    ];
+    return files.map(fileName => ({
+        id: path.join(cwd, 'source', fileName),
+        dist: process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
+            ? path.join(cwd, '../../src/', fileName)
+            : path.join(cwd, 'src', fileName),
+        ACTION_TYPE: 'COPY'
+    }));
+}
 function getQuickBuildConfigFile() {
     const baseDir = path.join(cliRoot, 'packages/quickHelpers/quickInitConfig');
     let signDir = baseDir;
@@ -297,7 +309,7 @@ function runTask({ platform: buildType, beta, betaUi, compress }) {
             tasks = tasks.concat(getReactLibFile(ReactLibName));
         }
         if (isQuick) {
-            tasks = tasks.concat(getQuickBuildConfigFile(), getQuickPkgFile());
+            tasks = tasks.concat(getQuickBuildConfigFile(), getQuickPkgFile(), getCopyFiles());
             if (needInstallHapToolkit()) {
                 let toolName = 'hap-toolkit@latest';
                 utils.installer(toolName, '--save-dev');
@@ -313,7 +325,7 @@ function runTask({ platform: buildType, beta, betaUi, compress }) {
             }));
             yield Promise.all(tasks.map(function (task) {
                 if (helpers[task.ACTION_TYPE]) {
-                    return helpers[task.ACTION_TYPE](task);
+                    return helpers[task.ACTION_TYPE](task).catch(() => { });
                 }
             }));
         }

@@ -17,6 +17,7 @@ const path = __importStar(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const utils_1 = __importDefault(require("../utils"));
 const calculateComponentsPath_1 = __importDefault(require("../utils/calculateComponentsPath"));
+const globalStore_1 = __importDefault(require("../utils/globalStore"));
 const config_1 = __importDefault(require("../../config/config"));
 const transformConfig_1 = __importDefault(require("./transformConfig"));
 const buildType = config_1.default['buildType'];
@@ -219,7 +220,7 @@ const visitor = {
                 json.pages = modules.pages;
                 delete modules.pages;
             }
-            helpers.configName(json, modules.componentType);
+            helpers.configName(json, modules.componentType, modules.sourcePath);
             var keys = Object.keys(modules.usedComponents), usings;
             if (keys.length) {
                 usings = json.usingComponents || (json.usingComponents = {});
@@ -230,6 +231,9 @@ const visitor = {
             if (buildType == 'quick') {
                 var obj = quickFiles[modules.sourcePath];
                 if (obj) {
+                    if (modules.pageRoute) {
+                        globalStore_1.default.quickPageDisplayConifg[modules.pageRoute] = json.pageDisplay || {};
+                    }
                     quickConfig(json, modules, modules.queue, utils_1.default);
                     obj.config = Object.assign({}, json);
                 }

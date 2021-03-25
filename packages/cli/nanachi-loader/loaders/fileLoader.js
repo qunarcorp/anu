@@ -16,7 +16,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = require("../../packages/utils/logger/index");
 const path = __importStar(require("path"));
 const utils = require('../../packages/utils/index');
 module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
@@ -38,8 +37,6 @@ module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
                 }
             }
             this.emitFile(relativePath, code, map);
-            const outputPathName = utils.getDistName(this.nanachiOptions.platform);
-            index_1.successLog(path.join(outputPathName, relativePath), code);
         });
         callback(null, exportCode, map, meta);
     });

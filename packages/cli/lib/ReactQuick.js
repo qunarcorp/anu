@@ -1,5 +1,5 @@
 /**
- * 运行于快应用的React by 司徒正美 Copyright 2020-08-04
+ * 运行于快应用的React by 司徒正美 Copyright 2021-03-15
  */
 
 var arrayPush = Array.prototype.push;
@@ -1428,7 +1428,7 @@ function getCurrentPages$1() {
 
 var router = require('@system.router');
 var rQuery = /\?(.*)/;
-var urlReg = /(((http|https)\:\/\/)|(www)){1}[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z0-9\&\.\/\?\:@\-_=#])*/g;
+var urlReg = /^(((http|https)\:\/\/)|(www)){1}[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z0-9\&\.\/\?\:@\-_=#])*/g;
 function getQueryFromUri(uri, query) {
     return uri.replace(rQuery, function (a, b) {
         b.split('&').forEach(function (param) {
@@ -1440,6 +1440,12 @@ function getQueryFromUri(uri, query) {
 }
 function createRouter(name) {
     return function (obj, inner) {
+        var app = _getApp();
+        if (name === 'push' || name === 'replace') {
+            if (typeof app.onNavigate === 'function') {
+                obj = app.onNavigate(obj) || obj;
+            }
+        }
         var uri = "",
             params = {},
             delta = 0;

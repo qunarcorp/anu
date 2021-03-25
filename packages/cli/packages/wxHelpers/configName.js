@@ -3,12 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const chalk_1 = __importDefault(require("chalk"));
-module.exports = function mapConfigName(config) {
+const lintQueue_1 = __importDefault(require("../utils/lintQueue"));
+module.exports = function mapConfigName(config, patch, sourcePath) {
     if (config.window) {
-        modifyValue(config.window);
+        modifyValue(config.window, sourcePath);
     }
-    modifyValue(config);
+    modifyValue(config, sourcePath);
 };
 const mapColor = {
     "#fff": "white",
@@ -22,12 +22,16 @@ const mapBg = {
     '#000': 'dark',
     '#000000': 'dark',
 };
-function modifyValue(object, patch) {
+function modifyValue(object, sourcePath) {
+    var p = sourcePath.split(/\/source\//).pop();
     var barColor = object.navigationBarTextStyle, color, bg;
     if (barColor !== 'white' && barColor !== 'black') {
         color = mapColor[barColor] || 'white';
         if (barColor) {
-            console.log(chalk_1.default.magenta(`navigationBarTextStyle的值为${barColor},强制转换为${color}`));
+            lintQueue_1.default.push({
+                level: 'warn',
+                msg: `${p} 里navigationBarTextStyle的值为${barColor}, 强制转换为${color}.`
+            });
             object.navigationBarTextStyle = color;
         }
     }
@@ -42,7 +46,10 @@ function modifyValue(object, patch) {
         }
         if (barBg) {
             object.backgroundTextStyle = bg;
-            console.log(chalk_1.default.magenta(`backgroundTextStyle的值为${barBg},强制转换为${bg}`));
+            lintQueue_1.default.push({
+                level: 'warn',
+                msg: `${p}里backgroundTextStyle的值为${barBg}, 强制转换为${bg}.`
+            });
         }
     }
 }

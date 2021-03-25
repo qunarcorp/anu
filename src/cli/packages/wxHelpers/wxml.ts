@@ -6,12 +6,14 @@ import { transform, NodePath, PluginObj } from '@babel/core';
 import utils from '../utils';
 import config from '../../config/config';
 import beautify from 'js-beautify';
+import lintQueue from '../utils/lintQueue';
 //const he = require('he');//转义库
 const buildType = config.buildType;
 const helper = config[buildType].helpers
 const attrNameHelper = require(`../${helper}/attrName`);
 const attrValueHelper = require(`../${helper}/attrValue`);
 const logicHelper = require(`../${helper}/logic`);
+
 
 function beautifyXml(code: string){
     return beautify.html(code, {
@@ -26,7 +28,8 @@ const quickTextContainer: {
     a: 1,
     span: 1,
     label: 1,
-    option: 1
+    option: 1,
+    richtext: 1
 };
 /**
  * 必须符合babel-transfrom-xxx的格式，使用declare声明
@@ -61,6 +64,7 @@ let visitor = {
         exit: function(astPath: NodePath<t.CallExpression>, state: any){
             var callee = astPath.node.callee;
             let modules = utils.getAnu(state);
+            let p = modules.sourcePath.split(/\/source\//).pop();
             if(modules.isInAttribute){
                if(!modules.isInTag){
                     return
@@ -75,7 +79,12 @@ let visitor = {
             if(callee.type === 'MemberExpression' && callee.property.name === 'map'){
                //这是map循环
             }else{
-                console.log(chalk.red("请不要在JSX中调用函数 " + generate(astPath.node).code +"\n\n"))
+
+                lintQueue.push({
+                    level: 'warn',
+                    msg: `${p} 请不要在 JSX 中调用函数, wxml属性不支持函数调用 ${generate(astPath.node).code}`
+                })
+                //console.log(chalk.yellow(`[warn] ${p} 请不要在 JSX 中调用函数, wxml属性不支持函数调用 ${generate(astPath.node).code}`))
             }
        }
        
@@ -139,10 +148,12 @@ let visitor = {
     },
     JSXAttribute:{
         enter: function (astPath: NodePath<t.JSXAttribute>, state: any) {
+            
             let attrName = astPath.node.name.name;
             let attrValue: any = astPath.node.value;
             let modules = utils.getAnu(state);
-            modules.isInAttribute = attrName
+            const p = modules.sourcePath.split(/\/source\//).pop();
+            modules.isInAttribute = attrName;
             if (attrName === 'key') {
                 let value;
 
@@ -152,7 +163,12 @@ let visitor = {
                     value = generate(attrValue.expression).code;
                     if ((buildType === 'qq' || buildType === 'wx') && value.indexOf('+') > 0) {
                         var fixKey = value.replace(/\+.+/, '').trim();
-                        console.log(chalk.cyan(`微信/QQ小程序的key不支持加号表达式${value}-->${fixKey}`));
+
+                        lintQueue.push({
+                            level: 'warn',
+                            msg: `${p} 里微信/QQ小程序的 key 不支持加号表达式${value}-->${fixKey}.`
+                        })
+                        //console.log(chalk.yellow(`[warn] ${p} 里微信/QQ小程序的 key 不支持加号表达式${value}-->${fixKey}.`));
                         value = fixKey;
                     }
                 }
