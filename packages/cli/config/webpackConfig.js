@@ -90,6 +90,11 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
     const mergeRule = [].concat({
         test: /\.[jt]sx?$/,
         use: [].concat({
+            loader: require.resolve('thread-loader'),
+            options: {
+                workers: 4,
+            }
+        }, {
             loader: require.resolve("cache-loader-hash"),
             options: {
                 mode: 'hash',

@@ -128,6 +128,13 @@ export default function({
             //loader是从后往前处理
             use: [].concat(
                 {
+                    loader: require.resolve('thread-loader'),
+                    options: {
+                      // 产生的 worker 的数量，默认是 cpu 的核心数
+                      workers: 4,
+                    }
+                },
+                {
                     loader: require.resolve("cache-loader-hash"),
                     options: {
                     mode:'hash',
@@ -162,6 +169,7 @@ export default function({
         {
             test: /React\w+/,
             use: [].concat(
+               
                 fileLoader, 
                 postLoaders,
                 nodeLoader, 
@@ -170,6 +178,7 @@ export default function({
         {
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
+               
                 fileLoader, 
                 postLoaders, 
                 postCssLoaders,
