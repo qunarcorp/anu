@@ -127,6 +127,13 @@ export default function({
             test: /\.[jt]sx?$/,
             //loader是从后往前处理
             use: [].concat(
+                {
+                    loader: require.resolve("cache-loader-hash"),
+                    options: {
+                    mode:'hash',
+                        cacheDirectory: path.resolve(path.join(process.cwd(),'.qcache','nanachi-cache-loader')),
+                    }
+                },
                 fileLoader, 
                 postLoaders, 
                 postJsLoaders,
@@ -244,7 +251,7 @@ export default function({
     }
 
     let entry = path.join(cwd, 'source/app');
-
+console.log('-------', mergeRule[0].use)
     if (typescript) { entry += '.tsx' };
     return {
         entry: entry,

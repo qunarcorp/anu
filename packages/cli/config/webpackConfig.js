@@ -1,13 +1,25 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const plugin_1 = __importDefault(require("../nanachi-loader/plugin"));
@@ -77,7 +89,13 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
     const mergeRule = [].concat({
         test: /\.[jt]sx?$/,
-        use: [].concat(fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
+        use: [].concat({
+            loader: require.resolve("cache-loader-hash"),
+            options: {
+                mode: 'hash',
+                cacheDirectory: path.resolve(path.join(process.cwd(), '.qcache', 'nanachi-cache-loader')),
+            }
+        }, fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
@@ -133,6 +151,7 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
         }));
     }
     let entry = path.join(cwd, 'source/app');
+    console.log('-------', mergeRule[0].use);
     if (typescript) {
         entry += '.tsx';
     }
