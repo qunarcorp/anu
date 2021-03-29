@@ -113,6 +113,7 @@
     "babel-traverse": "^6.26.0",
     "babel-types": "^6.26.0",
     "babylon": "^6.18.0",
+    "cache-loader-hash": "^4.1.6",
     "chalk": "^2.4.1",
     "chokidar": "^2.0.4",
     "clean-css": "^4.2.1",
@@ -203,7 +204,6 @@
   },
   "dependencies": {
     "@rematch/core": "^1.0.0-alpha.9",
-    "cache-loader-hash": "^4.1.6",
     "html-minifier": "^3.5.20",
     "semver": "^5.5.1",
     "thread-loader": "^3.0.1"

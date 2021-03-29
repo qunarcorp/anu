@@ -8,6 +8,7 @@ import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
 
 import { NanachiOptions } from '../index';
 import * as path from 'path';
+import * as fs from 'fs';
 import webpack from 'webpack';
 const utils = require('../packages/utils/index');
 import { intermediateDirectoryName } from './h5/configurations';
@@ -111,7 +112,7 @@ export default function({
         ],
         ...copyPluginOption // 压缩图片配置
     }];
-    
+    console.log('platform--------', platform)
     const mergePlugins = [].concat( 
         isChaikaMode() ? [ new ChaikaPlugin() ] : [],
         analysis ? new SizePlugin() : [],
@@ -122,47 +123,52 @@ export default function({
         new CopyWebpackPlugin(copyAssetsRules),
         plugins);
 
+    const jsLorder  = () => {
+      
+        const { skipNanachiCache = true } = process.env
+       // console.log('process. env--------',  skipNanachiCache)
+        const useCache = skipNanachiCache && platform == 'wx'
+        const basePath = fs.existsSync('/usr/local/q/npm') ?   path.join('/usr/local/q/npm') : path.join(process.cwd(),'../../../../')
+        const cacheLorder =  {
+            loader: require.resolve("cache-loader-hash"),
+            options: {
+            mode:'hash',
+                cacheDirectory: path.resolve(path.join(basePath,'.qcache','nanachi-cache-loader',platform)),
+            }
+        }
+    
+        const __jsLorder = [].concat(
+            useCache ? cacheLorder : [],
+            fileLoader, 
+            postLoaders, 
+            postJsLoaders,
+            platform !== 'h5' ? aliasLoader: [], 
+            nanachiLoader,
+            // {
+            //     loader: require.resolve('eslint-loader'),
+            //     options: {
+            //         configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
+            //         failOnError: utils.isMportalEnv(),
+            //         allowInlineConfig: false, // 不允许使用注释配置eslint规则
+            //         useEslintrc: false // 不使用用户自定义eslintrc配置
+            //     }
+            // },
+            typescript ? {
+                loader: require.resolve('ts-loader'),
+                options: {
+                    context: path.resolve(cwd)
+                }
+            } : [],
+            prevJsLoaders,
+            prevLoaders )
+        return __jsLorder
+    };
+
     const mergeRule = [].concat(
         {
             test: /\.[jt]sx?$/,
             //loader是从后往前处理
-            use: [].concat(
-                {
-                    loader: require.resolve('thread-loader'),
-                    options: {
-                      // 产生的 worker 的数量，默认是 cpu 的核心数
-                      workers: 4,
-                    }
-                },
-                {
-                    loader: require.resolve("cache-loader-hash"),
-                    options: {
-                    mode:'hash',
-                        cacheDirectory: path.resolve(path.join(process.cwd(),'.qcache','nanachi-cache-loader')),
-                    }
-                },
-                fileLoader, 
-                postLoaders, 
-                postJsLoaders,
-                platform !== 'h5' ? aliasLoader: [], 
-                nanachiLoader,
-                // {
-                //     loader: require.resolve('eslint-loader'),
-                //     options: {
-                //         configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
-                //         failOnError: utils.isMportalEnv(),
-                //         allowInlineConfig: false, // 不允许使用注释配置eslint规则
-                //         useEslintrc: false // 不使用用户自定义eslintrc配置
-                //     }
-                // },
-                typescript ? {
-                    loader: require.resolve('ts-loader'),
-                    options: {
-                        context: path.resolve(cwd)
-                    }
-                } : [],
-                prevJsLoaders,
-                prevLoaders ) ,
+            use:  jsLorder() ,
             exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
         },
         platform !== 'h5' ? nodeRules : [],
@@ -259,6 +265,7 @@ export default function({
         )
     }
 
+   // mergeRule.
     let entry = path.join(cwd, 'source/app');
 console.log('-------', mergeRule[0].use)
     if (typescript) { entry += '.tsx' };

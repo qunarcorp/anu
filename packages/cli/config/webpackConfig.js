@@ -28,6 +28,7 @@ const quickPlugin_1 = __importDefault(require("../nanachi-loader/quickPlugin"));
 const chaikaPlugin_1 = __importDefault(require("../nanachi-loader/chaika-plugin/chaikaPlugin"));
 const copy_webpack_plugin_1 = __importDefault(require("copy-webpack-plugin"));
 const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
 const webpack_1 = __importDefault(require("webpack"));
 const utils = require('../packages/utils/index');
 const configurations_1 = require("./h5/configurations");
@@ -83,29 +84,33 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
     const copyAssetsRules = [Object.assign({ from: '**', to: 'assets', context: 'source/assets', ignore: [
                 '**/*.@(js|jsx|json|sass|scss|less|css|ts|tsx)'
             ] }, copyPluginOption)];
+    console.log('platform--------', platform);
     const mergePlugins = [].concat(isChaikaMode() ? [new chaikaPlugin_1.default()] : [], analysis ? new sizePlugin_1.default() : [], new plugin_1.default({
         platform,
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
-    const mergeRule = [].concat({
-        test: /\.[jt]sx?$/,
-        use: [].concat({
-            loader: require.resolve('thread-loader'),
-            options: {
-                workers: 4,
-            }
-        }, {
+    const jsLorder = () => {
+        const { skipNanachiCache = true } = process.env;
+        const useCache = skipNanachiCache && platform == 'wx';
+        const basePath = fs.existsSync('/usr/local/q/npm') ? path.join('/usr/local/q/npm') : path.join(process.cwd(), '../../../../');
+        const cacheLorder = {
             loader: require.resolve("cache-loader-hash"),
             options: {
                 mode: 'hash',
-                cacheDirectory: path.resolve(path.join(process.cwd(), '.qcache', 'nanachi-cache-loader')),
+                cacheDirectory: path.resolve(path.join(basePath, '.qcache', 'nanachi-cache-loader', platform)),
             }
-        }, fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
+        };
+        const __jsLorder = [].concat(useCache ? cacheLorder : [], fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
             }
-        } : [], prevJsLoaders, prevLoaders),
+        } : [], prevJsLoaders, prevLoaders);
+        return __jsLorder;
+    };
+    const mergeRule = [].concat({
+        test: /\.[jt]sx?$/,
+        use: jsLorder(),
         exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
     }, platform !== 'h5' ? nodeRules : [], {
         test: /React\w+/,
