@@ -17,6 +17,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
+const fs = __importStar(require("fs-extra"));
 const utils = require('../../packages/utils/index');
 module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -35,6 +36,19 @@ module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
                 if (!this._compilation.assets[relativePath]) {
                     this.emitFile(path.join(path.dirname(relativePath), 'index.qss'), '', map);
                 }
+            }
+            const fileBaseName = path.basename(relativePath);
+            if (this.nanachiOptions.platform === 'wx' && ['app.js', 'app.json', 'app.wxss'].includes(fileBaseName)) {
+                const distPath = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
+                    ? path.join(process.cwd(), '../../dist/', fileBaseName)
+                    : path.join(process.cwd(), '/dist/', fileBaseName);
+                fs.ensureFileSync(distPath);
+                fs.writeFile(distPath, code, function (err) {
+                    if (err) {
+                        throw err;
+                    }
+                });
+                return;
             }
             this.emitFile(relativePath, code, map);
         });

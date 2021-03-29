@@ -9,8 +9,6 @@ const utils = require('../../packages/utils/index');
  * 处理快应用的多个文件合并成一个文件，QQ小程序添加空的样式文件的各种情况
  */
 
-
-
 module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderStruct, map: any, meta: any) {
     this._compiler.NANACHI = this._compiler.NANACHI || {};
     this._compiler.NANACHI.webviews = this._compiler.NANACHI.webviews || [];
@@ -24,7 +22,7 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
     }
 
     const callback = this.async();
-    queues.forEach(({ code = '', path: relativePath }) => {
+    queues.forEach(({ code = '', path: relativePath}) => {
         //qq轻应用，页面必须有样式，否则页面无法渲染，这是qq轻应用bug
         if ( this.nanachiOptions.platform === 'qq' && /[\/\\](pages|components)[\/\\]/.test(this.resourcePath) && path.parse(this.resourcePath).base === 'index.js' ) {
             //to do .css 有问题
@@ -34,9 +32,24 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
         }
 
 
+        // 与其他技术融合，可能得提前需要app.js, app.json
+        const fileBaseName = path.basename(relativePath);
+        if (this.nanachiOptions.platform === 'wx' && ['app.js', 'app.json', 'app.wxss'].includes(fileBaseName)) {
+            const distPath = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
+                ? path.join(process.cwd(), '../../dist/', fileBaseName)
+                : path.join(process.cwd(), '/dist/', fileBaseName)
+
+            fs.ensureFileSync(distPath);
+            fs.writeFile(distPath, code, function(err) {
+                if (err) {
+                    throw err;
+                }
+            });
+            return;
+        }
+    
         this.emitFile(relativePath, code, map);
-        //const outputPathName = utils.getDistName(this.nanachiOptions.platform);
-        //successLog(path.join(outputPathName, relativePath), code);
+      
     });
     
     callback(null, exportCode, map, meta);
