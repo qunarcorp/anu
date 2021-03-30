@@ -8,6 +8,7 @@ import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
 
 import { NanachiOptions } from '../index';
 import * as path from 'path';
+import * as fs from 'fs';
 import webpack from 'webpack';
 const utils = require('../packages/utils/index');
 import { intermediateDirectoryName } from './h5/configurations';
@@ -111,7 +112,6 @@ export default function({
         ],
         ...copyPluginOption // 压缩图片配置
     }];
-    
     const mergePlugins = [].concat( 
         isChaikaMode() ? [ new ChaikaPlugin() ] : [],
         analysis ? new SizePlugin() : [],
@@ -122,39 +122,61 @@ export default function({
         new CopyWebpackPlugin(copyAssetsRules),
         plugins);
 
+    const jsLorder  = () => {
+      
+        const { skipNanachiCache = true } = process.env
+        const useCache = JSON.parse(skipNanachiCache) && platform == 'wx'
+        const jenkinsPath = '/usr/local/q/npm'
+        const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../../../')
+        const cacheDirectory = path.resolve(path.join(basePath,'.qcache','nanachi-cache-loader',platform))
+
+        const cacheLorder =  {
+            loader: require.resolve("cache-loader-hash"),
+            options: {
+                mode:'hash',
+                cacheDirectory
+            }
+        }
+    
+        const __jsLorder = [].concat(
+            useCache ? cacheLorder : [],
+            fileLoader, 
+            postLoaders, 
+            postJsLoaders,
+            platform !== 'h5' ? aliasLoader: [], 
+            nanachiLoader,
+            // {
+            //     loader: require.resolve('eslint-loader'),
+            //     options: {
+            //         configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
+            //         failOnError: utils.isMportalEnv(),
+            //         allowInlineConfig: false, // 不允许使用注释配置eslint规则
+            //         useEslintrc: false // 不使用用户自定义eslintrc配置
+            //     }
+            // },
+            typescript ? {
+                loader: require.resolve('ts-loader'),
+                options: {
+                    context: path.resolve(cwd)
+                }
+            } : [],
+            prevJsLoaders,
+            prevLoaders )
+        return __jsLorder
+    };
+
     const mergeRule = [].concat(
         {
             test: /\.[jt]sx?$/,
             //loader是从后往前处理
-            use: [].concat(
-                fileLoader, 
-                postLoaders, 
-                postJsLoaders,
-                platform !== 'h5' ? aliasLoader: [], 
-                nanachiLoader,
-                // {
-                //     loader: require.resolve('eslint-loader'),
-                //     options: {
-                //         configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
-                //         failOnError: utils.isMportalEnv(),
-                //         allowInlineConfig: false, // 不允许使用注释配置eslint规则
-                //         useEslintrc: false // 不使用用户自定义eslintrc配置
-                //     }
-                // },
-                typescript ? {
-                    loader: require.resolve('ts-loader'),
-                    options: {
-                        context: path.resolve(cwd)
-                    }
-                } : [],
-                prevJsLoaders,
-                prevLoaders ) ,
+            use:  jsLorder() ,
             exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
         },
         platform !== 'h5' ? nodeRules : [],
         {
             test: /React\w+/,
             use: [].concat(
+               
                 fileLoader, 
                 postLoaders,
                 nodeLoader, 
@@ -163,6 +185,7 @@ export default function({
         {
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
+               
                 fileLoader, 
                 postLoaders, 
                 postCssLoaders,
@@ -243,8 +266,8 @@ export default function({
         )
     }
 
+   // mergeRule.
     let entry = path.join(cwd, 'source/app');
-
     if (typescript) { entry += '.tsx' };
     return {
         entry: entry,

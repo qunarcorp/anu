@@ -1,13 +1,25 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const plugin_1 = __importDefault(require("../nanachi-loader/plugin"));
@@ -16,6 +28,7 @@ const quickPlugin_1 = __importDefault(require("../nanachi-loader/quickPlugin"));
 const chaikaPlugin_1 = __importDefault(require("../nanachi-loader/chaika-plugin/chaikaPlugin"));
 const copy_webpack_plugin_1 = __importDefault(require("copy-webpack-plugin"));
 const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
 const webpack_1 = __importDefault(require("webpack"));
 const utils = require('../packages/utils/index');
 const configurations_1 = require("./h5/configurations");
@@ -75,14 +88,30 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
         platform,
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
-    const mergeRule = [].concat({
-        test: /\.[jt]sx?$/,
-        use: [].concat(fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
+    const jsLorder = () => {
+        const { skipNanachiCache = true } = process.env;
+        const useCache = JSON.parse(skipNanachiCache) && platform == 'wx';
+        const jenkinsPath = '/usr/local/q/npm';
+        const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../../../');
+        const cacheDirectory = path.resolve(path.join(basePath, '.qcache', 'nanachi-cache-loader', platform));
+        const cacheLorder = {
+            loader: require.resolve("cache-loader-hash"),
+            options: {
+                mode: 'hash',
+                cacheDirectory
+            }
+        };
+        const __jsLorder = [].concat(useCache ? cacheLorder : [], fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
             }
-        } : [], prevJsLoaders, prevLoaders),
+        } : [], prevJsLoaders, prevLoaders);
+        return __jsLorder;
+    };
+    const mergeRule = [].concat({
+        test: /\.[jt]sx?$/,
+        use: jsLorder(),
         exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
     }, platform !== 'h5' ? nodeRules : [], {
         test: /React\w+/,
