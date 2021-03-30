@@ -176,7 +176,6 @@ export default function({
         {
             test: /React\w+/,
             use: [].concat(
-               
                 fileLoader, 
                 postLoaders,
                 nodeLoader, 
@@ -185,7 +184,6 @@ export default function({
         {
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
-               
                 fileLoader, 
                 postLoaders, 
                 postCssLoaders,
