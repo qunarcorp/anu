@@ -713,6 +713,62 @@ const visitor:babel.Visitor = {
             }
 
             let modules = utils.getAnu(state);
+
+            if (buildType === 'wx' && nodeName === 'button') {
+                
+                /**
+                 * {
+                 *  open-type: 'xxx',
+                 *  onGetUserInfo: 'yyy'
+                 * }
+                 */
+                const attrs:any = astPath.node.attributes.reduce(function(acc:any, attr:any) {
+                    acc[attr.name.name.toLowerCase()] = typeof attr.value?.value === 'string'
+                        ? attr.value.value.toLowerCase()
+                        // xxx={}
+                        : generate(attr.value.expression).code;
+
+                    return acc;
+                }, {})
+
+               
+
+                // 删掉 open-type = 'getUserInfo'
+               if (attrs['open-type'] === 'getuserinfo') {
+                  astPath.node.attributes = astPath.node.attributes.filter(attr => attr.name.name.toLowerCase() !== 'open-type')
+               
+               
+                    const getUserInfoKey = 'ongetuserinfo' || 'bindgetuserinfo';
+                    const cbNames = ['ongetuserinfo', 'bindgetuserinfo'];
+                    
+                    if (attrs[getUserInfoKey]) {
+                       
+                        astPath.node.attributes = astPath.node.attributes.map((attr:any) => {
+                            const name = attr.name.name.toLowerCase();
+                           
+                            if (cbNames.includes(name)) {
+                                // ongetUserInfo | bindgetuserinfo 绑定的函数名字
+                               
+                                // ongetuserinfo = {this.xxx.bind(this)}
+                                // ongetuserinfo = {this.xxx}
+                                // 统一取到 xxx 函数名，用于在 class helper 中进行 xxx class methods 的改造
+                                const bindReg = /(\.bind\(\w+\))$/;
+                                modules.onGetUserClassMethodName = bindReg.test(attrs[getUserInfoKey])
+                                    ? attrs[getUserInfoKey].replace(bindReg, '').split('.').pop()
+                                    : attrs[getUserInfoKey].split('.').pop();
+                                    
+                                //onGetUserInfo | bindgetUserInfo => onClick
+                                attr.name.name = 'onClick';
+                            }
+                            
+                            return attr;
+                        })
+                    }
+                }
+               
+            }
+
+
             nodeName = helpers.nodeName(astPath, modules) || nodeName;
             // https://mp.weixin.qq.com/wxopen/plugindevdoc?appid=wx56c8f077de74b07c&token=1011820682&lang=zh_CN#-
             if (buildType === 'wx' && config.pluginTags && config.pluginTags[nodeName]) { // 暂时只有wx支持

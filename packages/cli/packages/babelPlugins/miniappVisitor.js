@@ -501,6 +501,33 @@ const visitor = {
                 }
             }
             let modules = utils_1.default.getAnu(state);
+            if (buildType === 'wx' && nodeName === 'button') {
+                const attrs = astPath.node.attributes.reduce(function (acc, attr) {
+                    var _a;
+                    acc[attr.name.name.toLowerCase()] = typeof ((_a = attr.value) === null || _a === void 0 ? void 0 : _a.value) === 'string'
+                        ? attr.value.value.toLowerCase()
+                        : generator_1.default(attr.value.expression).code;
+                    return acc;
+                }, {});
+                if (attrs['open-type'] === 'getuserinfo') {
+                    astPath.node.attributes = astPath.node.attributes.filter(attr => attr.name.name.toLowerCase() !== 'open-type');
+                    const getUserInfoKey = 'ongetuserinfo' || 'bindgetuserinfo';
+                    const cbNames = ['ongetuserinfo', 'bindgetuserinfo'];
+                    if (attrs[getUserInfoKey]) {
+                        astPath.node.attributes = astPath.node.attributes.map((attr) => {
+                            const name = attr.name.name.toLowerCase();
+                            if (cbNames.includes(name)) {
+                                const bindReg = /(\.bind\(\w+\))$/;
+                                modules.onGetUserClassMethodName = bindReg.test(attrs[getUserInfoKey])
+                                    ? attrs[getUserInfoKey].replace(bindReg, '').split('.').pop()
+                                    : attrs[getUserInfoKey].split('.').pop();
+                                attr.name.name = 'onClick';
+                            }
+                            return attr;
+                        });
+                    }
+                }
+            }
             nodeName = helpers.nodeName(astPath, modules) || nodeName;
             if (buildType === 'wx' && config_1.default.pluginTags && config_1.default.pluginTags[nodeName]) {
                 modules.usedComponents[nodeName] = config_1.default.pluginTags[nodeName];

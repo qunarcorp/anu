@@ -2,7 +2,10 @@ import * as t from '@babel/types';
 import { NodePath } from '@babel/core';
 import generate from '@babel/generator';
 import template from '@babel/template';
+import config from '../../config/config';
 import utils from '../utils';
+
+const buildType = config.buildType;
 
 module.exports = {
     enter(astPath: NodePath<t.ClassDeclaration>, state: any) {
@@ -10,7 +13,8 @@ module.exports = {
         let modules = utils.getAnu(state);
         modules.className = astPath.node.id.name;
         modules.parentName = generate(astPath.node.superClass).code || 'Object';
-        modules.classUid = 'c' + utils.createUUID(astPath);
+        modules.classUid = 'c' + utils.createUUID(astPath);  
+
     },
     exit(astPath: NodePath<t.ClassDeclaration>, state: any) {
         // 将类表式变成函数调用
@@ -54,12 +58,67 @@ module.exports = {
         // }).type);
         // astPath.insertBefore(modules.ctorFn);
         //用于绑定事件
+
+        
+
         modules.thisMethods.push(
             t.objectProperty(
                 t.identifier('classUid'),
                 t.stringLiteral(modules.classUid)
             )
         );
+
+
+      
+        // 统一处理微信小程序 DSL <button onGetUserInfo={this.a} /> 升级
+        if (buildType === 'wx' && modules.onGetUserClassMethodName) {
+            modules.thisMethods = modules.thisMethods.map(function(node:any) {
+                if (node.key.name === modules.onGetUserClassMethodName) {
+                    // 函数体节点
+                    const fnBody = node.value.body.body;
+                    const param = node.value.params;
+                    /**
+                     * 
+                     * a = function(b) {
+                     *  // your logic code
+                     * }
+                     * 
+                     * 转译成:
+                     * 
+                     * a = function() {
+                     *  React.api.getUserInfo({
+                     *     success: (b) => {
+                     *         // your logic code
+                     *     }
+                     *  })
+                     * }
+                     * 
+                     * 注意 success callback 一定要为箭头函数, 防止 this 指针错乱。
+                     *  
+                     */
+                    const wrappedCb =  template(
+                        `
+                            React.api.getUserInfo({
+                                success: (%%PARAM%%) => {
+                                    %%FNBODY%%
+                                },
+                                fail: (e) => {
+                                    console.warn(e);
+                                }
+                            })
+                        `.trim(), 
+                        {syntacticPlaceholders: true} as any
+                    )({
+                         FNBODY: fnBody,
+                         PARAM: param[0]
+                    });
+                    node.value.body.body[0] = wrappedCb;
+
+                }
+                return node;
+            })
+        }
+
         /**
          * 使用 babel-types 完成如下语法
          * var Global = React.toClass(Global, React.Component, {});
@@ -98,6 +157,7 @@ module.exports = {
 
         
         // 可以通过 `console.log(generate(classDeclarationAst).code)` 查看编译后的代码
+       
 
         astPath.replaceWith(classDeclarationAst);
         if (astPath.type == 'CallExpression') {

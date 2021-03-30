@@ -13,7 +13,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const t = __importStar(require("@babel/types"));
 const generator_1 = __importDefault(require("@babel/generator"));
 const template_1 = __importDefault(require("@babel/template"));
+const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../utils"));
+const buildType = config_1.default.buildType;
 module.exports = {
     enter(astPath, state) {
         let modules = utils_1.default.getAnu(state);
@@ -47,6 +49,29 @@ module.exports = {
             tempPath.insertBefore(modules.ctorFn);
         }
         modules.thisMethods.push(t.objectProperty(t.identifier('classUid'), t.stringLiteral(modules.classUid)));
+        if (buildType === 'wx' && modules.onGetUserClassMethodName) {
+            modules.thisMethods = modules.thisMethods.map(function (node) {
+                if (node.key.name === modules.onGetUserClassMethodName) {
+                    const fnBody = node.value.body.body;
+                    const param = node.value.params;
+                    const wrappedCb = template_1.default(`
+                            React.api.getUserInfo({
+                                success: (%%PARAM%%) => {
+                                    %%FNBODY%%
+                                },
+                                fail: (e) => {
+                                    console.warn(e);
+                                }
+                            })
+                        `.trim(), { syntacticPlaceholders: true })({
+                        FNBODY: fnBody,
+                        PARAM: param[0]
+                    });
+                    node.value.body.body[0] = wrappedCb;
+                }
+                return node;
+            });
+        }
         const classDeclarationAst = t.assignmentExpression('=', t.identifier(modules.className), t.callExpression(t.identifier('React.toClass'), [
             t.identifier(modules.className),
             t.identifier(modules.parentName),
