@@ -84,20 +84,21 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
     const copyAssetsRules = [Object.assign({ from: '**', to: 'assets', context: 'source/assets', ignore: [
                 '**/*.@(js|jsx|json|sass|scss|less|css|ts|tsx)'
             ] }, copyPluginOption)];
-    console.log('platform--------', platform);
     const mergePlugins = [].concat(isChaikaMode() ? [new chaikaPlugin_1.default()] : [], analysis ? new sizePlugin_1.default() : [], new plugin_1.default({
         platform,
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
     const jsLorder = () => {
         const { skipNanachiCache = true } = process.env;
-        const useCache = skipNanachiCache && platform == 'wx';
-        const basePath = fs.existsSync('/usr/local/q/npm') ? path.join('/usr/local/q/npm') : path.join(process.cwd(), '../../../../');
+        const useCache = JSON.parse(skipNanachiCache) && platform == 'wx';
+        const jenkinsPath = '/usr/local/q/npm';
+        const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../../../');
+        const cacheDirectory = path.resolve(path.join(basePath, '.qcache', 'nanachi-cache-loader', platform));
         const cacheLorder = {
             loader: require.resolve("cache-loader-hash"),
             options: {
                 mode: 'hash',
-                cacheDirectory: path.resolve(path.join(basePath, '.qcache', 'nanachi-cache-loader', platform)),
+                cacheDirectory
             }
         };
         const __jsLorder = [].concat(useCache ? cacheLorder : [], fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
@@ -161,7 +162,6 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
         }));
     }
     let entry = path.join(cwd, 'source/app');
-    console.log('-------', mergeRule[0].use);
     if (typescript) {
         entry += '.tsx';
     }

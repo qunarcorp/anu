@@ -112,7 +112,6 @@ export default function({
         ],
         ...copyPluginOption // 压缩图片配置
     }];
-    console.log('platform--------', platform)
     const mergePlugins = [].concat( 
         isChaikaMode() ? [ new ChaikaPlugin() ] : [],
         analysis ? new SizePlugin() : [],
@@ -126,14 +125,16 @@ export default function({
     const jsLorder  = () => {
       
         const { skipNanachiCache = true } = process.env
-       // console.log('process. env--------',  skipNanachiCache)
-        const useCache = skipNanachiCache && platform == 'wx'
-        const basePath = fs.existsSync('/usr/local/q/npm') ?   path.join('/usr/local/q/npm') : path.join(process.cwd(),'../../../../')
+        const useCache = JSON.parse(skipNanachiCache) && platform == 'wx'
+        const jenkinsPath = '/usr/local/q/npm'
+        const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../../../')
+        const cacheDirectory = path.resolve(path.join(basePath,'.qcache','nanachi-cache-loader',platform))
+
         const cacheLorder =  {
             loader: require.resolve("cache-loader-hash"),
             options: {
-            mode:'hash',
-                cacheDirectory: path.resolve(path.join(basePath,'.qcache','nanachi-cache-loader',platform)),
+                mode:'hash',
+                cacheDirectory
             }
         }
     
@@ -267,7 +268,6 @@ export default function({
 
    // mergeRule.
     let entry = path.join(cwd, 'source/app');
-console.log('-------', mergeRule[0].use)
     if (typescript) { entry += '.tsx' };
     return {
         entry: entry,
