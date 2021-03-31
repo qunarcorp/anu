@@ -120,6 +120,7 @@
     "@types/semver": "^6.0.1",
     "@types/shelljs": "^0.8.5",
     "@types/webpack": "^4.4.35",
+    "cache-loader-hash": "^4.1.6",
     "jest": "^24.7.1"
   }
 }

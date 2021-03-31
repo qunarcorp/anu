@@ -113,7 +113,6 @@
     "babel-traverse": "^6.26.0",
     "babel-types": "^6.26.0",
     "babylon": "^6.18.0",
-    "cache-loader-hash": "^4.1.6",
     "chalk": "^2.4.1",
     "chokidar": "^2.0.4",
     "clean-css": "^4.2.1",
