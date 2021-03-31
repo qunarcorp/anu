@@ -47,6 +47,7 @@
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "babel-plugin-transform-node-env-inline": "^0.4.3",
     "babel-plugin-transform-remove-console": "^6.9.4",
+    "cache-loader-hash": "^4.1.6",
     "chalk": "^2.4.1",
     "chokidar": "^2.0.4",
     "clean-webpack-plugin": "^2.0.2",
@@ -120,7 +121,6 @@
     "@types/semver": "^6.0.1",
     "@types/shelljs": "^0.8.5",
     "@types/webpack": "^4.4.35",
-    "cache-loader-hash": "^4.1.6",
     "jest": "^24.7.1"
   }
 }
