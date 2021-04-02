@@ -9,9 +9,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 let userConfig = {};
+let nanachiConfig = {};
 try {
     const pkg = require(path.join(process.cwd(), 'package.json'));
     userConfig = pkg.nanachi || pkg.mpreact || userConfig;
+    nanachiConfig = require(path.join('..', 'package.json'));
 }
 catch (err) {
 }
@@ -113,6 +115,7 @@ const config = {
     huawei: false,
     '360mode': false,
     typescript: false,
+    nanachiVersion: nanachiConfig.version,
     patchComponents: {},
     pluginTags: {},
     plugins: {}

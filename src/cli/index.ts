@@ -193,6 +193,7 @@ async function nanachi(options: NanachiOptions = {}) {
         }
 
         const webpackConfig: webpack.Configuration = getWebPackConfig({
+            watch,
             platform,
             compress,
             compressOption,

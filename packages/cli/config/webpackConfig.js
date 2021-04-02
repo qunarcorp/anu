@@ -17,6 +17,7 @@ const chaikaPlugin_1 = __importDefault(require("../nanachi-loader/chaika-plugin/
 const copy_webpack_plugin_1 = __importDefault(require("copy-webpack-plugin"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
+const { exec } = require('child_process');
 const webpack_1 = __importDefault(require("webpack"));
 const utils = require('../packages/utils/index');
 const configurations_1 = require("./h5/configurations");
@@ -37,7 +38,8 @@ const WebpackBar = require('webpackbar');
 const quickConfigFileName = config_1.default.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
     ? "quickConfig.huawei.json"
     : "quickConfig.json";
-function default_1({ platform, compress, compressOption, plugins, rules, huawei, analysis, typescript, prevLoaders, postLoaders, prevJsLoaders, postJsLoaders, prevCssLoaders, postCssLoaders, }) {
+global.nanachiVersion = config_1.default.nanachiVersion || '';
+function default_1({ watch, platform, compress, compressOption, plugins, rules, huawei, analysis, typescript, prevLoaders, postLoaders, prevJsLoaders, postJsLoaders, prevCssLoaders, postCssLoaders, }) {
     let externals = quickAPIList_1.default;
     if (platform === 'h5') {
         externals.push(...H5AliasList);
@@ -76,20 +78,31 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
         platform,
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
+    const { skipNanachiCache = true } = process.env;
+    const jenkinsPath = '/usr/local/q/npm';
+    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../../../');
+    const cachePath = `.qcache/nanachi-cache-loader/${platform}`;
+    global.cacheDirectory = path.resolve(path.join(basePath, cachePath));
+    const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`;
+    const hasInternal = fs.existsSync(internalPath);
+    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal;
+    if (!useCache) {
+        exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => { });
+    }
+    copyAssetsRules.push({
+        from: '**',
+        to: 'internal',
+        context: path.join(internalPath)
+    });
+    const cacheLorder = {
+        loader: require.resolve("cache-loader-hash"),
+        options: {
+            mode: 'hash',
+            cacheDirectory: global.cacheDirectory,
+        }
+    };
     const jsLorder = () => {
-        const { skipNanachiCache = true } = process.env;
-        const useCache = JSON.parse(skipNanachiCache) && platform == 'wx';
-        const jenkinsPath = '/usr/local/q/npm';
-        const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../../../');
-        const cacheDirectory = path.resolve(path.join(basePath, '.qcache', 'nanachi-cache-loader', platform));
-        const cacheLorder = {
-            loader: require.resolve("cache-loader-hash"),
-            options: {
-                mode: 'hash',
-                cacheDirectory
-            }
-        };
-        const __jsLorder = [].concat(useCache ? cacheLorder : [], fileLoader, postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
+        const __jsLorder = [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
@@ -103,10 +116,10 @@ function default_1({ platform, compress, compressOption, plugins, rules, huawei,
         exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
     }, platform !== 'h5' ? nodeRules : [], {
         test: /React\w+/,
-        use: [].concat(fileLoader, postLoaders, nodeLoader, reactLoader)
+        use: [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, nodeLoader, reactLoader)
     }, {
         test: /\.(s[ca]ss|less|css)$/,
-        use: [].concat(fileLoader, postLoaders, postCssLoaders, platform !== 'h5' ? aliasLoader : [], nanachiStyleLoader, prevCssLoaders, prevLoaders)
+        use: [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, postCssLoaders, platform !== 'h5' ? aliasLoader : [], nanachiStyleLoader, prevCssLoaders, prevLoaders)
     }, {
         test: /\.(jpg|png|gif)$/,
         loader: require.resolve('file-loader'),

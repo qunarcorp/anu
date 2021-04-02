@@ -68,7 +68,7 @@ module.exports = [
                     return acc + `export ${curCode}\n\n\n`;
                 }, '');
                 const writeDistFilePath = isChaikaMode()
-                    ? path_1.default.join(cwd, '../../dist', 'internal/runtimecommon.js')
+                    ? path_1.default.join(global.cacheDirectory, `internal_${global.nanachiVersion}/runtimecommon.js`)
                     : this.distCommonPath;
                 fs.ensureFileSync(writeDistFilePath);
                 fs.writeFileSync(writeDistFilePath, exportCode);

@@ -1,8 +1,10 @@
 import * as path from 'path';
 let userConfig: any = {};
+let nanachiConfig: any = {};
 try {
     const pkg = require(path.join(process.cwd(), 'package.json'));
     userConfig = pkg.nanachi || pkg.mpreact || userConfig;
+    nanachiConfig = require(path.join('..', 'package.json'));
 } catch (err) {
     // eslint-disable-next-line
 }
@@ -49,6 +51,7 @@ export interface GlobalConfigMap {
     compress?: boolean;
     typescript?: boolean;
     WebViewRules?: any; // TODO
+    nanachiVersion: string;
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;
@@ -143,6 +146,7 @@ const config: GlobalConfigMap =  {
     huawei: false,
     '360mode': false,
     typescript: false,
+    nanachiVersion: nanachiConfig.version,
     patchComponents: {}, // 项目中使用的补丁组件
     pluginTags: {},
     plugins: {}

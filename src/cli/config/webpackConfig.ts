@@ -9,6 +9,7 @@ import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
 import { NanachiOptions } from '../index';
 import * as path from 'path';
 import * as fs from 'fs';
+const { exec } = require('child_process');
 import webpack from 'webpack';
 const utils = require('../packages/utils/index');
 import { intermediateDirectoryName } from './h5/configurations';
@@ -45,7 +46,10 @@ const quickConfigFileName: string =
     ? "quickConfig.huawei.json"
     : "quickConfig.json";
 
+global.nanachiVersion = config.nanachiVersion || '';
+
 export default function({
+    watch,
     platform,
     compress,
     compressOption,
@@ -122,25 +126,38 @@ export default function({
         new CopyWebpackPlugin(copyAssetsRules),
         plugins);
 
-    const jsLorder  = () => {
-      
-        const { skipNanachiCache = true } = process.env
-        const useCache = JSON.parse(skipNanachiCache) && platform == 'wx'
-        const jenkinsPath = '/usr/local/q/npm'
-        const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../../../')
-        const cacheDirectory = path.resolve(path.join(basePath,'.qcache','nanachi-cache-loader',platform))
 
-        const cacheLorder =  {
-            loader: require.resolve("cache-loader-hash"),
-            options: {
-                mode:'hash',
-                cacheDirectory
-            }
-        }
+    const { skipNanachiCache = true } = process.env
+    const jenkinsPath = '/usr/local/q/npm'
+    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../../../')
+    const cachePath = `.qcache/nanachi-cache-loader/${platform}`
+    global.cacheDirectory = path.resolve(path.join(basePath,cachePath))
+    const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`
+    const hasInternal = fs.existsSync(internalPath);
+    // 1 - watch模式不开启缓存； 2 - 环境变量 skipNanachiCache = false不开启缓存； 3 - 非微信平台不开启缓存 4 - 没有生成公共文件的时候不开启缓存
+    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal
+    if(!useCache) {
+        exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => {});
+    } 
+
+    copyAssetsRules.push({
+        from: '**',
+        to: 'internal',
+        context: path.join(internalPath)
+    });
     
+    const cacheLorder =  {
+        loader: require.resolve("cache-loader-hash"),
+        options: {
+            mode:'hash',
+            cacheDirectory: global.cacheDirectory,
+        }
+    }
+
+    const jsLorder  = () => {
         const __jsLorder = [].concat(
-            useCache ? cacheLorder : [],
             fileLoader, 
+            useCache ? cacheLorder : [],
             postLoaders, 
             postJsLoaders,
             platform !== 'h5' ? aliasLoader: [], 
@@ -177,6 +194,7 @@ export default function({
             test: /React\w+/,
             use: [].concat(
                 fileLoader, 
+                useCache ? cacheLorder : [],
                 postLoaders,
                 nodeLoader, 
                 reactLoader)
@@ -185,6 +203,7 @@ export default function({
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
                 fileLoader, 
+                useCache ? cacheLorder : [],
                 postLoaders, 
                 postCssLoaders,
                 platform !== 'h5' ? aliasLoader : [], 
@@ -263,8 +282,6 @@ export default function({
             })
         )
     }
-
-   // mergeRule.
     let entry = path.join(cwd, 'source/app');
     if (typescript) { entry += '.tsx' };
     return {
