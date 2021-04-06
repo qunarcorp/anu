@@ -139,6 +139,7 @@ function nanachi(options = {}) {
                 postLoaders.unshift('nanachi-compress-loader');
             }
             const webpackConfig = webpackConfig_1.default({
+                watch,
                 platform,
                 compress,
                 compressOption,

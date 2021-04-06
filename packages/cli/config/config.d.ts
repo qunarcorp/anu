@@ -34,6 +34,7 @@ export interface GlobalConfigMap {
     compress?: boolean;
     typescript?: boolean;
     WebViewRules?: any;
+    nanachiVersion: string;
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;

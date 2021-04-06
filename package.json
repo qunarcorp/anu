@@ -194,7 +194,7 @@
     "stylelint-plugin-nanachi": "latest",
     "table": "^5.2.3",
     "tslib": "^1.10.0",
-    "typescript": "^3.5.3",
+    "typescript": "3.8.3",
     "validate-npm-package-name": "^3.0.0",
     "webpack": "^4.29.6",
     "webpack-dev-server": "^3.4.1",

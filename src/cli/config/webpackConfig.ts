@@ -8,6 +8,8 @@ import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
 
 import { NanachiOptions } from '../index';
 import * as path from 'path';
+import * as fs from 'fs';
+const { exec } = require('child_process');
 import webpack from 'webpack';
 const utils = require('../packages/utils/index');
 import { intermediateDirectoryName } from './h5/configurations';
@@ -44,7 +46,10 @@ const quickConfigFileName: string =
     ? "quickConfig.huawei.json"
     : "quickConfig.json";
 
+global.nanachiVersion = config.nanachiVersion || '';
+
 export default function({
+    watch,
     platform,
     compress,
     compressOption,
@@ -111,7 +116,6 @@ export default function({
         ],
         ...copyPluginOption // 压缩图片配置
     }];
-    
     const mergePlugins = [].concat( 
         isChaikaMode() ? [ new ChaikaPlugin() ] : [],
         analysis ? new SizePlugin() : [],
@@ -122,33 +126,67 @@ export default function({
         new CopyWebpackPlugin(copyAssetsRules),
         plugins);
 
+
+    const { skipNanachiCache = true } = process.env
+    const jenkinsPath = '/usr/local/q/npm'
+    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../../../')
+    const cachePath = `.qcache/nanachi-cache-loader/${platform}`
+    global.cacheDirectory = path.resolve(path.join(basePath,cachePath))
+    const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`
+    const hasInternal = fs.existsSync(internalPath);
+    // 1 - watch模式不开启缓存； 2 - 环境变量 skipNanachiCache = false不开启缓存； 3 - 非微信平台不开启缓存 4 - 没有生成公共文件的时候不开启缓存
+    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal
+    if(!useCache) {
+        exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => {});
+    } 
+
+    copyAssetsRules.push({
+        from: '**',
+        to: 'internal',
+        context: path.join(internalPath)
+    });
+    
+    const cacheLorder =  {
+        loader: require.resolve("cache-loader-hash"),
+        options: {
+            mode:'hash',
+            cacheDirectory: global.cacheDirectory,
+        }
+    }
+
+    const jsLorder  = () => {
+        const __jsLorder = [].concat(
+            fileLoader, 
+            useCache ? cacheLorder : [],
+            postLoaders, 
+            postJsLoaders,
+            platform !== 'h5' ? aliasLoader: [], 
+            nanachiLoader,
+            // {
+            //     loader: require.resolve('eslint-loader'),
+            //     options: {
+            //         configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
+            //         failOnError: utils.isMportalEnv(),
+            //         allowInlineConfig: false, // 不允许使用注释配置eslint规则
+            //         useEslintrc: false // 不使用用户自定义eslintrc配置
+            //     }
+            // },
+            typescript ? {
+                loader: require.resolve('ts-loader'),
+                options: {
+                    context: path.resolve(cwd)
+                }
+            } : [],
+            prevJsLoaders,
+            prevLoaders )
+        return __jsLorder
+    };
+
     const mergeRule = [].concat(
         {
             test: /\.[jt]sx?$/,
             //loader是从后往前处理
-            use: [].concat(
-                fileLoader, 
-                postLoaders, 
-                postJsLoaders,
-                platform !== 'h5' ? aliasLoader: [], 
-                nanachiLoader,
-                // {
-                //     loader: require.resolve('eslint-loader'),
-                //     options: {
-                //         configFile: require.resolve(`./eslint/.eslintrc-${platform}.js`),
-                //         failOnError: utils.isMportalEnv(),
-                //         allowInlineConfig: false, // 不允许使用注释配置eslint规则
-                //         useEslintrc: false // 不使用用户自定义eslintrc配置
-                //     }
-                // },
-                typescript ? {
-                    loader: require.resolve('ts-loader'),
-                    options: {
-                        context: path.resolve(cwd)
-                    }
-                } : [],
-                prevJsLoaders,
-                prevLoaders ) ,
+            use:  jsLorder() ,
             exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
         },
         platform !== 'h5' ? nodeRules : [],
@@ -156,6 +194,7 @@ export default function({
             test: /React\w+/,
             use: [].concat(
                 fileLoader, 
+                useCache ? cacheLorder : [],
                 postLoaders,
                 nodeLoader, 
                 reactLoader)
@@ -164,6 +203,7 @@ export default function({
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
                 fileLoader, 
+                useCache ? cacheLorder : [],
                 postLoaders, 
                 postCssLoaders,
                 platform !== 'h5' ? aliasLoader : [], 
@@ -242,9 +282,7 @@ export default function({
             })
         )
     }
-
     let entry = path.join(cwd, 'source/app');
-
     if (typescript) { entry += '.tsx' };
     return {
         entry: entry,

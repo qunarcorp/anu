@@ -1,6 +1,6 @@
 {
   "name": "nanachi-cli",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "cli tool for nanachi",
   "bin": {
     "nanachi": "./bin/index.js"
@@ -47,6 +47,7 @@
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "babel-plugin-transform-node-env-inline": "^0.4.3",
     "babel-plugin-transform-remove-console": "^6.9.4",
+    "cache-loader-hash": "^4.1.6",
     "chalk": "^2.4.1",
     "chokidar": "^2.0.4",
     "clean-webpack-plugin": "^2.0.2",
