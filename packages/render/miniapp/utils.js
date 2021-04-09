@@ -63,7 +63,6 @@ export function _getCurrentPages() {
 // 用于保存所有用miniCreateClass创建的类，然后在事件系统中用到
 export var classCached = {};
 
-var isMac = false;
 export function updateMiniApp (instance) {
     if (!instance || !instance.wx) {
         return;
@@ -75,32 +74,7 @@ export function updateMiniApp (instance) {
     });
 
     if (instance.wx.setData) {
-
-        if (wx) {
-            // mac 环境下用setTimeout去setData, 否则会出现异常
-            if (isMac) {
-                setTimeout(() => {
-                    instance.wx.setData(data);
-                }, 0);
-            } else {
-                try {
-                    var sys = wx.getSystemInfoSync();
-                    var model = (sys.system || '').toLowerCase();
-                    if (/mac/.test(model) || /macos/.test(model)) {
-                        isMac = true;
-                        setTimeout(() => {
-                            instance.wx.setData(data);
-                        }, 0);
-                    }
-                } catch (e) {
-                    instance.wx.setData(data);
-                }
-            }
-
-        } else {
-            instance.wx.setData(data);
-        }
-        
+        instance.wx.setData(data);
     } else {
         updateQuickApp(instance.wx, data);
     }

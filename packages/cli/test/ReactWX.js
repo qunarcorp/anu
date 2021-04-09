@@ -970,7 +970,6 @@ function _getCurrentPages() {
     }
     return [];
 }
-var isMac = false;
 function updateMiniApp(instance) {
     if (!instance || !instance.wx) {
         return;
@@ -981,28 +980,7 @@ function updateMiniApp(instance) {
         context: instance.context
     });
     if (instance.wx.setData) {
-        if (wx) {
-            if (isMac) {
-                setTimeout(function () {
-                    instance.wx.setData(data);
-                }, 0);
-            } else {
-                try {
-                    var sys = wx.getSystemInfoSync();
-                    var model = (sys.system || '').toLowerCase();
-                    if (/mac/.test(model) || /macos/.test(model)) {
-                        isMac = true;
-                        setTimeout(function () {
-                            instance.wx.setData(data);
-                        }, 0);
-                    }
-                } catch (e) {
-                    instance.wx.setData(data);
-                }
-            }
-        } else {
-            instance.wx.setData(data);
-        }
+        instance.wx.setData(data);
     } else {
         updateQuickApp(instance.wx, data);
     }
