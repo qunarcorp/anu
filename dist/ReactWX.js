@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2021-01-14T09
+ * 运行于微信小程序的React by 司徒正美 Copyright 2021-04-09T08
  * IE9+
  */
 
@@ -968,6 +968,7 @@ function _getCurrentPages() {
     }
     return [];
 }
+var isMac = false;
 function updateMiniApp(instance) {
     if (!instance || !instance.wx) {
         return;
@@ -978,7 +979,28 @@ function updateMiniApp(instance) {
         context: instance.context
     });
     if (instance.wx.setData) {
-        instance.wx.setData(data);
+        if (wx) {
+            if (isMac) {
+                setTimeout(function () {
+                    instance.wx.setData(data);
+                }, 0);
+            } else {
+                try {
+                    var sys = wx.getSystemInfoSync();
+                    var model = (sys.system || '').toLowerCase();
+                    if (/mac/.test(model) || /macos/.test(model)) {
+                        isMac = true;
+                        setTimeout(function () {
+                            instance.wx.setData(data);
+                        }, 0);
+                    }
+                } catch (e) {
+                    instance.wx.setData(data);
+                }
+            }
+        } else {
+            instance.wx.setData(data);
+        }
     } else {
         updateQuickApp(instance.wx, data);
     }
