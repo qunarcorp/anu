@@ -146,7 +146,6 @@ export default function({
      * **/ 
     global.useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal && !!BUILD_ENV
     if(!global.useCache) {
-        console.log('AA',!watch,  JSON.parse(skipNanachiCache),  platform == 'wx', hasInternal, !!BUILD_ENV)
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => {});
     } 
 
