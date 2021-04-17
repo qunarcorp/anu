@@ -103,9 +103,9 @@ module.exports = [
                     return acc + `export ${curCode}\n\n\n`;
                 }, '');
 
-             
+                const __runtimecommon = global.useCache ? path.join(global.cacheDirectory, `internal_${global.nanachiVersion}/runtimecommon.js`) :  path.join(cwd, '../../dist', 'internal/runtimecommon.js');
                 const writeDistFilePath = isChaikaMode()
-                ? path.join(global.cacheDirectory, `internal_${global.nanachiVersion}/runtimecommon.js`)
+                ? __runtimecommon
                 : this.distCommonPath
 
                 fs.ensureFileSync(writeDistFilePath);

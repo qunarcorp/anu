@@ -1,13 +1,25 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const plugin_1 = __importDefault(require("../nanachi-loader/plugin"));
@@ -79,14 +91,17 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
     const { skipNanachiCache = true } = process.env;
+    const BUILD_ENV = process.env.BUILD_ENV || '';
     const jenkinsPath = '/usr/local/q/npm';
     const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../../../');
-    const cachePath = `.qcache/nanachi-cache-loader/${platform}`;
+    const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`;
+    console.log('BUILD_ENV---', process.env.BUILD_ENV);
     global.cacheDirectory = path.resolve(path.join(basePath, cachePath));
     const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`;
     const hasInternal = fs.existsSync(internalPath);
-    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal;
-    if (!useCache) {
+    global.useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal && !!BUILD_ENV;
+    if (!global.useCache) {
+        console.log('AA', !watch, JSON.parse(skipNanachiCache), platform == 'wx', hasInternal, !!BUILD_ENV);
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => { });
     }
     copyAssetsRules.push({
@@ -102,7 +117,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         }
     };
     const jsLorder = () => {
-        const __jsLorder = [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
+        const __jsLorder = [].concat(fileLoader, global.useCache ? cacheLorder : [], postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
@@ -116,10 +131,10 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
     }, platform !== 'h5' ? nodeRules : [], {
         test: /React\w+/,
-        use: [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, nodeLoader, reactLoader)
+        use: [].concat(fileLoader, global.useCache ? cacheLorder : [], postLoaders, nodeLoader, reactLoader)
     }, {
         test: /\.(s[ca]ss|less|css)$/,
-        use: [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, postCssLoaders, platform !== 'h5' ? aliasLoader : [], nanachiStyleLoader, prevCssLoaders, prevLoaders)
+        use: [].concat(fileLoader, global.useCache ? cacheLorder : [], postLoaders, postCssLoaders, platform !== 'h5' ? aliasLoader : [], nanachiStyleLoader, prevCssLoaders, prevLoaders)
     }, {
         test: /\.(jpg|png|gif)$/,
         loader: require.resolve('file-loader'),

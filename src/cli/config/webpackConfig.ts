@@ -128,15 +128,25 @@ export default function({
 
 
     const { skipNanachiCache = true } = process.env
+    const BUILD_ENV = process.env.BUILD_ENV || ''
     const jenkinsPath = '/usr/local/q/npm'
     const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../../../')
-    const cachePath = `.qcache/nanachi-cache-loader/${platform}`
+    const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`
+    console.log('BUILD_ENV---',  process.env.BUILD_ENV)
+  
     global.cacheDirectory = path.resolve(path.join(basePath,cachePath))
     const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`
     const hasInternal = fs.existsSync(internalPath);
-    // 1 - watch模式不开启缓存； 2 - 环境变量 skipNanachiCache = false不开启缓存； 3 - 非微信平台不开启缓存 4 - 没有生成公共文件的时候不开启缓存
-    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal
-    if(!useCache) {
+    /**
+     * 1 - watch模式不开启缓存；
+     * 2 - 环境变量 skipNanachiCache = false不开启缓存；
+     * 3 - 非微信平台不开启缓存
+     * 4 - 没有生成公共文件的时候不开启缓存
+     * 5 - 没有 BUILD_ENV（编译环境不缓存）
+     * **/ 
+    global.useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal && !!BUILD_ENV
+    if(!global.useCache) {
+        console.log('AA',!watch,  JSON.parse(skipNanachiCache),  platform == 'wx', hasInternal, !!BUILD_ENV)
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => {});
     } 
 
@@ -145,7 +155,7 @@ export default function({
         to: 'internal',
         context: path.join(internalPath)
     });
-    
+
     const cacheLorder =  {
         loader: require.resolve("cache-loader-hash"),
         options: {
@@ -157,7 +167,7 @@ export default function({
     const jsLorder  = () => {
         const __jsLorder = [].concat(
             fileLoader, 
-            useCache ? cacheLorder : [],
+            global.useCache ? cacheLorder : [],
             postLoaders, 
             postJsLoaders,
             platform !== 'h5' ? aliasLoader: [], 
@@ -194,7 +204,7 @@ export default function({
             test: /React\w+/,
             use: [].concat(
                 fileLoader, 
-                useCache ? cacheLorder : [],
+                global.useCache ? cacheLorder : [],
                 postLoaders,
                 nodeLoader, 
                 reactLoader)
@@ -203,7 +213,7 @@ export default function({
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
                 fileLoader, 
-                useCache ? cacheLorder : [],
+                global.useCache ? cacheLorder : [],
                 postLoaders, 
                 postCssLoaders,
                 platform !== 'h5' ? aliasLoader : [], 
