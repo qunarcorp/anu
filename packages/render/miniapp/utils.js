@@ -2,6 +2,8 @@ import { hasOwnProperty, typeNumber, isFn, get, noop } from 'react-core/util';
 import { createElement } from 'react-core/createElement';
 import { Renderer } from 'react-core/createRenderer';
 
+
+
 var fakeApp = {
     app: {
         globalData: {}
@@ -70,6 +72,7 @@ export function updateMiniApp (instance) {
         state: instance.state || null,
         context: instance.context
     });
+
     if (instance.wx.setData) {
         instance.wx.setData(data);
     } else {

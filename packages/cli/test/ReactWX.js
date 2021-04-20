@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2021-01-14T09
+ * 运行于微信小程序的React by 司徒正美 Copyright 2021-04-09T09
  * IE9+
  */
 
@@ -2673,66 +2673,94 @@ function registerPage(PageClass, path, testObject) {
     return config;
 }
 
-var defer = Promise.resolve().then.bind(Promise.resolve());
-function registerComponent(type, name) {
-    type.isMPComponent = true;
-    registeredComponents[name] = type;
-    type.reactInstances = [];
-    var pageLifetimes = (type.prototype.pageLifetimes || function () {
-        return {};
-    })();
-    var instance = null;
-    var config = {
-        data: {
-            props: {},
-            state: {},
-            context: {}
-        },
-        options: type.options,
-        pageLifetimes: {
-            show: function show() {
-                var wx = this;
-                var uuid = wx.dataset.instanceUid || null;
-                if (typeof pageLifetimes.show === 'function') {
-                    var args = Array.from(arguments);
-                    instance = instance || type.reactInstances.find(function (el) {
-                        return el.instanceUid === uuid;
-                    });
-                    pageLifetimes.show.apply(instance || this, args);
-                }
-            },
-            hide: function hide() {
-                var wx = this;
-                var uuid = wx.dataset.instanceUid || null;
-                if (typeof pageLifetimes.hide === 'function') {
-                    var args = Array.from(arguments);
-                    instance = instance || type.reactInstances.find(function (el) {
-                        return el.instanceUid === uuid;
-                    });
-                    pageLifetimes.hide.apply(instance || this, args);
-                }
-            }
-        },
-        lifetimes: {
-            attached: function attached() {
-                var wx = this;
-                defer(function () {
-                    usingComponents[name] = type;
-                    var uuid = wx.dataset.instanceUid || null;
-                    refreshComponent(type.reactInstances, wx, uuid);
-                });
-            },
-            detached: detachComponent,
-            error: function error(e) {
-                console.log(e, name);
-            }
-        },
-        methods: {
-            dispatchEvent: dispatchEvent
+var defer = function () {
+  var isMac = false;
+  if (wx) {
+    return function (cb) {
+      if (isMac) {
+        setTimeout(function () {
+          cb && cb();
+        }, 0);
+      } else {
+        try {
+          var sys = wx.getSystemInfoSync();
+          var model = (sys.system || '').toLowerCase();
+          if (/mac/.test(model) || /macos/.test(model)) {
+            isMac = true;
+            setTimeout(function () {
+              cb && cb();
+            }, 0);
+          } else {
+            Promise.resolve().then.bind(Promise.resolve())(cb);
+          }
+        } catch (e) {
+          return Promise.resolve().then.bind(Promise.resolve())(cb);
         }
+      }
     };
-    Object.assign(config, config.lifetimes);
-    return config;
+  } else {
+    return Promise.resolve().then.bind(Promise.resolve());
+  }
+}();
+function registerComponent(type, name) {
+  type.isMPComponent = true;
+  registeredComponents[name] = type;
+  type.reactInstances = [];
+  var pageLifetimes = (type.prototype.pageLifetimes || function () {
+    return {};
+  })();
+  var instance = null;
+  var config = {
+    data: {
+      props: {},
+      state: {},
+      context: {}
+    },
+    options: type.options,
+    pageLifetimes: {
+      show: function show() {
+        var wx = this;
+        var uuid = wx.dataset.instanceUid || null;
+        if (typeof pageLifetimes.show === 'function') {
+          var args = Array.from(arguments);
+          instance = instance || type.reactInstances.find(function (el) {
+            return el.instanceUid === uuid;
+          });
+          pageLifetimes.show.apply(instance || this, args);
+        }
+      },
+      hide: function hide() {
+        var wx = this;
+        var uuid = wx.dataset.instanceUid || null;
+        if (typeof pageLifetimes.hide === 'function') {
+          var args = Array.from(arguments);
+          instance = instance || type.reactInstances.find(function (el) {
+            return el.instanceUid === uuid;
+          });
+          pageLifetimes.hide.apply(instance || this, args);
+        }
+      }
+    },
+    lifetimes: {
+      attached: function attached() {
+        var wx = this;
+        defer(function () {
+          usingComponents[name] = type;
+          var uuid = wx.dataset.instanceUid || null;
+          refreshComponent(type.reactInstances, wx, uuid);
+        });
+      },
+      detached: detachComponent,
+      error: function error(e) {
+        console.log(e, name);
+      }
+    },
+    methods: {
+      dispatchEvent: dispatchEvent
+    }
+  };
+  Object.assign(config, config.lifetimes);
+  return config;
 }
 
 function useState(initValue) {

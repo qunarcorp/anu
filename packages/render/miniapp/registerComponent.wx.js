@@ -1,6 +1,36 @@
 import { registeredComponents, usingComponents, refreshComponent, detachComponent } from './utils';
 import { dispatchEvent } from './eventSystem';
-const defer = Promise.resolve().then.bind(Promise.resolve());
+
+
+var defer = (function() {
+    var isMac = false;
+    if (wx) {
+      return function(cb) {
+        if (isMac) {
+          setTimeout(function () {
+            cb && cb();
+          }, 0);
+        } else {
+          try {
+            var sys = wx.getSystemInfoSync();
+            var model = (sys.system || '').toLowerCase();
+            if (/mac/.test(model) || /macos/.test(model)) {
+              isMac = true;
+              setTimeout(function () {
+                cb && cb();
+              }, 0);
+            } else {
+              Promise.resolve().then.bind(Promise.resolve())(cb)
+            }
+          } catch (e) {
+            return Promise.resolve().then.bind(Promise.resolve())(cb)
+          }
+        }
+      }
+    } else {
+      return Promise.resolve().then.bind(Promise.resolve());
+    }
+})();
 
 export function registerComponent(type, name) {
     type.isMPComponent = true;
