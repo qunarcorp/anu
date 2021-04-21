@@ -130,12 +130,10 @@ export default function({
     const { skipNanachiCache = true } = process.env
     const BUILD_ENV = process.env.BUILD_ENV || ''
     const jenkinsPath = '/usr/local/q/npm'
-    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../../../')
+    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../')
     const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`
-    console.log('BUILD_ENV---',  process.env.BUILD_ENV)
-  
     global.cacheDirectory = path.resolve(path.join(basePath,cachePath))
-    const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`
+    const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}` // 根据nanachi版本缓存internal文件夹，意味着nanahci版本变更就要更新internal
     const hasInternal = fs.existsSync(internalPath);
     /**
      * 1 - watch模式不开启缓存；
@@ -145,7 +143,10 @@ export default function({
      * 5 - 没有 BUILD_ENV（编译环境不缓存）
      * **/ 
     global.useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal && !!BUILD_ENV
-    if(!global.useCache) {
+
+    console.log(`watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 是否生成了提取的公共文件: ${hasInternal} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
+    console.log(`\n\n本次构建是否要走缓存：${global.useCache}`)
+    if(!global.useCache) { // 这个删除是在编译之前执行的，时间长了会忘记这个顺序（以为程序出了问题，为啥internal没有被删除，第一次编译会生成internal，第二次编译检测internal有没有生成，如果有走缓存没有删除没用的缓存避免缓存错乱）
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => {});
     } 
 

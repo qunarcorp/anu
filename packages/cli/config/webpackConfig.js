@@ -1,25 +1,13 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
     return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const plugin_1 = __importDefault(require("../nanachi-loader/plugin"));
@@ -93,15 +81,15 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     const { skipNanachiCache = true } = process.env;
     const BUILD_ENV = process.env.BUILD_ENV || '';
     const jenkinsPath = '/usr/local/q/npm';
-    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../../../');
+    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../');
     const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`;
-    console.log('BUILD_ENV---', process.env.BUILD_ENV);
     global.cacheDirectory = path.resolve(path.join(basePath, cachePath));
     const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`;
     const hasInternal = fs.existsSync(internalPath);
     global.useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal && !!BUILD_ENV;
+    console.log(`watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 是否生成了提取的公共文件: ${hasInternal} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
+    console.log(`\n\n本次构建是否要走缓存：${global.useCache}`);
     if (!global.useCache) {
-        console.log('AA', watch);
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => { });
     }
     copyAssetsRules.push({
