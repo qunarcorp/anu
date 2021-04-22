@@ -78,7 +78,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         platform,
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
-    const { skipNanachiCache = true } = process.env;
+    const { skipNanachiCache = true, JENKINS_URL = '' } = process.env;
     const BUILD_ENV = process.env.BUILD_ENV || '';
     const jenkinsPath = '/usr/local/q/npm';
     const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../');
@@ -87,8 +87,10 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}`;
     const hasInternal = fs.existsSync(internalPath);
     global.useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal && !!BUILD_ENV;
-    console.log(`watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 是否生成了提取的公共文件: ${hasInternal} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
-    console.log(`\n\n本次构建是否要走缓存：${global.useCache}`);
+    if (!!JENKINS_URL) {
+        console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 是否生成了提取的公共文件: ${hasInternal} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
+        console.log(`\n\n本次构建是否要走缓存：${global.useCache}`);
+    }
     if (!global.useCache) {
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => { });
     }
