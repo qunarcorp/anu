@@ -94,11 +94,6 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     if (!global.useCache) {
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => { });
     }
-    copyAssetsRules.push({
-        from: '**',
-        to: 'internal',
-        context: path.join(internalPath)
-    });
     const cacheLorder = {
         loader: require.resolve("cache-loader-hash"),
         options: {

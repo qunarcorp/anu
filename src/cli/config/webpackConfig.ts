@@ -150,13 +150,7 @@ export default function({
     if(!global.useCache) { // 这个删除是在编译之前执行的，时间长了会忘记这个顺序（以为程序出了问题，为啥internal没有被删除，第一次编译会生成internal，第二次编译检测internal有没有生成，如果有走缓存没有删除没用的缓存避免缓存错乱）
         exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => {});
     } 
-
-    copyAssetsRules.push({
-        from: '**',
-        to: 'internal',
-        context: path.join(internalPath)
-    });
-
+    
     const cacheLorder =  {
         loader: require.resolve("cache-loader-hash"),
         options: {
