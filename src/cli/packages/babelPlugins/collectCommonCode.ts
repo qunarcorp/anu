@@ -96,20 +96,20 @@ module.exports = [
             },
             visitor,
             post(){
-                this.injectInportSpecifiers = [];
-                if (!this.needWrite) return;
-                const codesList = closureCache.map(el => el.code);
-                const exportCode = codesList.reduce(function(acc, curCode) {
-                    return acc + `export ${curCode}\n\n\n`;
-                }, '');
+                // this.injectInportSpecifiers = [];
+                // if (!this.needWrite) return;
+                // const codesList = closureCache.map(el => el.code);
+                // const exportCode = codesList.reduce(function(acc, curCode) {
+                //     return acc + `export ${curCode}\n\n\n`;
+                // }, '');
 
              
-                const writeDistFilePath = isChaikaMode()
-                ? path.join(cwd, '../../dist', 'internal/runtimecommon.js')
-                : this.distCommonPath
+                // const writeDistFilePath = isChaikaMode()
+                // ? path.join(cwd, '../../dist', 'internal/runtimecommon.js')
+                // : this.distCommonPath
 
-                fs.ensureFileSync(writeDistFilePath);
-                fs.writeFileSync(writeDistFilePath, exportCode);
+                // fs.ensureFileSync(writeDistFilePath);
+                // fs.writeFileSync(writeDistFilePath, exportCode);
             }
         };
     }
