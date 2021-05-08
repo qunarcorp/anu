@@ -131,38 +131,38 @@ export default function({
     const BUILD_ENV = process.env.BUILD_ENV || ''
     const jenkinsPath = '/usr/local/q/npm'
     const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../')
-    const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`
-    global.cacheDirectory = path.resolve(path.join(basePath,cachePath))
-    const internalPath = `${global.cacheDirectory}/internal_${nanachiVersion}` // 根据nanachi版本缓存internal文件夹，意味着nanahci版本变更就要更新internal
-    const hasInternal = fs.existsSync(internalPath);
+    const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`;
+    const cacheDirectory = path.resolve(path.join(basePath,cachePath));
+   
+    
+   
     /**
      * 1 - watch模式不开启缓存；
      * 2 - 环境变量 skipNanachiCache = false不开启缓存；
      * 3 - 非微信平台不开启缓存
-     * 4 - 没有生成公共文件的时候不开启缓存
-     * 5 - 没有 BUILD_ENV（编译环境不缓存）
+     * 4 - 没有 BUILD_ENV（编译环境不缓存）
      * **/ 
-    global.useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && hasInternal && !!BUILD_ENV
+    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV
     if(!!JENKINS_URL) {
-        console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 是否生成了提取的公共文件: ${hasInternal} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
-        console.log(`\n\n本次构建是否要走缓存：${global.useCache}`)
+        console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
+        console.log(`\n\n本次构建是否要走缓存：${useCache}`)
     }
-    if(!global.useCache) { // 这个删除是在编译之前执行的，时间长了会忘记这个顺序（以为程序出了问题，为啥internal没有被删除，第一次编译会生成internal，第二次编译检测internal有没有生成，如果有走缓存没有删除没用的缓存避免缓存错乱）
-        exec(`rm -rf ${global.cacheDirectory}`, (err, stdout, stderr) => {});
+    if(!useCache) { // 这个删除是在编译之前执行的，时间长了会忘记这个顺序（以为程序出了问题，为啥internal没有被删除，第一次编译会生成internal，第二次编译检测internal有没有生成，如果有走缓存没有删除没用的缓存避免缓存错乱）
+        exec(`rm -rf ${cacheDirectory}`, (err, stdout, stderr) => {});
     } 
     
     const cacheLorder =  {
         loader: require.resolve("cache-loader-hash"),
         options: {
             mode:'hash',
-            cacheDirectory: global.cacheDirectory,
+            cacheDirectory: cacheDirectory,
         }
     }
 
     const jsLorder  = () => {
         const __jsLorder = [].concat(
             fileLoader, 
-            global.useCache ? cacheLorder : [],
+            useCache ? cacheLorder : [],
             postLoaders, 
             postJsLoaders,
             platform !== 'h5' ? aliasLoader: [], 
@@ -199,7 +199,7 @@ export default function({
             test: /React\w+/,
             use: [].concat(
                 fileLoader, 
-                global.useCache ? cacheLorder : [],
+                useCache ? cacheLorder : [],
                 postLoaders,
                 nodeLoader, 
                 reactLoader)
@@ -208,7 +208,7 @@ export default function({
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
                 fileLoader, 
-                global.useCache ? cacheLorder : [],
+                useCache ? cacheLorder : [],
                 postLoaders, 
                 postCssLoaders,
                 platform !== 'h5' ? aliasLoader : [], 
