@@ -55,7 +55,7 @@ class P extends React.Component {
         }
     }
   config = {
-      backgroundColor: 'rgb(240, 240, 240);',
+      backgroundColor: '#f5f5f5',
       navigationBarBackgroundColor: '#fff',
       navigationBarTitleText: '趣问答',
       navigationBarTextStyle: 'black'

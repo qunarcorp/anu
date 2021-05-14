@@ -22,7 +22,7 @@ class P extends React.Component {
         navigationBarTextStyle: "white",
         navigationBarBackgroundColor: "#0088a4",
         navigationBarTitleText: "内置组件",
-        backgroundColor: "orange",
+        backgroundColor: "#ffa500",
         backgroundTextStyle: "light"
     };
     componentWillMount() {

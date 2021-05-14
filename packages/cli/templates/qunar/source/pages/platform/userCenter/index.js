@@ -70,7 +70,7 @@ class P extends React.Component {
         });
     }
     config = {
-        backgroundColor: 'rgb(245, 245, 245)',
+        backgroundColor: '#fff',
         navigationBarBackgroundColor: '#fff',
         navigationBarTitleText: '个人中心',
         navigationBarTextStyle: 'black'
