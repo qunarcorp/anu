@@ -121,7 +121,7 @@ class NanachiWebpackPlugin {
             callback();
         }));
         compiler.hooks.beforeCompile.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
-            if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
+            if (process.env.JENKINS_URL && process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
                 writeInternalCommonRuntime();
             }
             callBeforeCompileFn(nanachiUserConfig);

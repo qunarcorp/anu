@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const t = __importStar(require("@babel/types"));
 const generator_1 = __importDefault(require("@babel/generator"));
 const path_1 = __importDefault(require("path"));
+const fs = __importStar(require("fs-extra"));
 function isChaikaMode() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 }
@@ -59,6 +60,20 @@ module.exports = [
             },
             visitor,
             post() {
+                if (process.env.JENKINS_URL && process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE')
+                    return;
+                this.injectInportSpecifiers = [];
+                if (!this.needWrite)
+                    return;
+                const codesList = closureCache.map(el => el.code);
+                const exportCode = codesList.reduce(function (acc, curCode) {
+                    return acc + `export ${curCode}\n\n\n`;
+                }, '');
+                const writeDistFilePath = isChaikaMode()
+                    ? path_1.default.join(cwd, '../../dist', 'internal/runtimecommon.js')
+                    : this.distCommonPath;
+                fs.ensureFileSync(writeDistFilePath);
+                fs.writeFileSync(writeDistFilePath, exportCode);
             }
         };
     }
