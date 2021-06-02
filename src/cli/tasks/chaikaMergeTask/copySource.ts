@@ -1,9 +1,11 @@
 import fs from 'fs-extra';
 import glob from 'glob';
 import * as path from 'path';
+import config from '../../config/config';
+import utils from '../../packages/utils';
+import {getMultiplePackDirPrefix} from './isMutilePack';
 const cwd = process.cwd();
-const downLoadDir = path.join(cwd, '.CACHE/download');
-const mergeDir = path.join(cwd, '.CACHE/nanachi');
+
 const mergeFilesQueue = require('./mergeFilesQueue');
 //这些文件对项目编译时来说，没啥用
 const ignoreFiles: any = [
@@ -30,6 +32,17 @@ const lockFiles: any = [
 ];
 
 
+function getDownLoadDir() {
+    return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix());
+}
+
+function getMergeDir() {
+    return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
+}
+
+// let getDownLoadDir() = path.join(cwd, '.CACHE/download', getMultiplePackDirPrefix());
+// let getMergeDir() = path.join(cwd, '.CACHE/nanachi', getMultiplePackDirPrefix());
+
 
 function isIgnoreFile(fileName: string){
     return ignoreFiles.includes(fileName) 
@@ -50,10 +63,10 @@ function isLockFile(fileName: string) {
     return lockFiles.includes(fileName);
 }
 
-function copyCurrentProject(): Promise<any> {
 
+
+function copyCurrentProjectToDownLoad(): Promise<any> {
     // 如果当前目录不存在source目录，并且不存不存在app.js, 那可能是个非nanachi工程目录
-    
     if (
         !fs.existsSync(path.join(cwd, 'source'))
         && !fs.existsSync(path.join(cwd, 'app.js'))
@@ -62,16 +75,22 @@ function copyCurrentProject(): Promise<any> {
     }
     
     let projectDirName = cwd.replace(/\\/g, '/').split('/').pop();
-    let files = glob.sync( './!(node_modules|dist|src|sign|build|.CACHE|.chaika_cache|nanachi)', {
+    let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi)', {
         //nodir: true
     });
+
+   
     let allPromiseCopy = files
     // .filter((file) => {
     //     return isIgnoreFile(path.basename(file)) ? false : true;
     // })
     .map(function(el){
         let src = path.join(cwd, el);
-        let dist = path.join(downLoadDir, projectDirName, el);
+        let dist = path.join(
+            getDownLoadDir(), 
+            projectDirName, 
+            el
+        );
         if (/\.\w+$/.test(el)) {
             fs.ensureFileSync(dist);
             return fs.copyFile(src, dist);
@@ -83,8 +102,14 @@ function copyCurrentProject(): Promise<any> {
     return Promise.all(allPromiseCopy);
 }
 
-function copyOtherProject() {
-    let files = glob.sync( downLoadDir + '/**', {nodir: true});
+
+
+function copyDownLoadToNnc() {
+    let files = glob.sync( 
+        getDownLoadDir()  + '/**', 
+        {nodir: true}
+    );
+  
     files = files.filter((file)=>{
         let fileName = path.parse(file).base;
         if (isIgnoreFile(fileName)) {
@@ -101,10 +126,11 @@ function copyOtherProject() {
         let dist = '';
         file = file.replace(/\\/g, '/');
         if (/\/source\//.test(file)) {
-            dist = path.join(mergeDir, 'source', file.split('/source/').pop());
+            dist = path.join(getMergeDir(), 'source', file.split('/source/').pop());
         } else {
-            dist = path.join(mergeDir, file.split('/').pop());
+            dist = path.join(getMergeDir(), file.split('/').pop());
         }
+       
         fs.ensureFileSync(dist);
         return fs.copyFile(file, dist);
     });
@@ -113,10 +139,10 @@ function copyOtherProject() {
 }
 
 export default function(){
-    fs.emptyDirSync(mergeDir);
-    return copyCurrentProject()
+    // fs.emptyDirSync(getMergeDir());
+    return copyCurrentProjectToDownLoad()
         .then(function(){
-            return copyOtherProject();
+            return copyDownLoadToNnc();
         })
         .then(function(){
             return Promise.resolve(1);

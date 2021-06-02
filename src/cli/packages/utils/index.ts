@@ -288,7 +288,7 @@ let utils = {
         });
     },
     getDistName(buildType: string) {
-        return buildType === 'quick' ? 'src' : (userConfig && userConfig.buildDir || 'dist');
+        return buildType === 'quick' ? 'src' : config.buildDir;
     },
     getDeps(messages: Array<any> = []) {
         return messages.filter((item) => {
@@ -399,6 +399,36 @@ let utils = {
         } catch (err) {
             return false;
         }
+    },
+
+    getProjectRootPath() {
+        // /a/project
+        // /a/project/.CACHE/nanachi
+        // /a/project/.CACHE/nanachi/wx
+        return cwd.split('\/.CACHE')[0];
+    },
+
+    getDistDir() {
+        const projectRootPath = this.getProjectRootPath();
+        return path.join(projectRootPath, this.getDistRelativeDir());
+    },
+
+    getDistRelativeDir() {
+        const isMultiple = userConfig.multiple || false;
+        if (config.buildType === 'quick') {
+            return 'src'
+        }
+        return path.join(
+            // 快应用把dist, build目录占了。
+            // 在同时构建多个小程序的时候，非快应用的构建到target目录里
+            isMultiple ? 'target' : config.buildDir,
+            isMultiple ? config.buildType : ''
+        );
+    },
+
+    getDistPathFromSoucePath(sourcePath: string) {
+        const fileName = sourcePath.split('/source/').pop();
+        return path.join(this.getDistDir(), fileName);
     }
 };
 

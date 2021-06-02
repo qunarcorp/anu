@@ -225,7 +225,7 @@ let utils = {
         });
     },
     getDistName(buildType) {
-        return buildType === 'quick' ? 'src' : (userConfig && userConfig.buildDir || 'dist');
+        return buildType === 'quick' ? 'src' : config.buildDir;
     },
     getDeps(messages = []) {
         return messages.filter((item) => {
@@ -321,6 +321,24 @@ let utils = {
         catch (err) {
             return false;
         }
+    },
+    getProjectRootPath() {
+        return cwd.split('\/.CACHE')[0];
+    },
+    getDistDir() {
+        const projectRootPath = this.getProjectRootPath();
+        return path.join(projectRootPath, this.getDistRelativeDir());
+    },
+    getDistRelativeDir() {
+        const isMultiple = userConfig.multiple || false;
+        if (config.buildType === 'quick') {
+            return 'src';
+        }
+        return path.join(isMultiple ? 'target' : config.buildDir, isMultiple ? config.buildType : '');
+    },
+    getDistPathFromSoucePath(sourcePath) {
+        const fileName = sourcePath.split('/source/').pop();
+        return path.join(this.getDistDir(), fileName);
     }
 };
 module.exports = utils;

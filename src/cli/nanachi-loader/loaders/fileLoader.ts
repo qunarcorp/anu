@@ -2,6 +2,7 @@ import { NanachiLoaderStruct } from './nanachiLoader';
 import { successLog } from '../../packages/utils/logger/index';
 import * as path from 'path';
 import * as fs from 'fs-extra';
+import config from '../../config/config';
 const utils = require('../../packages/utils/index');
 /**
  * queues 存放需要输出的文件
@@ -31,14 +32,11 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
             }
         }
 
-
+       
         // 与其他技术融合，可能得提前需要app.js, app.json
         const fileBaseName = path.basename(relativePath);
         if (this.nanachiOptions.platform === 'wx' && ['app.js', 'app.json', 'app.wxss'].includes(fileBaseName)) {
-            const distPath = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-                ? path.join(process.cwd(), '../../dist/', fileBaseName)
-                : path.join(process.cwd(), '/dist/', fileBaseName)
-
+            const distPath = path.join(utils.getDistDir(), fileBaseName);
             fs.ensureFileSync(distPath);
             fs.writeFile(distPath, code, function(err) {
                 if (err) {

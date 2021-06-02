@@ -1,6 +1,7 @@
 import * as path from 'path';
 import getDistPath from './getDistPath';
 import calculateAlias from './calculateAlias';
+import config from '../../config/config';
 const cwd = process.cwd();
 let cachedUsingComponents: {
     [props: string]: string;
@@ -32,15 +33,18 @@ function calculateComponentsPath( bag: any ) {
         calculateAlias(bag.sourcePath, bag.source) //引用模块的相对路径
     );
 
-   
-    realPath = fixWinPath(realPath).replace(/\.js$/, '');
+    realPath = getDistPath(fixWinPath(realPath).replace(/\.js$/, ''));
 
-    let usingPath = getDistPath(realPath)
-        .replace(
-            fixWinPath( path.join(cwd, 'dist') ),
-            ''
-        );
-
+    // 非快应用useComponents是绝对路径, 快应用会经过mergeUx.js计算得到相对路径
+    //  usingComponents: {
+    //     "A": "/components/xxx/yyy"
+    //  }
+    //  <import name="xxx" src="../../xxx/yyy"></import>
+    
+    const usingPath = config.buildType !== 'quick'
+        ? realPath.replace(fixWinPath(path.join(cwd, config.buildDir)), '')
+        : realPath;
+ 
     cachedUsingComponents[bag.source] = usingPath;
     return usingPath;
 };

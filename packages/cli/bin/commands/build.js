@@ -23,11 +23,12 @@ const index_1 = require("../../consts/index");
 const fs = __importStar(require("fs-extra"));
 const index_2 = __importDefault(require("../../index"));
 const config_1 = __importDefault(require("../../config/config"));
+const utils_1 = __importDefault(require("../../packages/utils"));
 const { deepMerge } = require('../../packages/utils/index');
 const build = function (args) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const { beta, betaUi, watch, compress, huawei, analysis, silent, typescript } = args;
+            const { beta, betaUi, watch, compress, huawei, analysis, silent, typescript, dir = '' } = args;
             let { buildType } = args;
             const nanachiConfig = {};
             if (buildType === '360') {
@@ -43,8 +44,10 @@ const build = function (args) {
                 huawei,
                 analysis,
                 silent,
-                typescript
+                typescript,
+                dir
             };
+            config_1.default.buildDir = utils_1.default.getDistRelativeDir();
             if (fs.existsSync(index_1.NANACHI_CONFIG_PATH)) {
                 const userConfig = require(index_1.NANACHI_CONFIG_PATH);
                 deepMerge(nanachiConfig, userConfig);

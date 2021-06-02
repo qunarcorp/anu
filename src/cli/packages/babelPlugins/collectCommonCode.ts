@@ -3,7 +3,9 @@ import * as t from '@babel/types';
 import g from '@babel/generator';
 import path from 'path';
 import * as fs from 'fs-extra';
+import config from '../../config/config';
 import traverse from '@babel/traverse';
+import utils from '../utils';
 
 function isChaikaMode() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
@@ -63,8 +65,10 @@ const visitor = {
           
             // 插入 import 节点
             if (!this.injectInportSpecifiers.length) return;
+          
+          
             const importSourcePath = path.relative(
-                path.dirname(state.filename.replace(/\/source\//, '/dist/')),
+                path.parse(utils.getDistPathFromSoucePath(state.filename)).dir,
                 this.distCommonPath
             );
             const specifiersAst = this.injectInportSpecifiers.map(name => t.importSpecifier(t.identifier(name), t.identifier(name)));
@@ -90,7 +94,7 @@ module.exports = [
             pre(){
                 // 用于搜集当前需要插入的 import 函数名
                 this.injectInportSpecifiers = [];
-                this.distCommonPath = path.join(cwd, 'dist', 'internal/runtimecommon.js');
+                this.distCommonPath = path.join(utils.getDistDir(), 'internal/runtimecommon.js');
                 // 用于标示公共文件是否需要重新写入
                 this.needWrite = false;
             },
@@ -104,13 +108,8 @@ module.exports = [
                     return acc + `export ${curCode}\n\n\n`;
                 }, '');
 
-             
-                const writeDistFilePath = isChaikaMode()
-                ? path.join(cwd, '../../dist', 'internal/runtimecommon.js')
-                : this.distCommonPath
-
-                fs.ensureFileSync(writeDistFilePath);
-                fs.writeFileSync(writeDistFilePath, exportCode);
+                fs.ensureFileSync(this.distCommonPath);
+                fs.writeFileSync(this.distCommonPath, exportCode);
             }
         };
     }

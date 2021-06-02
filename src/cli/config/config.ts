@@ -1,4 +1,7 @@
+
 import * as path from 'path';
+// import utils from '../packages/utils/index';
+
 let userConfig: any = {};
 let nanachiConfig: any = {};
 try {
@@ -8,6 +11,7 @@ try {
 } catch (err) {
     // eslint-disable-next-line
 }
+
 const buildDir = userConfig.buildDir || 'dist';
 const sourceDir = userConfig.sourceDir || 'source';
 
@@ -141,6 +145,7 @@ const config: GlobalConfigMap =  {
         disabledTitleBarPages: new Set()
     },
     buildType: 'wx',      //构建类型默认微信小程序
+    // 会被重新写入
     buildDir: buildDir,   //非快应用项目默认构建目录为dist
     sourceDir: sourceDir,  //默认生成的源码目录
     huawei: false,
@@ -151,6 +156,8 @@ const config: GlobalConfigMap =  {
     pluginTags: {},
     plugins: {}
 };
+
+
 
 module.exports = config;
 export default config;

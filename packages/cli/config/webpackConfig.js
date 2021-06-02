@@ -46,13 +46,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     }
     externals.push(/runtimecommon\.js/);
     let aliasMap = require('../packages/utils/calculateAliasConfig')();
-    let distPath = '';
-    if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
-        distPath = path.resolve(cwd, '../../', utils.getDistName(platform));
-    }
-    else {
-        distPath = path.resolve(cwd, utils.getDistName(platform));
-    }
+    let distPath = path.resolve(utils.getDistDir());
     if (platform === 'h5') {
         distPath = path.join(distPath, configurations_1.intermediateDirectoryName);
     }
@@ -165,6 +159,15 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         entry += '.tsx';
     }
     ;
+    const barNameMap = {
+        quick: '快应用',
+        wx: '微信小程序',
+        ali: '支付宝小程序',
+        bu: '百度小程序',
+        qq: 'QQ小程序',
+        tt: '头条小程序',
+        h5: 'H5'
+    };
     return {
         entry: entry,
         mode: 'development',
@@ -176,7 +179,16 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
             rules: mergeRule
         },
         plugins: [
-            new WebpackBar(),
+            new WebpackBar({
+                name: 'Webpack: ' + barNameMap[platform],
+                reporter: {
+                    change(ctx, changedFileInfo) {
+                        console.log(this, changedFileInfo);
+                        ctx.options.reporters = [];
+                        return '';
+                    },
+                }
+            }),
             ...mergePlugins
         ],
         resolve: {

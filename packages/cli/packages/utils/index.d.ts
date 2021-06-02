@@ -39,5 +39,9 @@ declare let utils: {
     deepMerge(...args: any): any;
     getStyleNamespace(dirname: string): string;
     isCheckQuickConfigFileExist(configFile: string): boolean;
+    getProjectRootPath(): string;
+    getDistDir(): string;
+    getDistRelativeDir(): string;
+    getDistPathFromSoucePath(sourcePath: string): string;
 };
 export default utils;

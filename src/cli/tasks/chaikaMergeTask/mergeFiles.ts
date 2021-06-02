@@ -2,20 +2,27 @@
 //app.json中alias需要校验冲突，并且注入到package.json中
 //package.json中需要校验运行依赖，开发依赖的冲突
 //*Config.json需要校验冲突，并合并
+
+import {getMultiplePackDirPrefix} from './isMutilePack';
+import utils from '../../packages/utils';
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const cwd = process.cwd();
 const merge = require('lodash.mergewith');
 const shelljs = require('shelljs');
+
 //const semver = require('semver');
-const mergeDir = path.join(cwd, '.CACHE/nanachi');
+
 let mergeFilesQueue = require('./mergeFilesQueue');
 let diff = require('deep-diff');
 
 const buildType = process.argv[2].split(':')[1];
 const ignoreExt = ['.tgz'];
 
+function getMergeDir() {
+    return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
+}
 
 // 默认微信，如果是h5，则为web
 const ANU_ENV = buildType
@@ -61,7 +68,7 @@ function getMergedAppJsConent( appJsSrcPath: string, pages: Array<string> = [], 
     
     return new Promise(function(rel, rej) {
         let appJsSrcContent = '';
-        let appJsDist =  path.join(mergeDir, 'source', 'app.js');
+        let appJsDist =  path.join(getMergeDir(), 'source', 'app.js');
         try {
             appJsSrcContent = fs.readFileSync(appJsSrcPath).toString();
         } catch (err) {
@@ -242,7 +249,7 @@ function getUniqueSubPkgConfig(list: object[] = []) {
 
 function getMergedXConfigContent(config:any) {
     let env = ANU_ENV;
-    let xConfigJsonDist =  path.join(mergeDir, 'source', `${env}Config.json`);
+    let xConfigJsonDist =  path.join(getMergeDir(), 'source', `${env}Config.json`);
     let ret = xDiff(config);
     for(let i in ret) {
         if (i.toLocaleLowerCase() === 'subpackages') {
@@ -267,7 +274,7 @@ function getSitemapContent(quickRules: any) {
    
     const content = JSON.stringify({rules: rulesList});
     return Promise.resolve({
-        dist: path.join(mergeDir, 'source/sitemap.json'),
+        dist: path.join(getMergeDir(), 'source/sitemap.json'),
         content
     });
 }
@@ -379,7 +386,7 @@ function getMergedPkgJsonContent(alias: any) {
             alias: alias
         }
     });
-    let dist = path.join(mergeDir, 'package.json');
+    let dist = path.join(getMergeDir(), 'package.json');
     return {
         dist: dist,
         content: JSON.stringify(distContent, null, 4)
@@ -387,7 +394,7 @@ function getMergedPkgJsonContent(alias: any) {
 }
 
 function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
-    let dist = path.join(mergeDir, 'project.config.json');
+    let dist = path.join(getMergeDir(), 'project.config.json');
     let distContent = '';
     if (projectConfigQueue.length) {
         distContent = JSON.stringify(require( projectConfigQueue[0] ), null, 4);
@@ -398,15 +405,20 @@ function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
     };
 }
 
-//校验app.js是否正确
+// 校验app.js是否正确
 function validateAppJsFileCount(queue: any) {
     let appJsFileCount = queue
-        .filter(function(el: any){
+        .filter(function(el: string){
             return /\/app\.js$/.test(el);
+        })
+        .filter(function(el: string) {
+            // 非target构建目录
+            return !/\/target\//.test(el)
         })
         .map(function(el: any){
             return el.replace(/\\/g, '/').split('/download/').pop();
         });
+   
 
     if (!appJsFileCount.length || appJsFileCount.length > 1) {
         let msg = '';
@@ -422,9 +434,14 @@ function validateAppJsFileCount(queue: any) {
 }
 
 function validateMiniAppProjectConfigJson(queue: any) {
-    let projectConfigJsonList = queue.filter(function(el: any){
+    let projectConfigJsonList = 
+    queue
+    .filter(function(el: string){
         return /\/project\.config\.json$/.test(el);
-    });
+    })
+    .filter(function(el: string){
+        return !/\/target\//.test(el);
+    })
     if ( projectConfigJsonList.length > 1 ) {
         // eslint-disable-next-line
         console.log(chalk.bold.red('校验到多个拆库仓库中存在project.config.json. 在业务线的拆库工程中，最多只能有一个拆库需要包含project.config.jon:'), chalk.bold.red('\n' + JSON.stringify(projectConfigJsonList, null, 4)));
@@ -592,9 +609,7 @@ export default function(){
                         rel(1);
                         return;
                     }
-
                     fs.ensureFileSync(dist);
-                   
                     fs.writeFile( dist, content, function(err: any){
                         if (err) {
                             rej(err);

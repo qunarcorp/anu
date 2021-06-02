@@ -28,29 +28,36 @@ const ora_1 = __importDefault(require("ora"));
 const index_1 = require("../consts/index");
 const resolve_1 = __importDefault(require("resolve"));
 const config_1 = __importDefault(require("../config/config"));
+const isMutilePack_1 = __importDefault(require("./chaikaMergeTask/isMutilePack"));
 const utils = require('../packages/utils/index');
 const cliRoot = path.resolve(__dirname, '..');
 const getSubpackage = require('../packages/utils/getSubPackage');
 let cwd = process.cwd();
 function getRubbishFiles(buildType) {
+    const projectRootPath = utils.getProjectRootPath();
     let fileList = ['package-lock.json', 'yarn.lock'];
     buildType === 'quick'
         ? fileList = fileList.concat([
             'dist', 'build', 'sign', 'src', 'babel.config.js',
-            '../../dist', '../../build', '../../sign', '../../src', '../../babel.config.js'
-        ])
-        : fileList = fileList.concat([utils.getDistName(buildType)]);
-    let libList = Object.keys(index_1.REACT_LIB_MAP)
-        .map(function (key) {
-        return `source/${index_1.REACT_LIB_MAP[key]}`;
-    })
-        .filter(function (libName) {
-        return libName.split('/')[1] != index_1.REACT_LIB_MAP[buildType];
-    });
-    fileList = fileList.concat(libList);
+        ].map(function (dir) {
+            return path.join(projectRootPath, dir);
+        }))
+        : fileList = fileList.concat([utils.getDistDir()]);
+    let libList = Array.from(new Set(Object.values(index_1.REACT_LIB_MAP)));
+    if (!isMutilePack_1.default()) {
+        libList = libList.filter(function (libName) {
+            return libName !== index_1.REACT_LIB_MAP[buildType];
+        });
+    }
+    else {
+        libList = [];
+    }
+    fileList = fileList.concat(libList.map(function (libName) {
+        return path.join(projectRootPath, 'source', libName);
+    }));
     return fileList.map(function (file) {
         return {
-            id: path.join(cwd, file),
+            id: file,
             ACTION_TYPE: 'REMOVE'
         };
     });
@@ -71,7 +78,7 @@ function getQuickPkgFile() {
         }
     ];
     if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
-        const curProjectPath = path.join(cwd, '../../', 'package.json');
+        const curProjectPath = path.join(utils.getProjectRootPath(), 'package.json');
         let curProjectPkg = require(curProjectPath);
         curProjectPkg.scripts = curProjectPkg.scripts || {};
         ['scripts', "devDependencies"].forEach(function (key) {
@@ -93,9 +100,7 @@ function getCopyFiles() {
     ];
     return files.map(fileName => ({
         id: path.join(cwd, 'source', fileName),
-        dist: process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-            ? path.join(cwd, '../../src/', fileName)
-            : path.join(cwd, 'src', fileName),
+        dist: path.join(utils.getProjectRootPath(), 'src', fileName),
         ACTION_TYPE: 'COPY'
     }));
 }
@@ -115,29 +120,15 @@ function getQuickBuildConfigFile() {
     let defaultList = [
         {
             id: path.join(signDir, sign),
-            dist: path.join(cwd, sign),
+            dist: path.join(utils.getProjectRootPath(), sign),
             ACTION_TYPE: 'COPY'
         },
         {
             id: path.join(baseDir, babelConfig),
-            dist: path.join(cwd, babelConfig),
+            dist: path.join(utils.getProjectRootPath(), babelConfig),
             ACTION_TYPE: 'COPY'
         }
     ];
-    if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
-        defaultList = defaultList.concat([
-            {
-                id: path.join(signDir, sign),
-                dist: path.join(cwd, '../../', sign),
-                ACTION_TYPE: 'COPY'
-            },
-            {
-                id: path.join(baseDir, babelConfig),
-                dist: path.join(cwd, '../../', babelConfig),
-                ACTION_TYPE: 'COPY'
-            }
-        ]);
-    }
     return defaultList;
 }
 function downloadSchneeUI() {
@@ -189,14 +180,17 @@ function getReactLibFile(ReactLibName) {
 function getProjectConfigFile(buildType) {
     if (buildType === 'quick' || buildType === 'h5')
         return [];
-    let fileName = 'project.config.json';
+    const map = {
+        wx: 'project.config.json',
+        bu: 'project.swan.json',
+        ali: 'mini.project.json'
+    };
+    let fileName = map[buildType] || 'project.config.json';
     let src = '';
     fs.existsSync(path.join(cwd, fileName))
         ? src = path.join(cwd, fileName)
         : src = path.join(cwd, 'source', fileName);
-    let dist = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-        ? path.join(cwd, '../../dist/', fileName)
-        : path.join(cwd, 'dist', fileName);
+    const dist = path.join(utils.getDistDir(), fileName);
     if (fs.existsSync(src)) {
         return [
             {
@@ -224,7 +218,7 @@ const helpers = {
 };
 function needInstallHapToolkit() {
     try {
-        let hapToolKitPath = path.join(cwd, 'node_modules', 'hap-toolkit');
+        let hapToolKitPath = path.join(utils.getProjectRootPath(), 'node_modules', 'hap-toolkit');
         fs.accessSync(hapToolKitPath);
         return false;
     }
@@ -306,7 +300,6 @@ function runTask({ platform: buildType, beta, betaUi, compress }) {
             spinner.succeed(chalk_1.default.green.bold(`同步最新的${ReactLibName}成功!`));
         }
         else {
-            tasks = tasks.concat(getReactLibFile(ReactLibName));
         }
         if (isQuick) {
             tasks = tasks.concat(getQuickBuildConfigFile(), getQuickPkgFile(), getCopyFiles());

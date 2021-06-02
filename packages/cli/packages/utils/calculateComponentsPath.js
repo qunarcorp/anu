@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const getDistPath_1 = __importDefault(require("./getDistPath"));
 const calculateAlias_1 = __importDefault(require("./calculateAlias"));
+const config_1 = __importDefault(require("../../config/config"));
 const cwd = process.cwd();
 let cachedUsingComponents = {};
 function fixWinPath(p) {
@@ -27,9 +28,10 @@ function calculateComponentsPath(bag) {
         return cachedUsingComponents[bag.source];
     }
     let realPath = path.join(path.dirname(bag.sourcePath), calculateAlias_1.default(bag.sourcePath, bag.source));
-    realPath = fixWinPath(realPath).replace(/\.js$/, '');
-    let usingPath = getDistPath_1.default(realPath)
-        .replace(fixWinPath(path.join(cwd, 'dist')), '');
+    realPath = getDistPath_1.default(fixWinPath(realPath).replace(/\.js$/, ''));
+    const usingPath = config_1.default.buildType !== 'quick'
+        ? realPath.replace(fixWinPath(path.join(cwd, config_1.default.buildDir)), '')
+        : realPath;
     cachedUsingComponents[bag.source] = usingPath;
     return usingPath;
 }

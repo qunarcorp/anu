@@ -19,6 +19,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const index_1 = require("../packages/utils/logger/index");
 const lintQueue_1 = __importDefault(require("../packages/utils/lintQueue"));
 const config_1 = __importDefault(require("../config/config"));
+const utils_1 = __importDefault(require("../packages/utils"));
 const globalStore_1 = __importDefault(require("../packages/utils/globalStore"));
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
@@ -73,7 +74,6 @@ function rebuildManifest(manifestJson, quickPageDisplayConifg) {
     return manifestJson;
 }
 function writeInternalCommonRuntime() {
-    const cwd = process.cwd();
     const code = `
     export function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
     
@@ -85,9 +85,7 @@ function writeInternalCommonRuntime() {
     
     export function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
     `.trim();
-    const writeDistFilePath = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-        ? path_1.default.join(cwd, '../../dist', 'internal/runtimecommon.js')
-        : this.distCommonPath;
+    const writeDistFilePath = path_1.default.join(utils_1.default.getDistDir(), 'internal/runtimecommon.js');
     fs_extra_1.default.ensureFileSync(writeDistFilePath);
     fs_extra_1.default.writeFileSync(writeDistFilePath, code);
 }

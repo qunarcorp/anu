@@ -39,9 +39,7 @@ module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
             }
             const fileBaseName = path.basename(relativePath);
             if (this.nanachiOptions.platform === 'wx' && ['app.js', 'app.json', 'app.wxss'].includes(fileBaseName)) {
-                const distPath = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-                    ? path.join(process.cwd(), '../../dist/', fileBaseName)
-                    : path.join(process.cwd(), '/dist/', fileBaseName);
+                const distPath = path.join(utils.getDistDir(), fileBaseName);
                 fs.ensureFileSync(distPath);
                 fs.writeFile(distPath, code, function (err) {
                     if (err) {

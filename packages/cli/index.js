@@ -172,12 +172,12 @@ function nanachi(options = {}) {
 }
 function injectBuildEnv({ platform, compress, huawei, typescript }) {
     process.env.ANU_ENV = (platform === 'h5' ? 'web' : platform);
-    config_1.default['buildType'] = platform;
-    config_1.default['compress'] = compress;
-    config_1.default['typescript'] = typescript;
-    if (platform === 'quick') {
-        config_1.default['huawei'] = huawei || false;
-    }
+    Object.assign(config_1.default, {
+        buildType: platform,
+        compress,
+        typescript,
+        huawei: huawei || false
+    });
 }
 function showLog() {
     if (index_2.default.isMportalEnv()) {

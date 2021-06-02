@@ -10,6 +10,8 @@ import * as babel from '@babel/core';
 import { spawnSync as spawn } from 'child_process';
 import utils from './packages/utils/index';
 import globalConfig from './config/config';
+
+
 import runBeforeParseTasks from './tasks/runBeforeParseTasks';
 import createH5Server from './tasks/createH5Server';
 import { validatePlatforms } from './config/config';
@@ -41,6 +43,10 @@ export interface NanachiOptions {
     complete?: Function;
 }
 
+
+
+
+
 async function nanachi(options: NanachiOptions = {}) {
     const {
         // entry = './source/app', // TODO: 入口文件配置暂时不支持
@@ -65,6 +71,10 @@ async function nanachi(options: NanachiOptions = {}) {
         // maxAssetSize = 20480, // 最大资源限制，超出报warning
         complete = () => { }
     } = options;
+
+
+   
+
     function callback(err: Error, stats?: webpack.Stats) {
         if (err) {
             // eslint-disable-next-line
@@ -176,6 +186,9 @@ async function nanachi(options: NanachiOptions = {}) {
         if (useTs && !typescript) {
             throw '检测到app.tsx，请使用typescript模式编译(-t/--typescript)';
         }
+
+        
+        
         injectBuildEnv({
             platform,
             compress,
@@ -212,6 +225,8 @@ async function nanachi(options: NanachiOptions = {}) {
             huawei
             // maxAssetSize
         });
+
+       
         const compiler = webpack(webpackConfig);
 
         if (watch) {
@@ -226,12 +241,12 @@ async function nanachi(options: NanachiOptions = {}) {
 
 function injectBuildEnv({ platform, compress, huawei, typescript }: NanachiOptions) {
     process.env.ANU_ENV = (platform === 'h5' ? 'web' : platform);
-    globalConfig['buildType'] = platform;
-    globalConfig['compress'] = compress;
-    globalConfig['typescript'] = typescript;
-    if (platform === 'quick') {
-        globalConfig['huawei'] = huawei || false;
-    }
+    Object.assign(globalConfig, {
+        buildType: platform,
+        compress,
+        typescript,
+        huawei: huawei || false
+    })
 }
 
 function showLog() {
