@@ -161,7 +161,7 @@ class NanachiWebpackPlugin implements webpack.Plugin {
 
         compiler.hooks.beforeCompile.tapAsync(id, async (compilation, callback) => {
             // 这么做是因为服务于缓存编译
-            if (process.env.JENKINS_URL && process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
+            if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
                 writeInternalCommonRuntime();
             }
             callBeforeCompileFn(nanachiUserConfig);

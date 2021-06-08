@@ -78,13 +78,13 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         platform,
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
-    const { skipNanachiCache = true, JENKINS_URL = '' } = process.env;
+    const { skipNanachiCache = false, JENKINS_URL = '' } = process.env;
     const BUILD_ENV = process.env.BUILD_ENV || '';
     const jenkinsPath = '/usr/local/q/npm';
     const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(), '../../');
     const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`;
     const cacheDirectory = path.resolve(path.join(basePath, cachePath));
-    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV;
+    const useCache = !watch && !JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV;
     if (!!JENKINS_URL) {
         console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
         console.log(`\n\n本次构建是否要走缓存：${useCache}`);
@@ -100,7 +100,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         }
     };
     const jsLorder = () => {
-        const __jsLorder = [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, postJsLoaders, platform !== 'h5' ? aliasLoader : [], nanachiLoader, typescript ? {
+        const __jsLorder = [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], useCache ? cacheLorder : [], postLoaders, postJsLoaders, nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
@@ -117,7 +117,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         use: [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, nodeLoader, reactLoader)
     }, {
         test: /\.(s[ca]ss|less|css)$/,
-        use: [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, postCssLoaders, platform !== 'h5' ? aliasLoader : [], nanachiStyleLoader, prevCssLoaders, prevLoaders)
+        use: [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], useCache ? cacheLorder : [], postLoaders, postCssLoaders, nanachiStyleLoader, prevCssLoaders, prevLoaders)
     }, {
         test: /\.(jpg|png|gif)$/,
         loader: require.resolve('file-loader'),

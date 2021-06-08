@@ -127,7 +127,7 @@ export default function({
         plugins);
 
 
-    const { skipNanachiCache = true, JENKINS_URL = '' } = process.env
+    const { skipNanachiCache = false, JENKINS_URL = '' } = process.env
     const BUILD_ENV = process.env.BUILD_ENV || ''
     const jenkinsPath = '/usr/local/q/npm'
     const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../')
@@ -142,7 +142,7 @@ export default function({
      * 3 - 非微信平台不开启缓存
      * 4 - 没有 BUILD_ENV（编译环境不缓存）
      * **/ 
-    const useCache = !watch && JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV
+    const useCache = !watch && !JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV
     if(!!JENKINS_URL) {
         console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
         console.log(`\n\n本次构建是否要走缓存：${useCache}`)
@@ -162,10 +162,10 @@ export default function({
     const jsLorder  = () => {
         const __jsLorder = [].concat(
             fileLoader, 
+            platform !== 'h5' ? aliasLoader: [], 
             useCache ? cacheLorder : [],
             postLoaders, 
             postJsLoaders,
-            platform !== 'h5' ? aliasLoader: [], 
             nanachiLoader,
             // {
             //     loader: require.resolve('eslint-loader'),
@@ -208,10 +208,10 @@ export default function({
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
                 fileLoader, 
+                platform !== 'h5' ? aliasLoader : [], 
                 useCache ? cacheLorder : [],
                 postLoaders, 
                 postCssLoaders,
-                platform !== 'h5' ? aliasLoader : [], 
                 nanachiStyleLoader,
                 prevCssLoaders,
                 prevLoaders)
