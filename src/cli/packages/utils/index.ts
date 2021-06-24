@@ -427,6 +427,9 @@ let utils = {
     },
 
     getDistPathFromSoucePath(sourcePath: string) {
+        if (/\/node_modules\//.test(sourcePath)) {
+            return path.join(this.getDistDir(), 'npm', sourcePath.split('/node_modules/').pop());
+        }
         const fileName = sourcePath.split('/source/').pop();
         return path.join(this.getDistDir(), fileName);
     }

@@ -337,6 +337,9 @@ let utils = {
         return path.join(isMultiple ? 'target' : config.buildDir, isMultiple ? config.buildType : '');
     },
     getDistPathFromSoucePath(sourcePath) {
+        if (/\/node_modules\//.test(sourcePath)) {
+            return path.join(this.getDistDir(), 'npm', sourcePath.split('/node_modules/').pop());
+        }
         const fileName = sourcePath.split('/source/').pop();
         return path.join(this.getDistDir(), fileName);
     }

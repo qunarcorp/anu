@@ -6,16 +6,65 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
+const _1 = __importDefault(require("."));
 const cwd = process.cwd();
+const babel = require('@babel/core');
 const nodeResolve = require('resolve');
 const getDistPath = require('./getDistPath');
 function fixPath(p) {
     p = p.replace(/\\/g, '/');
     return /^\w/.test(p) ? './' + p : p;
 }
-function calculateAlias(srcPath, importerSource, ignoredPaths) {
+const getImportSpecifierFilePath = (function () {
+    const ret = {};
+    return function (ImportSpecifierIdentifier, entryFilePath) {
+        babel.transformFileSync(entryFilePath, {
+            configFile: false,
+            babelrc: false,
+            comments: false,
+            ast: true,
+            plugins: [
+                function () {
+                    return {
+                        visitor: {
+                            Program: {
+                                exit: function (astPath) {
+                                    const body = astPath.get('body');
+                                    const allIsExportNamedDeclaration = body.every(function ({ node }) {
+                                        return node.type === 'ExportNamedDeclaration' && node.specifiers.length === 1;
+                                    });
+                                    if (!allIsExportNamedDeclaration) {
+                                        return;
+                                    }
+                                    const exportInfo = body
+                                        .map(function ({ node }) {
+                                        let src = path.join(path.parse(entryFilePath).dir, node.source.value);
+                                        src = src.replace(/(\.js)$/, '').replace(/(\/index)$/, '') + '/index.js';
+                                        return {
+                                            name: node.specifiers[0].exported.name,
+                                            src
+                                        };
+                                    }).reduce(function (acc, cur) {
+                                        acc[cur.name] = cur.src;
+                                        return acc;
+                                    }, {});
+                                    ret[entryFilePath] = exportInfo;
+                                }
+                            }
+                        }
+                    };
+                }
+            ]
+        });
+        return ret[entryFilePath][ImportSpecifierIdentifier];
+    };
+})();
+function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierName) {
     const aliasMap = require('./calculateAliasConfig')();
     if (ignoredPaths && ignoredPaths.find((p) => importerSource === p)) {
         return '';
@@ -43,9 +92,21 @@ function calculateAlias(srcPath, importerSource, ignoredPaths) {
     }
     try {
         let from = path.dirname(getDistPath(srcPath));
+        let isNncNpmComponentsLib = false;
         let to = nodeResolve.sync(importerSource, {
-            basedir: cwd
+            basedir: _1.default.getProjectRootPath(),
+            preserveSymlinks: true,
+            moduleDirectory: 'node_modules',
+            packageFilter: function (pkg) {
+                isNncNpmComponentsLib = !!pkg.nnc;
+                return pkg;
+            }
         });
+        if (isNncNpmComponentsLib) {
+            if (importSpecifierName) {
+                to = getImportSpecifierFilePath(importSpecifierName, to);
+            }
+        }
         to = getDistPath(to);
         return fixPath(path.relative(from, to));
     }

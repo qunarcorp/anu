@@ -191,6 +191,7 @@ const visitor = {
                 modules.importComponents[item.local.name] = {
                     astPath: astPath,
                     source: source,
+                    importSpecifierName: item.local.name,
                     sourcePath: modules.sourcePath
                 };
             });

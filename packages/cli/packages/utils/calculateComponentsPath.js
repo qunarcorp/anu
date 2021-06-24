@@ -15,7 +15,6 @@ const getDistPath_1 = __importDefault(require("./getDistPath"));
 const calculateAlias_1 = __importDefault(require("./calculateAlias"));
 const config_1 = __importDefault(require("../../config/config"));
 const cwd = process.cwd();
-let cachedUsingComponents = {};
 function fixWinPath(p) {
     return p.replace(/\\/g, '/');
 }
@@ -24,15 +23,11 @@ function calculateComponentsPath(bag) {
         console.error('bag.sourcePath 必须为绝对路径.');
         process.exit(1);
     }
-    if (cachedUsingComponents[bag.source]) {
-        return cachedUsingComponents[bag.source];
-    }
-    let realPath = path.join(path.dirname(bag.sourcePath), calculateAlias_1.default(bag.sourcePath, bag.source));
+    let realPath = path.join(path.dirname(bag.sourcePath), calculateAlias_1.default(bag.sourcePath, bag.source, [], bag.importSpecifierName));
     realPath = getDistPath_1.default(fixWinPath(realPath).replace(/\.js$/, ''));
     const usingPath = config_1.default.buildType !== 'quick'
         ? realPath.replace(fixWinPath(path.join(cwd, config_1.default.buildDir)), '')
         : realPath;
-    cachedUsingComponents[bag.source] = usingPath;
     return usingPath;
 }
 ;

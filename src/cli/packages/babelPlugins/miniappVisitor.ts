@@ -267,10 +267,11 @@ const visitor:babel.Visitor = {
         }
         if (modules.componentType !== 'App') {
             specifiers.forEach(item => {
-                //重点，保持所有引入的组件名及它们的路径，用于<import />
+                // 重点，保持所有引入的组件名及它们的路径，用于<import />
                 modules.importComponents[item.local.name] = {
                     astPath: astPath,
                     source: source,
+                    importSpecifierName: item.local.name,
                     sourcePath: modules.sourcePath
                 };
             });
@@ -280,11 +281,11 @@ const visitor:babel.Visitor = {
     Program: {
         exit(astPath: NodePath<t.Program>, state: any) {
             var modules = utils.getAnu(state);
-            //支付宝的自定义组件机制实现有问题，必须要在json.usingComponents引入了这个类
-            //这个类所在的JS 文件才会加入Component全局函数，否则会报Component不存在的BUG
-            //一般来说，我们在页面引入了某个组件，它肯定在json.usingComponents中，只有少数间接引入的父类没有引入
-            //因此在子类的json.usingComponents添加父类名
-            //好像支付宝小程序(0.25.1-beta.0)已经不需要添加父类了
+            // 支付宝的自定义组件机制实现有问题，必须要在json.usingComponents引入了这个类
+            // 这个类所在的JS 文件才会加入Component全局函数，否则会报Component不存在的BUG
+            // 一般来说，我们在页面引入了某个组件，它肯定在json.usingComponents中，只有少数间接引入的父类没有引入
+            // 因此在子类的json.usingComponents添加父类名
+            // 好像支付宝小程序(0.25.1-beta.0)已经不需要添加父类了
             // 下面代码是从wxHelper/render中挪过来的
             const parentClass = modules.parentName;
             if (
@@ -331,6 +332,7 @@ const visitor:babel.Visitor = {
                     usings[name] = modules.usedComponents[name];
                 });
             }
+            
             if (buildType == 'quick') {
                 var obj = quickFiles[modules.sourcePath];
                 if (obj) {
@@ -738,13 +740,16 @@ const visitor:babel.Visitor = {
                     // 存下删除的依赖路径
                     if (bag.source !== 'schnee-ui') modules.extraModules.push(bag.source);
                     bag.astPath.remove();
+                    
                     bag.astPath = null;
                 } catch (err) {
                     // eslint-disable-next-line
                 }
-
+                
+                
                 // let useComponentsPath = calculateComponentsPath(bag, nodeName); // tsc: 原来有两个参数 第二个参数有用吗？
                 let useComponentsPath = calculateComponentsPath(bag);
+                
                 modules.usedComponents['anu-' + nodeName.toLowerCase()] = useComponentsPath;
                 (astPath.node.name as t.JSXIdentifier).name = 'React.useComponent';
 

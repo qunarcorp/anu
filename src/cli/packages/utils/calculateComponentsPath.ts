@@ -3,9 +3,7 @@ import getDistPath from './getDistPath';
 import calculateAlias from './calculateAlias';
 import config from '../../config/config';
 const cwd = process.cwd();
-let cachedUsingComponents: {
-    [props: string]: string;
-} = {};
+
 
 /**
  * case1: userPath/source/components/Calendar/index => /components/Calendar/index
@@ -22,15 +20,11 @@ function calculateComponentsPath( bag: any ) {
         process.exit(1);
     }
 
-    if (cachedUsingComponents[bag.source]) {
-        return cachedUsingComponents[bag.source];
-    }
-   
     //求出引用模块的真实绝对路径 如：userPath/source/components/Calendar/index
    
     let realPath = path.join(
         path.dirname(bag.sourcePath),
-        calculateAlias(bag.sourcePath, bag.source) //引用模块的相对路径
+        calculateAlias(bag.sourcePath, bag.source, [], bag.importSpecifierName) //引用模块的相对路径
     );
 
     realPath = getDistPath(fixWinPath(realPath).replace(/\.js$/, ''));
@@ -45,7 +39,7 @@ function calculateComponentsPath( bag: any ) {
         ? realPath.replace(fixWinPath(path.join(cwd, config.buildDir)), '')
         : realPath;
  
-    cachedUsingComponents[bag.source] = usingPath;
+    
     return usingPath;
 };
 

@@ -98,15 +98,7 @@ export default function({
         };
     }
 
-    // node_modules pkg
-    const nodeRules = [{
-        test: /node_modules[\\/](?!schnee-ui[\\/])/,
-        use: [].concat(
-            fileLoader, 
-            postLoaders, 
-            aliasLoader, 
-            nodeLoader) 
-    }];
+
     const copyAssetsRules = [{
         from: '**',
         to: 'assets',
@@ -187,12 +179,65 @@ export default function({
         return __jsLorder
     };
 
+    function isJsFile(sourcePath: string) {
+        return /\.[jt]sx?$/.test(sourcePath);
+    }
+
+    function isNpmFile(sourcePath: string) {
+        return /\/node_modules\//.test(sourcePath);
+    }
+
+    function isPatchUiComponentsFile(sourcePath: string) {
+        return /\/node_modules\/schnee-ui\//.test(sourcePath);
+    }
+
+    function isThirdNpmUiComponentsFile(sourcePath: string) {
+        return /\/node_modules\/.+\/components\//.test(sourcePath)
+    }
+
+    function isReactFile(sourcePath: string) {
+        return /\/React\w+\.js$/.test(sourcePath);
+    }
+
+    const nodeRules = [{
+        // test: /node_modules[\\/](?!schnee-ui[\\/])/,
+        test: function(sourcePath: string) {
+            return isNpmFile(sourcePath) && !isThirdNpmUiComponentsFile(sourcePath);
+        },
+        use: [].concat(
+            fileLoader, 
+            postLoaders, 
+            aliasLoader, 
+            nodeLoader
+        ) 
+    }];
+
     const mergeRule = [].concat(
         {
-            test: /\.[jt]sx?$/,
+            //test: /\.[jt]sx?$/,
+            test: function(sourcePath: string) {
+                if (isJsFile(sourcePath)) {
+                    if (isNpmFile(sourcePath)) {
+                        if (isPatchUiComponentsFile(sourcePath)) {
+                            return true;
+                        } else if (isThirdNpmUiComponentsFile(sourcePath)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else if (isReactFile(sourcePath)) {
+                        return false;
+                    } {
+                        return true;
+                    }
+                } else {
+                    return false;
+                }
+              
+            },
             //loader是从后往前处理
-            use:  jsLorder() ,
-            exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
+            use: jsLorder(),
+            // exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
         },
         platform !== 'h5' ? nodeRules : [],
         {
