@@ -92,7 +92,7 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
         return fixPath(path.relative(from, to));
     }
     try {
-        let from = path.dirname(getDistPath(srcPath));
+        let from = path.dirname(srcPath);
         let isNncNpmComponentsLib = false;
         let to = nodeResolve.sync(importerSource, {
             basedir: _1.default.getProjectRootPath(),

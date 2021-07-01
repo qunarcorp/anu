@@ -127,7 +127,7 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
     // 上面都没匹配到的，那就是 node_modules 模块了
     // import cookie from 'cookie';
     try {
-        let from = path.dirname(getDistPath(srcPath));
+        let from = path.dirname(srcPath);
         let isNncNpmComponentsLib = false;
        
         let to = nodeResolve.sync(importerSource, {
@@ -148,11 +148,10 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
            
         }
 
-
-       
-      
+        
         to = getDistPath(to);
         from = getDistPath(from);
+
 
         return fixPath(path.relative(from, to));
     } catch (e) {
