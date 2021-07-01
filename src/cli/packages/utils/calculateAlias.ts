@@ -91,13 +91,6 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
         process.exit(1);
     }
 
-    if (path.isAbsolute(importerSource)) {
-        let from = path.dirname(srcPath);
-        let to = importerSource.replace(/\.js$/, '');
-        from = getDistPath(from);
-        to = getDistPath(to);
-        return fixPath(path.relative(from, to));
-    }
 
     let rsegments = importerSource.split('/');
     //import a from './a';
@@ -120,10 +113,21 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
         return fixPath(path.relative(from, to));
     }
 
+
+    if (path.isAbsolute(importerSource)) {
+        console.log(importerSource);
+        let from = path.dirname(srcPath);
+        let to = importerSource.replace(/\.js$/, '');
+        from = getDistPath(from);
+        to = getDistPath(to);
+        return fixPath(path.relative(from, to));
+    }
+
+
     // 上面都没匹配到的，那就是 node_modules 模块了
     // import cookie from 'cookie';
     try {
-        let from = path.dirname( getDistPath(srcPath));
+        let from = path.dirname(getDistPath(srcPath));
         let isNncNpmComponentsLib = false;
        
         let to = nodeResolve.sync(importerSource, {
@@ -136,7 +140,6 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
             }
         });
 
-       
 
         if (isNncNpmComponentsLib) {
             if (importSpecifierName) {
@@ -145,7 +148,11 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
            
         }
 
+
+       
+      
         to = getDistPath(to);
+        from = getDistPath(from);
 
         return fixPath(path.relative(from, to));
     } catch (e) {

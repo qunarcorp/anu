@@ -16,7 +16,8 @@ function getDistPath(sourcePath) {
             .replace(nodeModuleReg, `/${config_1.default.buildDir}/npm/`)
             .replace(/\/\//g, '/')
         : sourcePath
-            .replace(/\/source\//, `/${config_1.default.buildDir}/`)
+            .replace(/(\.CACHE\/.+\/source\/)|(\/source\/)/, `/${config_1.default.buildDir}/`)
+            .replace(/(\.CACHE\/.+\/npm\/)/, `/${config_1.default.buildDir}/npm/`)
             .replace(/\/\//g, '/');
     distPath = process.env.ANU_ENV === 'quick'
         ? distPath.replace(new RegExp('/' + config_1.default.buildDir + '/'), '/src/')

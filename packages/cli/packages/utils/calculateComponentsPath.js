@@ -14,6 +14,7 @@ const path = __importStar(require("path"));
 const getDistPath_1 = __importDefault(require("./getDistPath"));
 const calculateAlias_1 = __importDefault(require("./calculateAlias"));
 const config_1 = __importDefault(require("../../config/config"));
+const _1 = __importDefault(require("."));
 const cwd = process.cwd();
 function fixWinPath(p) {
     return p.replace(/\\/g, '/');
@@ -26,7 +27,7 @@ function calculateComponentsPath(bag) {
     let realPath = path.join(path.dirname(bag.sourcePath), calculateAlias_1.default(bag.sourcePath, bag.source, [], bag.importSpecifierName));
     realPath = getDistPath_1.default(fixWinPath(realPath).replace(/\.js$/, ''));
     const usingPath = config_1.default.buildType !== 'quick'
-        ? realPath.replace(fixWinPath(path.join(cwd, config_1.default.buildDir)), '')
+        ? realPath.replace(fixWinPath(path.join(_1.default.getProjectRootPath(), config_1.default.buildDir)), '')
         : realPath;
     return usingPath;
 }

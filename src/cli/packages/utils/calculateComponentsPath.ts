@@ -2,6 +2,7 @@ import * as path from 'path';
 import getDistPath from './getDistPath';
 import calculateAlias from './calculateAlias';
 import config from '../../config/config';
+import utils from '.';
 const cwd = process.cwd();
 
 
@@ -26,8 +27,14 @@ function calculateComponentsPath( bag: any ) {
         path.dirname(bag.sourcePath),
         calculateAlias(bag.sourcePath, bag.source, [], bag.importSpecifierName) //引用模块的相对路径
     );
+    
 
+    
+
+    
     realPath = getDistPath(fixWinPath(realPath).replace(/\.js$/, ''));
+
+    
 
     // 非快应用useComponents是绝对路径, 快应用会经过mergeUx.js计算得到相对路径
     //  usingComponents: {
@@ -36,10 +43,8 @@ function calculateComponentsPath( bag: any ) {
     //  <import name="xxx" src="../../xxx/yyy"></import>
     
     const usingPath = config.buildType !== 'quick'
-        ? realPath.replace(fixWinPath(path.join(cwd, config.buildDir)), '')
+        ? realPath.replace(fixWinPath(path.join(utils.getProjectRootPath(), config.buildDir)), '')
         : realPath;
- 
-    
     return usingPath;
 };
 

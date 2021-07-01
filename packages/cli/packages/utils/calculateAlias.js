@@ -73,13 +73,6 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
         console.error(`计算alias中的 ${srcPath} 必须为绝对路径.`);
         process.exit(1);
     }
-    if (path.isAbsolute(importerSource)) {
-        let from = path.dirname(srcPath);
-        let to = importerSource.replace(/\.js$/, '');
-        from = getDistPath(from);
-        to = getDistPath(to);
-        return fixPath(path.relative(from, to));
-    }
     let rsegments = importerSource.split('/');
     if (/^\./.test(rsegments[0])) {
         return importerSource;
@@ -87,6 +80,14 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
     if (aliasMap[rsegments[0]]) {
         let from = path.dirname(getDistPath(srcPath));
         let to = importerSource.replace(new RegExp(rsegments[0]), aliasMap[rsegments[0]]);
+        to = getDistPath(to);
+        return fixPath(path.relative(from, to));
+    }
+    if (path.isAbsolute(importerSource)) {
+        console.log(importerSource);
+        let from = path.dirname(srcPath);
+        let to = importerSource.replace(/\.js$/, '');
+        from = getDistPath(from);
         to = getDistPath(to);
         return fixPath(path.relative(from, to));
     }
@@ -108,6 +109,7 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
             }
         }
         to = getDistPath(to);
+        from = getDistPath(from);
         return fixPath(path.relative(from, to));
     }
     catch (e) {

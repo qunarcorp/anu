@@ -24,7 +24,8 @@
              .replace(nodeModuleReg, `/${config.buildDir}/npm/`)
              .replace(/\/\//g, '/')
          : sourcePath
-             .replace(/\/source\//, `/${config.buildDir}/`)
+             .replace(/(\.CACHE\/.+\/source\/)|(\/source\/)/, `/${config.buildDir}/`)
+             .replace(/(\.CACHE\/.+\/npm\/)/, `/${config.buildDir}/npm/`)
              .replace(/\/\//g, '/')
      
      //快应用目录要替换成src
