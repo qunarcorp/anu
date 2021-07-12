@@ -13,6 +13,7 @@ class WxParser extends JavascriptParser{
             configFile: false,
             babelrc: false,
             comments: false,
+            minified: true,
             ast: true,
             plugins: [
                

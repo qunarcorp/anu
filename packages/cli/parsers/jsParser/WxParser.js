@@ -24,6 +24,7 @@ class WxParser extends JavascriptParser_1.default {
             configFile: false,
             babelrc: false,
             comments: false,
+            minified: true,
             ast: true,
             plugins: [
                 [require('@babel/plugin-proposal-decorators'), { legacy: true }],

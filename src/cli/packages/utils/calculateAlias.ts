@@ -115,7 +115,6 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
 
 
     if (path.isAbsolute(importerSource)) {
-        console.log(importerSource);
         let from = path.dirname(srcPath);
         let to = importerSource.replace(/\.js$/, '');
         from = getDistPath(from);
