@@ -37,7 +37,6 @@ class WxParser extends JavascriptParser{
                         camel2DashComponentName: false
                     }
                 ],
-                
                 require('@babel/plugin-syntax-jsx'),
                 require('@babel/plugin-syntax-optional-chaining'),
                 require('../../packages/babelPlugins/collectDependencies'),
@@ -46,6 +45,7 @@ class WxParser extends JavascriptParser{
                 ...require('../../packages/babelPlugins/transformEnv'),
                 [ require('@babel/plugin-transform-template-literals'), { loose: true }],
                 require('../../packages/babelPlugins/transformIfImport'),
+                require('../../packages/babelPlugins/transformIfFun'),
                 ...this.filterCommonFile,
                 require('@babel/plugin-proposal-optional-chaining'),
                 ...require('../../packages/babelPlugins/patchAsyncAwait'),
