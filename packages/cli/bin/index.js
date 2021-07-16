@@ -48,7 +48,7 @@ cli.version = version;
 cli.addCommand('init <app-name>', null, 'description: 初始化项目', {}, (appName) => {
     init_1.default(appName);
 });
-cli.addCommand('install <name>', null, 'description: 安装拆库模块. 文档: https://rubylouvre.github.io/nanachi/documents/chaika.html', {
+cli.addCommand('install [name]', null, 'description: 安装拆库模块. 文档: https://rubylouvre.github.io/nanachi/documents/chaika.html', {
     'branch': {
         desc: '指定分支',
         alias: 'b'

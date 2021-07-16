@@ -36,7 +36,7 @@ cli.addCommand('init <app-name>', null, 'description: 初始化项目', {}, (app
 });
 
 cli.addCommand(
-    'install <name>',
+    'install [name]',
     null,
     'description: 安装拆库模块. 文档: https://rubylouvre.github.io/nanachi/documents/chaika.html',
     {
