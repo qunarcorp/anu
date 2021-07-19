@@ -72,6 +72,9 @@ function copyReactLibFile(buildType) {
     const dist = isChaikaMode()
         ? path.join(projectRootPath, '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix(), 'source', ReactLibName)
         : path.join(projectRootPath, 'source', ReactLibName);
+    console.log('[copyReactLibFile]执行中------------------------');
+    console.log('dist:', dist);
+    console.log('isChaikaMode():', isChaikaMode());
     fs_extra_1.default.ensureFileSync(dist);
     fs_extra_1.default.copySync(src, dist);
 }
@@ -97,20 +100,27 @@ platforms_1.default.forEach(function (el) {
     const { buildType, des, isDefault } = el;
     ['build', 'watch'].forEach(function (compileType) {
         cli.addCommand(`${compileType}:${buildType}`, isDefault ? compileType : null, des, buildOptions_1.default, (options) => __awaiter(this, void 0, void 0, function* () {
+            console.log('start build------------------------');
             const isChaika = isChaikaMode();
+            console.log('[isChaika]------------------------', isChaika);
             Object.assign(config_1.default, {
                 buildType
             });
+            console.log('[isChaconfigika]------------------------', config_1.default);
             if (isChaika) {
                 checkChaikaPatchInstalled();
+                console.log('[checkChaikaPatchInstalled]执行完成------------------------');
                 fs_extra_1.default.emptyDirSync(getMergeDir());
                 fs_extra_1.default.emptyDirSync(getMultipleBuildTargetDir());
             }
             copyReactLibFile(buildType);
+            console.log('[copyReactLibFile]执行完成------------------------');
             if (isChaika) {
                 try {
                     installDefaultModule_1.default(buildType);
+                    console.log('[installDefaltChaikaModule]执行完成------------------------');
                     yield index_2.default();
+                    console.log('[runChaikaMergeTask]执行完成------------------------');
                 }
                 catch (err) {
                     console.error(err);

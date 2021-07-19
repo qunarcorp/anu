@@ -68,6 +68,7 @@ module.exports = async function(code: string, map: any, meta: any) {
         plugins: [
             ...require('../../packages/babelPlugins/transformEnv'),
             require('../../packages/babelPlugins/transformIfImport'),
+            require('../../packages/babelPlugins/transformIfFun'),
             patchMobx.bind(this)
         ]
     }).code;

@@ -31,7 +31,7 @@ cli.checkNodeVersion('8.6.0');
 
 cli.version = version;
 
-cli.addCommand('init <app-name>', null, 'description: 初始化项目', {}, (appName: any)=>{
+cli.addCommand('init <app-name>', null, 'description: 初始化项目', {}, (appName: any) => {
     init(appName);
 });
 
@@ -49,7 +49,7 @@ cli.addCommand(
             alias: 'p'
         }
     },
-    function(name, opts){
+    function (name, opts) {
         install(name, opts);
     }
 );
@@ -59,14 +59,14 @@ cli.addCommand(
         `${type} <page-name>`,
         null,
         `description: 创建${type}s/<${type}-name>/index.js模版`,
-        {}, 
-        (name)=>{
-            createPage({name, isPage: type === 'page'});
+        {},
+        (name) => {
+            createPage({ name, isPage: type === 'page' });
         });
 });
 
 
-function copyReactLibFile(buildType:string) {
+function copyReactLibFile(buildType: string) {
     const ReactLibName = REACT_LIB_MAP[buildType];
     const projectRootPath = utils.getProjectRootPath();
     const src = path.join(__dirname, '../lib', ReactLibName);
@@ -78,9 +78,11 @@ function copyReactLibFile(buildType:string) {
             getMultiplePackDirPrefix(),
             'source',
             ReactLibName
-          )
+        )
         : path.join(projectRootPath, 'source', ReactLibName);
-
+    console.log('[copyReactLibFile]执行中------------------------');
+    console.log('dist:', dist);
+    console.log('isChaikaMode():', isChaikaMode());
     fs.ensureFileSync(dist);
     fs.copySync(src, dist);
 }
@@ -95,7 +97,7 @@ function getMultipleBuildTargetDir() {
 
 function checkChaikaPatchInstalled() {
     try {
-        resolve.sync('@qnpm/chaika-patch',  {
+        resolve.sync('@qnpm/chaika-patch', {
             basedir: utils.getProjectRootPath(),
             moduleDirectory: path.join(utils.getProjectRootPath(), 'node_modules')
         });
@@ -103,35 +105,41 @@ function checkChaikaPatchInstalled() {
         console.log(chalk.green(`请先在你的项目里安装 @qnpm/chaika-patch@latest 模块`));
         process.exit(1);
     }
-    
+
 }
 
-platforms.forEach(function(el){
+platforms.forEach(function (el) {
     const { buildType, des, isDefault } = el;
     ['build', 'watch'].forEach(function (compileType) {
         cli.addCommand(
-            `${compileType}:${buildType}`, 
+            `${compileType}:${buildType}`,
             isDefault ? compileType : null,
-            des, 
+            des,
             BUILD_OPTIONS,
             async (options) => {
+                console.log('start build------------------------');
                 const isChaika = isChaikaMode();
+                console.log('[isChaika]------------------------', isChaika);
                 Object.assign(config, {
                     buildType
                 });
-
+                console.log('[isChaconfigika]------------------------', config);
                 if (isChaika) {
                     checkChaikaPatchInstalled();
+                    console.log('[checkChaikaPatchInstalled]执行完成------------------------');
                     fs.emptyDirSync(getMergeDir());
                     fs.emptyDirSync(getMultipleBuildTargetDir());
                 }
-               
+
                 copyReactLibFile(buildType);
-                
+                console.log('[copyReactLibFile]执行完成------------------------');
+
                 if (isChaika) {
                     try {
                         installDefaltChaikaModule(buildType);
+                        console.log('[installDefaltChaikaModule]执行完成------------------------');
                         await runChaikaMergeTask();
+                        console.log('[runChaikaMergeTask]执行完成------------------------');
                     } catch (err) {
                         console.error(err);
                         process.exit(1);
