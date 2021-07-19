@@ -110,6 +110,8 @@ platforms_1.default.forEach(function (el) {
             if (isChaika) {
                 checkChaikaPatchInstalled();
                 console.log('[checkChaikaPatchInstalled]执行完成------------------------');
+                const mergeDir = getMergeDir();
+                console.log('');
                 fs_extra_1.default.emptyDirSync(getMergeDir());
                 fs_extra_1.default.emptyDirSync(getMultipleBuildTargetDir());
             }
