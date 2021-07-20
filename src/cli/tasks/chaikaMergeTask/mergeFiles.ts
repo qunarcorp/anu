@@ -3,7 +3,7 @@
 //package.json中需要校验运行依赖，开发依赖的冲突
 //*Config.json需要校验冲突，并合并
 
-import {getMultiplePackDirPrefix} from './isMutilePack';
+import { getMultiplePackDirPrefix } from './isMutilePack';
 import utils from '../../packages/utils';
 const fs = require('fs-extra');
 const path = require('path');
@@ -37,7 +37,7 @@ const ANU_ENV = buildType
  * @param {Array} pages 所有的页面路径
  * @return {Object} 
  */
-function getMergedAppJsConent( appJsSrcPath: string, pages: Array<string> = [], importSyntax: Array<string> = [] ) {
+function getMergedAppJsConent(appJsSrcPath: string, pages: Array<string> = [], importSyntax: Array<string> = []) {
     function getAppImportSyntaxCode(importSyntax: Array<string> = []) {
         /**
          * app.json
@@ -45,7 +45,7 @@ function getMergedAppJsConent( appJsSrcPath: string, pages: Array<string> = [], 
          *   "imports": ["import a from '@b/c'"]
          * }
          */
-        let importSyntaxList = importSyntax.map(function(curEl) {
+        let importSyntaxList = importSyntax.map(function (curEl) {
             curEl = curEl.trim();
             if (!/;$/.test(curEl)) {
                 curEl = curEl + ';';
@@ -54,9 +54,9 @@ function getMergedAppJsConent( appJsSrcPath: string, pages: Array<string> = [], 
         });
         return importSyntaxList.length ? importSyntaxList.join("\n") + '\n' : '';
     }
-    
-    let allRoutesStr = pages.map(function(pageRoute: any){
-        if ( !(/^\.\//.test(pageRoute)) ) {
+
+    let allRoutesStr = pages.map(function (pageRoute: any) {
+        if (!(/^\.\//.test(pageRoute))) {
             pageRoute = './' + pageRoute;
         }
         pageRoute = `import '${pageRoute}';\n`;
@@ -65,10 +65,10 @@ function getMergedAppJsConent( appJsSrcPath: string, pages: Array<string> = [], 
 
     // 在app.js里插入 app.json 中 imports 语句
     allRoutesStr += getAppImportSyntaxCode(importSyntax);
-    
-    return new Promise(function(rel, rej) {
+
+    return new Promise(function (rel, rej) {
         let appJsSrcContent = '';
-        let appJsDist =  path.join(getMergeDir(), 'source', 'app.js');
+        let appJsDist = path.join(getMergeDir(), 'source', 'app.js');
         try {
             appJsSrcContent = fs.readFileSync(appJsSrcPath).toString();
         } catch (err) {
@@ -86,8 +86,8 @@ function getMergedAppJsConent( appJsSrcPath: string, pages: Array<string> = [], 
  * @param {Array} queue 所有需要经过 merged 处理的文件
  * @return {String} 找到app.js的路径
  */
-function getAppJsSourcePath( queue: any = []) {
-    let appJsSourcePath = queue.filter(function(file: any){
+function getAppJsSourcePath(queue: any = []) {
+    let appJsSourcePath = queue.filter(function (file: any) {
         file = file.replace(/\\/g, '/');
         return /\/app\.js$/.test(file);
     })[0];
@@ -97,11 +97,11 @@ function getAppJsSourcePath( queue: any = []) {
 function getFilesMap(queue: any = []) {
     let map: any = {};
     let env = ANU_ENV;
-    queue.forEach(function(file: any){
+    queue.forEach(function (file: any) {
         file = file.replace(/\\/g, '/');
         if (/\/package\.json$/.test(file)) {
             let { dependencies = {}, devDependencies = {}, nanachi = {} } = require(file);
-            if ( Object.keys(dependencies).length ) {
+            if (Object.keys(dependencies).length) {
                 delete dependencies['@qnpm/chaika-patch'];
                 map['pkgDependencies'] = map['pkgDependencies'] || [];
                 map['pkgDependencies'].push({
@@ -110,7 +110,7 @@ function getFilesMap(queue: any = []) {
                     type: 'dependencies'
                 });
             }
-            if ( Object.keys(devDependencies).length ) {
+            if (Object.keys(devDependencies).length) {
                 delete devDependencies['node-sass'];
                 delete devDependencies['@qnpm/chaika-patch'];
                 map['pkgDevDep'] = map['pkgDevDep'] || [];
@@ -128,7 +128,7 @@ function getFilesMap(queue: any = []) {
             return;
         }
         if (/\/app\.json$/.test(file)) {
-            var { alias={}, pages=[], rules=[], imports=[], order = 0 } = require(file);
+            var { alias = {}, pages = [], rules = [], imports = [], order = 0 } = require(file);
             if (alias) {
                 map['alias'] = map['alias'] || [];
                 map['alias'].push({
@@ -137,9 +137,9 @@ function getFilesMap(queue: any = []) {
                     type: 'alias'
                 });
             }
-            
+
             if (pages.length) {
-                let allInjectRoutes = pages.reduce(function(ret: any, route: any){
+                let allInjectRoutes = pages.reduce(function (ret: any, route: any) {
                     let injectRoute = '';
                     if ('[object Object]' === Object.prototype.toString.call(route)) {
                         // ' wx, ali,bu ,tt ' => ['wx', 'ali', 'bu', 'tt']
@@ -151,7 +151,7 @@ function getFilesMap(queue: any = []) {
                         injectRoute = route;
                     }
 
-                    if ( injectRoute ) {
+                    if (injectRoute) {
                         ret.add(injectRoute);
                     }
                     return ret;
@@ -161,36 +161,36 @@ function getFilesMap(queue: any = []) {
                 map['pages'].push({
                     routes: Array.from(allInjectRoutes),
                     order: order
-                }); 
+                });
             }
 
             if (rules.length) {
                 map['quickRules'] = map['quickRules'] || new Map();
-                rules.forEach((curRule:any) => {
+                rules.forEach((curRule: any) => {
                     const selector = JSON.stringify(curRule);
                     if (map['quickRules'].has(selector)) {
-                        console.log(chalk.yellow(`无法合并, ${file.split('download/').pop()} 中已经存在规则：\n${JSON.stringify(curRule, null ,4)}\n`));
+                        console.log(chalk.yellow(`无法合并, ${file.split('download/').pop()} 中已经存在规则：\n${JSON.stringify(curRule, null, 4)}\n`));
                         return;
                     }
                     map['quickRules'].set(selector, 1);
                 })
-               
-                
+
+
             }
 
             map['importSyntax'] = map['importSyntax'] || [];
             map['importSyntax'] = map['importSyntax'].concat(imports);
             return;
         }
-        
+
         if (/\/project\.config\.json$/.test(file)) {
             map['projectConfigJson'] = map['projectConfigJson'] || [];
             map['projectConfigJson'].push(file);
             return;
         }
 
-        var reg = new RegExp( env +'Config.json$');
-        map['xconfig'] =  map['xconfig'] || [];
+        var reg = new RegExp(env + 'Config.json$');
+        map['xconfig'] = map['xconfig'] || [];
         if (reg.test(file)) {
             try {
                 var config = require(file);
@@ -203,9 +203,9 @@ function getFilesMap(queue: any = []) {
             } catch (err) {
                 // eslint-disable-next-line
             }
-            
+
         }
-        
+
     });
     map = orderRouteByOrder(map);
     return map;
@@ -213,20 +213,20 @@ function getFilesMap(queue: any = []) {
 
 function orderRouteByOrder(map: any) {
     //根据order排序
-    map['pages'] = map['pages'].sort(function(a: any, b: any){
+    map['pages'] = map['pages'].sort(function (a: any, b: any) {
         return b.order - a.order;
     });
-    map['pages'] = map['pages'].map(function(pageEl: any){
+    map['pages'] = map['pages'].map(function (pageEl: any) {
         return pageEl.routes;
     });
-    
+
     //二数组变一纬
     map['pages'] = [].concat(...map['pages']);
     return map;
 }
 
 function customizer(objValue: any, srcValue: any) {
-    if ( Array.isArray(objValue)) {
+    if (Array.isArray(objValue)) {
         return Array.from(new Set(objValue.concat(srcValue)));
     }
 }
@@ -237,9 +237,9 @@ function getUniqueSubPkgConfig(list: object[] = []) {
         name: string,
         resource: string
     }
-    return list.reduce(function(initList: Array<interFaceList>, curEle: interFaceList){
+    return list.reduce(function (initList: Array<interFaceList>, curEle: interFaceList) {
         let curName = curEle.name;
-        let hasEle = initList.some(function(el: interFaceList){
+        let hasEle = initList.some(function (el: interFaceList) {
             return el.name === curName;
         });
         if (!hasEle) initList.push(curEle);
@@ -247,11 +247,11 @@ function getUniqueSubPkgConfig(list: object[] = []) {
     }, []);
 }
 
-function getMergedXConfigContent(config:any) {
+function getMergedXConfigContent(config: any) {
     let env = ANU_ENV;
-    let xConfigJsonDist =  path.join(getMergeDir(), 'source', `${env}Config.json`);
+    let xConfigJsonDist = path.join(getMergeDir(), 'source', `${env}Config.json`);
     let ret = xDiff(config);
-    for(let i in ret) {
+    for (let i in ret) {
         if (i.toLocaleLowerCase() === 'subpackages') {
             ret[i] = getUniqueSubPkgConfig(ret[i]);
         }
@@ -268,22 +268,22 @@ function getSitemapContent(quickRules: any) {
             content: ''
         });
     }
-    const rulesList = Array.from(quickRules).map((el:any)=>{
-        return el[0]; 
+    const rulesList = Array.from(quickRules).map((el: any) => {
+        return el[0];
     });
-   
-    const content = JSON.stringify({rules: rulesList});
+
+    const content = JSON.stringify({ rules: rulesList });
     return Promise.resolve({
         dist: path.join(getMergeDir(), 'source/sitemap.json'),
         content
     });
 }
 
-function getMergedData(configList: any){
+function getMergedData(configList: any) {
     return xDiff(configList);
 }
 
-function getValueByPath(path: any, data: any){
+function getValueByPath(path: any, data: any) {
     path = path.slice(0);
     var ret;
     while (path.length) {
@@ -305,13 +305,13 @@ function xDiff(list: any) {
     let isConfict = false;
     for (let i = 0; i < other.length; i++) {
         let x = diff(first.content, other[i].content) || [];
-        x = x.filter(function(el: any){
+        x = x.filter(function (el: any) {
             // 只比较key/value, 不比较数组, 数组认为是增量合并, diff模块中，如何有数组比较， DiffEdit中path字段必定有index(数字)
             // [ DiffEdit { kind: 'E', path: [ 'list', 0, 'name' ], lhs: 1, rhs: 2 },
-            return el.kind === 'E' 
-                    && el.path.every(function(el: string|number){
-                        return typeof el === 'string'
-                    });
+            return el.kind === 'E'
+                && el.path.every(function (el: string | number) {
+                    return typeof el === 'string'
+                });
         });
         if (x.length) {
             isConfict = true;
@@ -322,25 +322,25 @@ function xDiff(list: any) {
 
     if (isConfict) {
         var errList: any = [];
-        confictQueue.forEach(function(confictEl){
+        confictQueue.forEach(function (confictEl) {
             //let keyName = confictEl.path[confictEl.path.length - 1];
             let kind: any = [];
-            list.forEach(function(el: any){
-                let confictValue =  getValueByPath(confictEl.path, el.content);
-                if ( confictValue ) {
+            list.forEach(function (el: any) {
+                let confictValue = getValueByPath(confictEl.path, el.content);
+                if (confictValue) {
                     let errorItem: any = {};
                     errorItem.confictFile = el.id.replace(/\\/g, '/').split(/\/download\//).pop();
                     errorItem.confictValue = confictValue || '';
                     if (el.type === 'dependencies') {
                         errorItem.confictKeyPath = ['dependencies', ...confictEl.path];
-                    } else if (el.type === 'devDependencies'){
+                    } else if (el.type === 'devDependencies') {
                         errorItem.confictKeyPath = ['devDependencies', ...confictEl.path];
                     } else if (el.type === 'alias') {
                         errorItem.confictKeyPath = ['nanachi', 'alias', ...confictEl.path];
                     } else {
                         errorItem.confictKeyPath = confictEl.path;
                     }
-                    
+
                     errorItem.confictKeyPath = JSON.stringify(errorItem.confictKeyPath);
                     kind.push(errorItem);
                 }
@@ -349,20 +349,20 @@ function xDiff(list: any) {
         });
 
         var msg = '';
-        
-        errList.forEach(function(errEl: any){
+
+        errList.forEach(function (errEl: any) {
             let kindErr = '';
-            errEl.forEach(function(errItem: any){
+            errEl.forEach(function (errItem: any) {
                 var tpl = `
 冲突文件: ${(errItem.confictFile)}
 冲突路径 ${errItem.confictKeyPath}
-冲突详情：${ JSON.stringify({ [ JSON.parse(errItem.confictKeyPath).pop() ] : errItem.confictValue}, null, 4) }
+冲突详情：${JSON.stringify({ [JSON.parse(errItem.confictKeyPath).pop()]: errItem.confictValue }, null, 4)}
 `;
                 kindErr += tpl;
             });
             msg = msg + kindErr + '\n--------------------------------------------------\n';
         });
-        
+
         // eslint-disable-next-line
         console.log(chalk.bold.red('⚠️  发现冲突! 请先解决冲突。\n\n' + msg));
         process.exit(1);
@@ -371,7 +371,7 @@ function xDiff(list: any) {
     isConfict = false;
 
     if (!isConfict) {
-        return list.reduce(function(ret: any, el: any){
+        return list.reduce(function (ret: any, el: any) {
             return merge(ret, el.content, customizer);
         }, {});
     } else {
@@ -397,8 +397,8 @@ function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
     let dist = path.join(getMergeDir(), 'project.config.json');
     let distContent = '';
     if (projectConfigQueue.length) {
-        distContent = JSON.stringify(require( projectConfigQueue[0] ), null, 4);
-    } 
+        distContent = JSON.stringify(require(projectConfigQueue[0]), null, 4);
+    }
     return {
         dist: dist,
         content: distContent
@@ -408,23 +408,23 @@ function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
 // 校验app.js是否正确
 function validateAppJsFileCount(queue: any) {
     let appJsFileCount = queue
-        .filter(function(el: string){
+        .filter(function (el: string) {
             return /\/app\.js$/.test(el);
         })
-        .filter(function(el: string) {
+        .filter(function (el: string) {
             // 非target构建目录
             return !/\/target\//.test(el)
         })
-        .map(function(el: any){
+        .map(function (el: any) {
             return el.replace(/\\/g, '/').split('/download/').pop();
         });
-   
+
 
     if (!appJsFileCount.length || appJsFileCount.length > 1) {
         let msg = '';
         if (!appJsFileCount.length) {
             msg = '校验到无 app.js 文件的拆库工程，请检查是否安装了该包含 app.js 文件的拆库工程.';
-        } else if ( appJsFileCount.length > 1){
+        } else if (appJsFileCount.length > 1) {
             msg = '校验到多个拆库仓库中存在app.js. 在业务线的拆库工程中，有且只能有一个拆库需要包含app.js' + '\n' + JSON.stringify(appJsFileCount, null, 4);
         }
         // eslint-disable-next-line
@@ -434,15 +434,15 @@ function validateAppJsFileCount(queue: any) {
 }
 
 function validateMiniAppProjectConfigJson(queue: any) {
-    let projectConfigJsonList = 
-    queue
-    .filter(function(el: string){
-        return /\/project\.config\.json$/.test(el);
-    })
-    .filter(function(el: string){
-        return !/\/target\//.test(el);
-    })
-    if ( projectConfigJsonList.length > 1 ) {
+    let projectConfigJsonList =
+        queue
+            .filter(function (el: string) {
+                return /\/project\.config\.json$/.test(el);
+            })
+            .filter(function (el: string) {
+                return !/\/target\//.test(el);
+            })
+    if (projectConfigJsonList.length > 1) {
         // eslint-disable-next-line
         console.log(chalk.bold.red('校验到多个拆库仓库中存在project.config.json. 在业务线的拆库工程中，最多只能有一个拆库需要包含project.config.jon:'), chalk.bold.red('\n' + JSON.stringify(projectConfigJsonList, null, 4)));
         process.exit(1);
@@ -451,22 +451,22 @@ function validateMiniAppProjectConfigJson(queue: any) {
 
 //校验config.json路径是否正确
 function validateConfigFileCount(queue: any) {
-    let configFiles = queue.filter(function(el: any){
+    let configFiles = queue.filter(function (el: any) {
         return /Config\.json$/.test(el);
     });
     let errorFiles: any = [];
-    configFiles.forEach(function(el: any) {
+    configFiles.forEach(function (el: any) {
         el = el.replace(/\\/g, '/');
         //'User/nnc_module_qunar_platform/.CACHE/download/nnc_home_qunar/app.json' => nnc_home_qunar
         let projectName = el.replace(/\\/g, '/').split('/download/')[1].split('/')[0];
         let reg = new RegExp(projectName + '/' + ANU_ENV + 'Config.json$');
         let dir = path.dirname(el);
-        if ( reg.test(el) && !fs.existsSync( path.join(dir, 'app.js') ) ) {
+        if (reg.test(el) && !fs.existsSync(path.join(dir, 'app.js'))) {
             errorFiles.push(el);
         }
     });
 
-       
+
     if (errorFiles.length) {
         // eslint-disable-next-line
         console.log(chalk.bold.red('⚠️   校验到拆库仓库中配置文件路径错误，请将该配置文件放到  source 目录中:'));
@@ -477,10 +477,11 @@ function validateConfigFileCount(queue: any) {
 
 
 
-export default function(){
-    
+export default function () {
+
+    console.log('[start mergeFiles]');
     let queue = Array.from(mergeFilesQueue);
-    
+
     validateAppJsFileCount(queue);
     validateConfigFileCount(queue);
     validateMiniAppProjectConfigJson(queue);
@@ -488,7 +489,7 @@ export default function(){
     let map: any = getFilesMap(queue);
     let tasks = [
         //app.js路由注入
-        getMergedAppJsConent( getAppJsSourcePath(queue), map.pages, map.importSyntax),
+        getMergedAppJsConent(getAppJsSourcePath(queue), map.pages, map.importSyntax),
         //*Config.json合并
         getMergedXConfigContent(map.xconfig),
         //alias合并
@@ -502,10 +503,10 @@ export default function(){
         // https://doc.quickapp.cn/framework/sitemap.html
         tasks.push(getSitemapContent(map.quickRules));
     }
-    
+
     function getNodeModulesList(config: any) {
         let mergeData = getMergedData(config);
-        return Object.keys(mergeData).reduce(function(ret, key){
+        return Object.keys(mergeData).reduce(function (ret, key) {
             ret.push(key + '@' + mergeData[key]);
             return ret;
         }, []);
@@ -515,10 +516,10 @@ export default function(){
 
     //['cookie@^0.3.1', 'regenerator-runtime@0.12.1']
     var installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
-    
-    installList =  Array.from(new Set(installList));
 
-    console.log('[installList-1]执行完成------------------------',installList);
+    installList = Array.from(new Set(installList));
+
+    console.log('[installList-1]执行完成------------------------', installList);
 
     // 非快应用过滤hap-tookit安装依赖
     if (ANU_ENV !== 'quick') {
@@ -528,7 +529,7 @@ export default function(){
     } else {
         const hapToolKitVersion = process.env.hapToolKitVersion;
         installList = installList.map((dep) => {
-            if ( /hap\-toolkit/.test(dep) && hapToolKitVersion ) {
+            if (/hap\-toolkit/.test(dep) && hapToolKitVersion) {
                 dep = `hap-toolkit@${hapToolKitVersion}`;
             }
             return dep;
@@ -537,52 +538,52 @@ export default function(){
 
     // 集成环境上过滤这些没用的包安装
     if (process.env.JENKINS_URL && map.ignoreInstallPkg.length) {
-       
+
 
         const ignoreInstallReg = new RegExp(map.ignoreInstallPkg.join('|'));
-        installList = installList.filter(function(el) {
+        installList = installList.filter(function (el) {
             return !ignoreInstallReg.test(el);
         })
     }
-   
-    console.log('[installList-2]执行完成------------------------',installList);
+
+    console.log('[installList-2]执行完成------------------------', installList);
 
 
     //semver.satisfies('1.2.9', '~1.2.3')
-    var installPkgList = installList.reduce(function(needInstall, pkg){
+    var installPkgList = installList.reduce(function (needInstall, pkg) {
         //@xxx/yyy@1.0.0 => xxx
         var pkgMeta = pkg.split('@');
         var pkgName = pkgMeta[0] === '' ? '@' + pkgMeta[1] : pkgMeta[0];
-        
+
         var p = path.join(cwd, 'node_modules', pkgName, 'package.json');
         var isExit = fs.existsSync(p);
         if (!isExit) {
             needInstall.push(pkg);
-        } 
+        }
         return needInstall;
     }, []);
-    console.log('[installList-3]执行完成------------------------',installList);
+    console.log('[installList-3]执行完成------------------------', installList);
 
 
-    installPkgList = installPkgList.filter(function(dep:string) {
+    installPkgList = installPkgList.filter(function (dep: string) {
         // 取后缀，过滤非法依赖
         return !ignoreExt.includes('.' + dep.split('.').pop())
     })
-    console.log('[installPkgList]执行完成------------------------',installPkgList);
+    console.log('[installPkgList]执行完成------------------------', installPkgList);
 
     //如果本地node_modules存在该模块，则不安装
     if (installPkgList.length) {
         //installPkgList = installPkgList.slice(0,2);
-        
+
         let installList = installPkgList.join(' ');
-        
+
         // --no-save 是为了不污染用户的package.json
         // eslint-disable-next-line
         let installListLog = installPkgList.join('\n');
-        
+
         fs.ensureDir(path.join(cwd, 'node_modules'));
         const npmRegistry = process.env.npmRegistry;
-        console.log('[npmRegistry]执行完成------------------------',npmRegistry);
+        console.log('[npmRegistry]执行完成------------------------', npmRegistry);
 
         let cmd = '';
         let installMsg = '';
@@ -593,7 +594,7 @@ export default function(){
             cmd = `npm install --prefer-offline ${installList} --no-save`;
             installMsg = `🚚 正在安装拆库依赖, 请稍候...\n${installListLog}`;
         }
-    
+
 
         console.log(chalk.bold.green(installMsg));
 
@@ -602,24 +603,24 @@ export default function(){
             silent: false
         });
 
-       
+
         if (/npm ERR/.test(std.stderr)) {
             // eslint-disable-next-line
             console.log(chalk.red(std.stderr));
             process.exit(1);
         }
     }
-    
+
     return Promise.all(tasks)
-        .then(function(queue){
-            queue = queue.map(function( {dist, content} ){
-                return new Promise(function(rel, rej){
+        .then(function (queue) {
+            queue = queue.map(function ({ dist, content }) {
+                return new Promise(function (rel, rej) {
                     if (!content) {
                         rel(1);
                         return;
                     }
                     fs.ensureFileSync(dist);
-                    fs.writeFile( dist, content, function(err: any){
+                    fs.writeFile(dist, content, function (err: any) {
                         if (err) {
                             rej(err);
                         } else {

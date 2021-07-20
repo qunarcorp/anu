@@ -117,33 +117,24 @@ platforms.forEach(function (el) {
             des,
             BUILD_OPTIONS,
             async (options) => {
-                console.log('start build------------------------');
                 const isChaika = isChaikaMode();
-                console.log('[isChaika]------------------------', isChaika);
                 Object.assign(config, {
                     buildType
                 });
-                console.log('[isChaconfigika]------------------------', config);
                 if (isChaika) {
                     checkChaikaPatchInstalled();
-                    console.log('[checkChaikaPatchInstalled]执行完成------------------------');
-                    const mergeDir = getMergeDir()
-                    console.log('')
                     fs.emptyDirSync(getMergeDir());
                     fs.emptyDirSync(getMultipleBuildTargetDir());
                 }
 
                 copyReactLibFile(buildType);
-                console.log('[copyReactLibFile]执行完成------------------------');
 
                 if (isChaika) {
                     try {
                         installDefaltChaikaModule(buildType);
-                        console.log('[installDefaltChaikaModule]执行完成------------------------');
                         await runChaikaMergeTask();
-                        console.log('[runChaikaMergeTask]执行完成------------------------');
                     } catch (err) {
-                        console.error(err);
+                        console.error('[build error]',err);
                         process.exit(1);
                     }
                 }

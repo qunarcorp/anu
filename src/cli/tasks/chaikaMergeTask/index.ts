@@ -25,17 +25,20 @@ function makeSymLink(){
 
 export default async function(){
     try {
+        console.log('[copySource]前');
         //copy 资源
         await copySource();
+        console.log('[mergeFiles]前');
         //合并各种配置，注入
         await mergeFiles();
+        console.log('[makeSymLink]前');
         //创建软连接
         makeSymLink();
-
+        console.log('[changeWorkingDir]前');
         changeWorkingDir();
-        
+        console.log('[changeWorkingDir]后');
     } catch (err) {
         // eslint-disable-next-line
-        console.log(err);
+        console.log('chaikaMerge error:',err);
     }
 };

@@ -395,6 +395,7 @@ function validateConfigFileCount(queue) {
     }
 }
 function default_1() {
+    console.log('[start mergeFiles]');
     let queue = Array.from(mergeFilesQueue);
     validateAppJsFileCount(queue);
     validateConfigFileCount(queue);
