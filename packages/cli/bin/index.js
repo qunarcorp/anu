@@ -72,9 +72,6 @@ function copyReactLibFile(buildType) {
     const dist = isChaikaMode()
         ? path.join(projectRootPath, '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix(), 'source', ReactLibName)
         : path.join(projectRootPath, 'source', ReactLibName);
-    console.log('[copyReactLibFile]执行中------------------------');
-    console.log('dist:', dist);
-    console.log('isChaikaMode():', isChaikaMode());
     fs_extra_1.default.ensureFileSync(dist);
     fs_extra_1.default.copySync(src, dist);
 }

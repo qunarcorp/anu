@@ -105,8 +105,6 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
 
 
 function copyDownLoadToNnc() {
-    console.log('getDownLoadDir():',getDownLoadDir());
-    console.log('downLoadDir:',downLoadDir);
     let files = glob.sync( 
         getDownLoadDir()  + '/**', 
         {nodir: true}

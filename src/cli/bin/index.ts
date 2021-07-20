@@ -80,9 +80,6 @@ function copyReactLibFile(buildType: string) {
             ReactLibName
         )
         : path.join(projectRootPath, 'source', ReactLibName);
-    console.log('[copyReactLibFile]执行中------------------------');
-    console.log('dist:', dist);
-    console.log('isChaikaMode():', isChaikaMode());
     fs.ensureFileSync(dist);
     fs.copySync(src, dist);
 }

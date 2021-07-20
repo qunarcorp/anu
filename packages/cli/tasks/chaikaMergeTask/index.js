@@ -39,15 +39,10 @@ function makeSymLink() {
 function default_1() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log('[copySource]前');
             yield copySource_1.default();
-            console.log('[mergeFiles]前');
             yield mergeFiles_1.default();
-            console.log('[makeSymLink]前');
             makeSymLink();
-            console.log('[changeWorkingDir]前');
             changeWorkingDir();
-            console.log('[changeWorkingDir]后');
         }
         catch (err) {
             console.log('chaikaMerge error:', err);

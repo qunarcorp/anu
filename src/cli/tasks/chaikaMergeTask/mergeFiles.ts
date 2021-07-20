@@ -407,7 +407,6 @@ function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
 
 // 校验app.js是否正确
 function validateAppJsFileCount(queue: any) {
-    console.log('[start validateAppJsFileCount]');
     let appJsFileCount = queue
         .filter(function (el: string) {
             return /\/app\.js$/.test(el);
@@ -420,7 +419,6 @@ function validateAppJsFileCount(queue: any) {
             return el.replace(/\\/g, '/').split('/download/').pop();
         });
 
-    console.log('appJsFileCount:',appJsFileCount);
     if (!appJsFileCount.length || appJsFileCount.length > 1) {
         let msg = '';
         if (!appJsFileCount.length) {
@@ -481,9 +479,7 @@ function validateConfigFileCount(queue: any) {
 
 export default function () {
 
-    console.log('[start mergeFiles]',mergeFilesQueue);
     let queue = Array.from(mergeFilesQueue);
-    // console.log('queue1',queue);
     validateAppJsFileCount(queue);
     validateConfigFileCount(queue);
     validateMiniAppProjectConfigJson(queue);
@@ -521,8 +517,6 @@ export default function () {
 
     installList = Array.from(new Set(installList));
 
-    console.log('[installList-1]执行完成------------------------', installList);
-
     // 非快应用过滤hap-tookit安装依赖
     if (ANU_ENV !== 'quick') {
         installList = installList.filter((dep) => {
@@ -548,9 +542,6 @@ export default function () {
         })
     }
 
-    console.log('[installList-2]执行完成------------------------', installList);
-
-
     //semver.satisfies('1.2.9', '~1.2.3')
     var installPkgList = installList.reduce(function (needInstall, pkg) {
         //@xxx/yyy@1.0.0 => xxx
@@ -564,14 +555,11 @@ export default function () {
         }
         return needInstall;
     }, []);
-    console.log('[installList-3]执行完成------------------------', installList);
-
 
     installPkgList = installPkgList.filter(function (dep: string) {
         // 取后缀，过滤非法依赖
         return !ignoreExt.includes('.' + dep.split('.').pop())
     })
-    console.log('[installPkgList]执行完成------------------------', installPkgList);
 
     //如果本地node_modules存在该模块，则不安装
     if (installPkgList.length) {
@@ -585,7 +573,6 @@ export default function () {
 
         fs.ensureDir(path.join(cwd, 'node_modules'));
         const npmRegistry = process.env.npmRegistry;
-        console.log('[npmRegistry]执行完成------------------------', npmRegistry);
 
         let cmd = '';
         let installMsg = '';
@@ -596,7 +583,6 @@ export default function () {
             cmd = `npm install --prefer-offline ${installList} --no-save`;
             installMsg = `🚚 正在安装拆库依赖, 请稍候...\n${installListLog}`;
         }
-
 
         console.log(chalk.bold.green(installMsg));
 

@@ -339,7 +339,6 @@ function getMiniAppProjectConfigJson(projectConfigQueue = []) {
     };
 }
 function validateAppJsFileCount(queue) {
-    console.log('[start validateAppJsFileCount]');
     let appJsFileCount = queue
         .filter(function (el) {
         return /\/app\.js$/.test(el);
@@ -350,7 +349,6 @@ function validateAppJsFileCount(queue) {
         .map(function (el) {
         return el.replace(/\\/g, '/').split('/download/').pop();
     });
-    console.log('appJsFileCount:', appJsFileCount);
     if (!appJsFileCount.length || appJsFileCount.length > 1) {
         let msg = '';
         if (!appJsFileCount.length) {
@@ -398,7 +396,6 @@ function validateConfigFileCount(queue) {
     }
 }
 function default_1() {
-    console.log('[start mergeFiles]', mergeFilesQueue);
     let queue = Array.from(mergeFilesQueue);
     validateAppJsFileCount(queue);
     validateConfigFileCount(queue);
@@ -422,7 +419,6 @@ function default_1() {
     }
     var installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
     installList = Array.from(new Set(installList));
-    console.log('[installList-1]执行完成------------------------', installList);
     if (ANU_ENV !== 'quick') {
         installList = installList.filter((dep) => {
             return !/hap\-toolkit/.test(dep);
@@ -443,7 +439,6 @@ function default_1() {
             return !ignoreInstallReg.test(el);
         });
     }
-    console.log('[installList-2]执行完成------------------------', installList);
     var installPkgList = installList.reduce(function (needInstall, pkg) {
         var pkgMeta = pkg.split('@');
         var pkgName = pkgMeta[0] === '' ? '@' + pkgMeta[1] : pkgMeta[0];
@@ -454,17 +449,14 @@ function default_1() {
         }
         return needInstall;
     }, []);
-    console.log('[installList-3]执行完成------------------------', installList);
     installPkgList = installPkgList.filter(function (dep) {
         return !ignoreExt.includes('.' + dep.split('.').pop());
     });
-    console.log('[installPkgList]执行完成------------------------', installPkgList);
     if (installPkgList.length) {
         let installList = installPkgList.join(' ');
         let installListLog = installPkgList.join('\n');
         fs.ensureDir(path.join(cwd, 'node_modules'));
         const npmRegistry = process.env.npmRegistry;
-        console.log('[npmRegistry]执行完成------------------------', npmRegistry);
         let cmd = '';
         let installMsg = '';
         if (npmRegistry) {

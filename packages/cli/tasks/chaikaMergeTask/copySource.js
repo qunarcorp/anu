@@ -78,8 +78,6 @@ function copyCurrentProjectToDownLoad() {
     return Promise.all(allPromiseCopy);
 }
 function copyDownLoadToNnc() {
-    console.log('getDownLoadDir():', getDownLoadDir());
-    console.log('downLoadDir:', downLoadDir);
     let files = glob_1.default.sync(getDownLoadDir() + '/**', { nodir: true });
     files = files.filter((file) => {
         let fileName = path.parse(file).base;
