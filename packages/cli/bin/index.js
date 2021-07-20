@@ -112,7 +112,9 @@ platforms_1.default.forEach(function (el) {
             copyReactLibFile(buildType);
             if (isChaika) {
                 try {
-                    installDefaultModule_1.default(buildType);
+                    if (!process.env.JENKINS_URL) {
+                        installDefaultModule_1.default(buildType);
+                    }
                     yield index_2.default();
                 }
                 catch (err) {

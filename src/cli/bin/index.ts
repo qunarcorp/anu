@@ -131,7 +131,11 @@ platforms.forEach(function (el) {
 
                 if (isChaika) {
                     try {
-                        installDefaltChaikaModule(buildType);
+                        // 集成环境不安装默认，因为已经安装过了
+                        if (!process.env.JENKINS_URL) {
+                            installDefaltChaikaModule(buildType);
+                        }
+                        
                         await runChaikaMergeTask();
                     } catch (err) {
                         console.error('[build error]',err);
