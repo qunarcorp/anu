@@ -339,6 +339,7 @@ function getMiniAppProjectConfigJson(projectConfigQueue = []) {
     };
 }
 function validateAppJsFileCount(queue) {
+    console.log('[start validateAppJsFileCount]');
     let appJsFileCount = queue
         .filter(function (el) {
         return /\/app\.js$/.test(el);
@@ -349,6 +350,7 @@ function validateAppJsFileCount(queue) {
         .map(function (el) {
         return el.replace(/\\/g, '/').split('/download/').pop();
     });
+    console.log('appJsFileCount:', appJsFileCount);
     if (!appJsFileCount.length || appJsFileCount.length > 1) {
         let msg = '';
         if (!appJsFileCount.length) {
@@ -375,6 +377,7 @@ function validateMiniAppProjectConfigJson(queue) {
     }
 }
 function validateConfigFileCount(queue) {
+    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el) {
         return /Config\.json$/.test(el);
     });
@@ -395,7 +398,7 @@ function validateConfigFileCount(queue) {
     }
 }
 function default_1() {
-    console.log('[start mergeFiles]');
+    console.log('[start mergeFiles]', mergeFilesQueue);
     let queue = Array.from(mergeFilesQueue);
     validateAppJsFileCount(queue);
     validateConfigFileCount(queue);

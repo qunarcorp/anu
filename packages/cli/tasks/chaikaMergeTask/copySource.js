@@ -16,6 +16,7 @@ const path = __importStar(require("path"));
 const utils_1 = __importDefault(require("../../packages/utils"));
 const isMutilePack_1 = require("./isMutilePack");
 const cwd = process.cwd();
+const downLoadDir = path.join(cwd, '.CACHE/download');
 const mergeFilesQueue = require('./mergeFilesQueue');
 const ignoreFiles = [
     'package-lock.json'
@@ -77,6 +78,8 @@ function copyCurrentProjectToDownLoad() {
     return Promise.all(allPromiseCopy);
 }
 function copyDownLoadToNnc() {
+    console.log('getDownLoadDir():', getDownLoadDir());
+    console.log('downLoadDir:', downLoadDir);
     let files = glob_1.default.sync(getDownLoadDir() + '/**', { nodir: true });
     files = files.filter((file) => {
         let fileName = path.parse(file).base;

@@ -407,6 +407,7 @@ function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
 
 // 校验app.js是否正确
 function validateAppJsFileCount(queue: any) {
+    console.log('[start validateAppJsFileCount]');
     let appJsFileCount = queue
         .filter(function (el: string) {
             return /\/app\.js$/.test(el);
@@ -419,7 +420,7 @@ function validateAppJsFileCount(queue: any) {
             return el.replace(/\\/g, '/').split('/download/').pop();
         });
 
-
+    console.log('appJsFileCount:',appJsFileCount);
     if (!appJsFileCount.length || appJsFileCount.length > 1) {
         let msg = '';
         if (!appJsFileCount.length) {
@@ -451,6 +452,7 @@ function validateMiniAppProjectConfigJson(queue: any) {
 
 //校验config.json路径是否正确
 function validateConfigFileCount(queue: any) {
+    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el: any) {
         return /Config\.json$/.test(el);
     });
@@ -479,9 +481,9 @@ function validateConfigFileCount(queue: any) {
 
 export default function () {
 
-    console.log('[start mergeFiles]');
+    console.log('[start mergeFiles]',mergeFilesQueue);
     let queue = Array.from(mergeFilesQueue);
-
+    // console.log('queue1',queue);
     validateAppJsFileCount(queue);
     validateConfigFileCount(queue);
     validateMiniAppProjectConfigJson(queue);

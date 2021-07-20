@@ -5,7 +5,7 @@ import config from '../../config/config';
 import utils from '../../packages/utils';
 import {getMultiplePackDirPrefix} from './isMutilePack';
 const cwd = process.cwd();
-
+const downLoadDir = path.join(cwd, '.CACHE/download');
 const mergeFilesQueue = require('./mergeFilesQueue');
 //这些文件对项目编译时来说，没啥用
 const ignoreFiles: any = [
@@ -105,6 +105,8 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
 
 
 function copyDownLoadToNnc() {
+    console.log('getDownLoadDir():',getDownLoadDir());
+    console.log('downLoadDir:',downLoadDir);
     let files = glob.sync( 
         getDownLoadDir()  + '/**', 
         {nodir: true}
