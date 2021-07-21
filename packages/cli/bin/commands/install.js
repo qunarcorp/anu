@@ -26,7 +26,9 @@ const fs = __importStar(require("fs-extra"));
 const axios_1 = __importDefault(require("axios"));
 const glob_1 = __importDefault(require("glob"));
 const isMutilePack_1 = require("../../tasks/chaikaMergeTask/isMutilePack");
+const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../../packages/utils"));
+const platforms_1 = __importDefault(require("../../consts/platforms"));
 const cwd = process.cwd();
 function writeVersions(moduleName, version) {
     let defaultVJson = {};
@@ -38,11 +40,7 @@ function writeVersions(moduleName, version) {
     catch (err) {
     }
     defaultVJson[moduleName] = version;
-    fs.writeFile(vPath, JSON.stringify(defaultVJson, null, 4), (err) => {
-        if (err) {
-            console.log(err);
-        }
-    });
+    fs.writeFileSync(vPath, JSON.stringify(defaultVJson, null, 4));
 }
 function unPack(src, dist) {
     dist = path.join(dist, 'source');
@@ -66,6 +64,7 @@ function unPack(src, dist) {
         });
     }
     catch (err) {
+        console.log('[unPack error]:', err);
     }
 }
 function isOldChaikaConfig(name = "") {
@@ -159,6 +158,10 @@ function downLoadPkgDepModule() {
     });
 }
 function default_1(name, opts) {
+    if (opts.platform && platforms_1.default.some((v) => v.buildType === opts.platform)) {
+        config_1.default.buildType = opts.platform;
+    }
+    console.log(chalk_1.default.bold.yellow(`传入的平台参数：${opts.platform}，处理后的平台参数：${config_1.default.buildType}`));
     if (process.env.NANACHI_CHAIK_MODE != 'CHAIK_MODE') {
         console.log(chalk_1.default.bold.red('需在package.json中配置{"nanachi": {"chaika": true }}, 拆库开发功能请查阅文档: https://rubylouvre.github.io/nanachi/documents/chaika.html'));
         process.exit(1);
