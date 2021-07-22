@@ -23,6 +23,9 @@ function getDistPath(sourcePath) {
         else if (/\/source\//.test(sourcePath)) {
             distPath = path_1.default.join(index_1.default.getProjectRootPath(), `${config_1.default.buildDir}`, sourcePath.split('/source/').pop());
         }
+        else if (/\/src\//.test(sourcePath)) {
+            distPath = sourcePath;
+        }
         else {
             distPath = path_1.default.join(index_1.default.getProjectRootPath(), `${config_1.default.buildDir}`);
         }
