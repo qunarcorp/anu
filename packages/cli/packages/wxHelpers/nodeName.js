@@ -14,7 +14,9 @@ let builtInStr = tags.join(',') + ',' +
     'navigator,audio,image,camera,video,live-player,live-pusher,map,canvas,open-data,web-view,radio-group,' +
     'slot,wxs,checkbox-group,loading';
 builtInStr = builtInStr + ',' + getNativeComponentsNode_1.default().join(',');
-let builtIn = {};
+let builtIn = {
+    'page-meta': 'page-meta',
+};
 builtInStr.replace(rword, function (el) {
     builtIn[el] = el;
     return el;
