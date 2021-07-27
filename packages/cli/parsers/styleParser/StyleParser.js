@@ -41,7 +41,7 @@ class StyleParser {
         this.loaderContext = loaderContext || {};
     }
     getRelativePath(filepath) {
-        if (/node_modules[\\\/]schnee-ui/.test(filepath)) {
+        if (/node_modules[\\\/]schnee-ui/.test(filepath) || /node_modules[\\\/]\@qnpm\/nui/.test(filepath)) {
             return path.join('npm', path.relative(path.resolve(process.cwd(), 'node_modules'), filepath));
         }
         else {
