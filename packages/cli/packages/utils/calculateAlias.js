@@ -29,36 +29,38 @@ const getImportSpecifierFilePath = (function () {
             comments: false,
             ast: true,
             plugins: [
-                function () {
-                    return {
-                        visitor: {
-                            Program: {
-                                exit: function (astPath) {
-                                    const body = astPath.get('body');
-                                    const allIsExportNamedDeclaration = body.every(function ({ node }) {
-                                        return node.type === 'ExportNamedDeclaration' && node.specifiers.length === 1;
-                                    });
-                                    if (!allIsExportNamedDeclaration) {
-                                        return;
+                [
+                    function () {
+                        return {
+                            visitor: {
+                                Program: {
+                                    exit: function (astPath) {
+                                        const body = astPath.get('body');
+                                        const allIsExportNamedDeclaration = body.every(function ({ node }) {
+                                            return node.type === 'ExportNamedDeclaration' && node.specifiers.length === 1;
+                                        });
+                                        if (!allIsExportNamedDeclaration) {
+                                            return;
+                                        }
+                                        const exportInfo = body
+                                            .map(function ({ node }) {
+                                            let src = path.join(path.parse(entryFilePath).dir, node.source.value);
+                                            src = src.replace(/(\.js)$/, '').replace(/(\/index)$/, '') + '/index.js';
+                                            return {
+                                                name: node.specifiers[0].exported.name,
+                                                src
+                                            };
+                                        }).reduce(function (acc, cur) {
+                                            acc[cur.name] = cur.src;
+                                            return acc;
+                                        }, {});
+                                        ret[entryFilePath] = exportInfo;
                                     }
-                                    const exportInfo = body
-                                        .map(function ({ node }) {
-                                        let src = path.join(path.parse(entryFilePath).dir, node.source.value);
-                                        src = src.replace(/(\.js)$/, '').replace(/(\/index)$/, '') + '/index.js';
-                                        return {
-                                            name: node.specifiers[0].exported.name,
-                                            src
-                                        };
-                                    }).reduce(function (acc, cur) {
-                                        acc[cur.name] = cur.src;
-                                        return acc;
-                                    }, {});
-                                    ret[entryFilePath] = exportInfo;
                                 }
                             }
-                        }
-                    };
-                }
+                        };
+                    }
+                ]
             ]
         });
         return ret[entryFilePath][ImportSpecifierIdentifier];
@@ -92,21 +94,11 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
     }
     try {
         let from = path.dirname(srcPath);
-        let isNncNpmComponentsLib = false;
         let to = nodeResolve.sync(importerSource, {
             basedir: _1.default.getProjectRootPath(),
             preserveSymlinks: true,
             moduleDirectory: 'node_modules',
-            packageFilter: function (pkg) {
-                isNncNpmComponentsLib = !!pkg.nnc;
-                return pkg;
-            }
         });
-        if (isNncNpmComponentsLib) {
-            if (importSpecifierName) {
-                to = getImportSpecifierFilePath(importSpecifierName, to);
-            }
-        }
         to = getDistPath(to);
         from = getDistPath(from);
         return fixPath(path.relative(from, to));

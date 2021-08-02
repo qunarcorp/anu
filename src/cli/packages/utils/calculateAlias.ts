@@ -5,59 +5,61 @@ const babel = require('@babel/core');
 const nodeResolve = require('resolve');
 
 const getDistPath = require('./getDistPath');
-function fixPath (p: string) {
+function fixPath(p: string) {
     p = p.replace(/\\/g, '/');
     return /^\w/.test(p) ? './' + p : p;
 }
 
 // 获取 import {a, b, c} from '@xxx/yyy', a, b, c 对应的模块真实路径，只适用于nanachi ui 组件库
-const getImportSpecifierFilePath = (function() {
+const getImportSpecifierFilePath = (function () {
     const ret = {};
-    return function(ImportSpecifierIdentifier: string, entryFilePath: string) {
+    return function (ImportSpecifierIdentifier: string, entryFilePath: string) {
         babel.transformFileSync(entryFilePath, {
             configFile: false,
             babelrc: false,
             comments: false,
             ast: true,
             plugins: [
-               function() {
-                   return {
-                       visitor: {
-                          Program: {
-                            exit: function(astPath:any) {
-                                const body = astPath.get('body');
-                                
-                                const allIsExportNamedDeclaration = body.every(function({node}) {
-                                    // export { default as Nbutton } from './source/components/Button';
-                                    return node.type === 'ExportNamedDeclaration' && node.specifiers.length === 1;
-                                });
+                [
+                    function () {
+                        return {
+                            visitor: {
+                                Program: {
+                                    exit: function (astPath: any) {
+                                        const body = astPath.get('body');
 
-                                if (!allIsExportNamedDeclaration) {
-                                    return;
-                                }
+                                        const allIsExportNamedDeclaration = body.every(function ({ node }) {
+                                            // export { default as Nbutton } from './source/components/Button';
+                                            return node.type === 'ExportNamedDeclaration' && node.specifiers.length === 1;
+                                        });
 
-                                const exportInfo = body
-                                .map(function({node}) {
-                                    let src = path.join(path.parse(entryFilePath).dir, node.source.value);
-                                    src = src.replace(/(\.js)$/, '').replace(/(\/index)$/, '') + '/index.js';
+                                        if (!allIsExportNamedDeclaration) {
+                                            return;
+                                        }
 
-                                    return {
-                                        name: node.specifiers[0].exported.name,
-                                        src
+                                        const exportInfo = body
+                                            .map(function ({ node }) {
+                                                let src = path.join(path.parse(entryFilePath).dir, node.source.value);
+                                                src = src.replace(/(\.js)$/, '').replace(/(\/index)$/, '') + '/index.js';
+
+                                                return {
+                                                    name: node.specifiers[0].exported.name,
+                                                    src
+                                                }
+                                            }).reduce(function (acc, cur) {
+                                                acc[cur.name] = cur.src;
+                                                return acc;
+                                            }, {});
+
+                                        ret[entryFilePath] = exportInfo;
+
                                     }
-                                }).reduce(function(acc, cur) {
-                                    acc[cur.name] = cur.src;
-                                    return acc;
-                                }, {});
-
-                                ret[entryFilePath] = exportInfo;
-                                
+                                }
                             }
-                         }
-                       }
-                       
-                   }
-               }
+
+                        }
+                    }
+                ]
             ]
         });
         return ret[entryFilePath][ImportSpecifierIdentifier];
@@ -81,7 +83,7 @@ const getImportSpecifierFilePath = (function() {
 // @import url('@globalStyle/reset.css');
 
 
-function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: Array<string|RegExp>, importSpecifierName: string): string {
+function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: Array<string | RegExp>, importSpecifierName: string): string {
     const aliasMap = require('./calculateAliasConfig')();
     if (ignoredPaths && ignoredPaths.find((p) => importerSource === p)) {
         return '';
@@ -101,15 +103,15 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
     //import Cat from '@components/Cat/index';
     //import Cat from '@PageIndex/Components/Cat/index;
     //@import url('@globalStyle/reset.scss');
-    if ( aliasMap[ rsegments[0] ] ) {
+    if (aliasMap[rsegments[0]]) {
         let from = path.dirname(getDistPath(srcPath));
         //@common/b/c ==> userPath/project/source/common/a/b
-        let to = importerSource.replace( 
+        let to = importerSource.replace(
             new RegExp(rsegments[0]),
-            aliasMap[ rsegments[0] ]
+            aliasMap[rsegments[0]]
         );
         to = getDistPath(to);
-    
+
         return fixPath(path.relative(from, to));
     }
 
@@ -127,27 +129,27 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
     // import cookie from 'cookie';
     try {
         let from = path.dirname(srcPath);
-        let isNncNpmComponentsLib = false;
-       
+        // let isNncNpmComponentsLib = false;
+
         let to = nodeResolve.sync(importerSource, {
             basedir: utils.getProjectRootPath(),
             preserveSymlinks: true,
             moduleDirectory: 'node_modules',
-            packageFilter: function(pkg) {
-                isNncNpmComponentsLib = !!pkg.nnc;
-                return pkg;
-            }
+            // packageFilter: function (pkg) {
+            //     isNncNpmComponentsLib = !!pkg.nnc;
+            //     return pkg;
+            // }
         });
 
 
-        if (isNncNpmComponentsLib) {
-            if (importSpecifierName) {
-                to = getImportSpecifierFilePath(importSpecifierName, to);
-            }
-           
-        }
+        // if (isNncNpmComponentsLib) {
+        //     if (importSpecifierName) {
+        //         to = getImportSpecifierFilePath(importSpecifierName, to);
+        //     }
 
-        
+        // }
+
+
         to = getDistPath(to);
         from = getDistPath(from);
 
@@ -158,7 +160,7 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
         console.log(e);
         return;
     }
-    
+
 }
 module.exports = calculateAlias;
 export default calculateAlias;

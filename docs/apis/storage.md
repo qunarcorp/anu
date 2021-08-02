@@ -163,7 +163,7 @@ Object object
 代码示例：
 
 ```javascript
-React.api.removeStorageSync({ key: 'currentCity' });
+React.api.removeStorageSync('currentCity')
 ```
 
 ## clearStorage(Object object)

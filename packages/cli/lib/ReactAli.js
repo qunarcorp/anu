@@ -2528,6 +2528,15 @@ var more = function more(api) {
             var res = api.getStorageSync({ key: a });
             return res.data || '';
         },
+        removeStorageSync: function _(a) {
+            if (a == null) throw new Error('key 不能是 undefined或者是空');       
+            if (typeof a == 'string'){//考虑兼容问题
+                return api.removeStorageSync({ key: a });
+            } else {
+                return api.removeStorageSync(a);
+            }   
+            
+        },
         setStorageSync: function _(a1, a2) {
             if (a1 == null) throw new Error('key 不能是 undefined或者是空');
             var k = {};

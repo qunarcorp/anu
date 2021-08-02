@@ -10,34 +10,42 @@ let visitor = {
         enter(astPath) {
             const node = astPath.node;
             const methodName = node.key.name;
+            if (!methodName) {
+                return;
+            }
             const siblingsNodes = astPath.container;
             const hasCurrentPlatformMethod = siblingsNodes.some(siblingsNode => siblingsNode.type === 'ClassMethod' && siblingsNode.key.name === (methodName + '_' + config_1.default.buildType));
             if (hasCurrentPlatformMethod) {
                 astPath.remove();
                 return false;
             }
-            for (let i = 0, pLen = platforms_1.default.length; i < pLen; i++) {
-                const platformType = platforms_1.default[i].buildType;
-                if (methodName.endsWith(`_${platformType}`)) {
-                    if (platformType === config_1.default.buildType) {
-                        const methodNameWithoutSuf = methodName.substr(0, methodName.length - platformType.length - 1);
-                        let indexWithoutSuf = -1;
-                        for (let j = 0, len = siblingsNodes.length; j < len; j++) {
-                            if (siblingsNodes[j].type === 'ClassMethod' && siblingsNodes[j].key.name === methodNameWithoutSuf) {
-                                indexWithoutSuf = j;
-                                break;
+            try {
+                for (let i = 0, pLen = platforms_1.default.length; i < pLen; i++) {
+                    const platformType = platforms_1.default[i].buildType;
+                    if (methodName.endsWith(`_${platformType}`)) {
+                        if (platformType === config_1.default.buildType) {
+                            const methodNameWithoutSuf = methodName.substr(0, methodName.length - platformType.length - 1);
+                            let indexWithoutSuf = -1;
+                            for (let j = 0, len = siblingsNodes.length; j < len; j++) {
+                                if (siblingsNodes[j].type === 'ClassMethod' && siblingsNodes[j].key.name === methodNameWithoutSuf) {
+                                    indexWithoutSuf = j;
+                                    break;
+                                }
                             }
+                            if (indexWithoutSuf != -1) {
+                                astPath.getSibling(indexWithoutSuf).remove();
+                            }
+                            astPath.node.key.name = methodNameWithoutSuf;
                         }
-                        if (indexWithoutSuf != -1) {
-                            astPath.getSibling(indexWithoutSuf).remove();
+                        else {
+                            astPath.remove();
                         }
-                        astPath.node.key.name = methodNameWithoutSuf;
+                        break;
                     }
-                    else {
-                        astPath.remove();
-                    }
-                    break;
                 }
+            }
+            catch (error) {
+                console.error("transformIfFun-error:", error);
             }
         }
     }
