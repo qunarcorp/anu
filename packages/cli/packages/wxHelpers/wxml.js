@@ -211,6 +211,16 @@ let visitor = {
             }
         }
     },
+    BinaryExpression: {
+        enter(astPath, state) {
+            let expr = astPath.node;
+            ['left', 'right'].forEach(v => {
+                if (t.isLiteral(expr[v])) {
+                    expr[v].extra.raw = expr[v].extra.raw.replace(/\"/g, "'");
+                }
+            });
+        }
+    },
     JSXExpressionContainer: {
         exit(astPath, state) {
             let expr = astPath.node.expression;
