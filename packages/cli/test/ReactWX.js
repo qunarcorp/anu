@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2021-04-09T09
+ * 运行于微信小程序的React by 司徒正美 Copyright 2021-08-06T06
  * IE9+
  */
 
@@ -623,6 +623,8 @@ var onAndSyncApis = {
   onHCEMessage: true,
   onGetWifiList: true,
   onWifiConnected: true,
+  onAppShow: true,
+  offAppShow: true,
   setStorageSync: true,
   getStorageSync: true,
   getStorageInfoSync: true,
@@ -630,6 +632,8 @@ var onAndSyncApis = {
   clearStorageSync: true,
   getSystemInfoSync: true,
   getExtConfigSync: true,
+  getMenuButtonBoundingClientRect: true,
+  getFileSystemManager: true,
   getLogManager: true
 };
 var noPromiseApis = {

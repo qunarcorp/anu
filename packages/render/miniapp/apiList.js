@@ -19,6 +19,8 @@ export var onAndSyncApis = {
     onHCEMessage: true,
     onGetWifiList: true,
     onWifiConnected: true,
+    onAppShow: true,
+    offAppShow: true,
     setStorageSync: true,
     getStorageSync: true,
     getStorageInfoSync: true,
@@ -26,6 +28,9 @@ export var onAndSyncApis = {
     clearStorageSync: true,
     getSystemInfoSync: true,
     getExtConfigSync: true,
+    //界面
+    getMenuButtonBoundingClientRect: true,
+    getFileSystemManager: true,
     getLogManager: true
 };
 export var noPromiseApis = {

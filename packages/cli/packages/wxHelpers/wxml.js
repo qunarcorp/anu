@@ -214,11 +214,16 @@ let visitor = {
     BinaryExpression: {
         enter(astPath, state) {
             let expr = astPath.node;
-            ['left', 'right'].forEach(v => {
-                if (t.isLiteral(expr[v])) {
-                    expr[v].extra.raw = expr[v].extra.raw.replace(/\"/g, "'");
-                }
-            });
+            try {
+                ['left', 'right'].forEach(v => {
+                    if (t.isStringLiteral(expr[v])) {
+                        expr[v].extra.raw = expr[v].extra.raw.replace(/\"/g, "'");
+                    }
+                });
+            }
+            catch (error) {
+                console.log('BinaryExpression-error', error);
+            }
         }
     },
     JSXExpressionContainer: {
