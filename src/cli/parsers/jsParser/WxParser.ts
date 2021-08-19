@@ -13,7 +13,7 @@ class WxParser extends JavascriptParser{
             configFile: false,
             babelrc: false,
             comments: false,
-            minified: true,
+            // minified: true,
             ast: true,
             plugins: [
                
@@ -62,6 +62,7 @@ class WxParser extends JavascriptParser{
             path: this.relativePath,
             code: res.code,
             ast: this.ast,
+            fileMap: res.map,
             extraModules: this.extraModules
         });
         return res;

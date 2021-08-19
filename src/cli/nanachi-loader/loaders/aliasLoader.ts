@@ -9,6 +9,8 @@ function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: 
     const babelConfig: babel.TransformOptions = {
         configFile: false,
         babelrc: false,
+        sourceMaps: true,
+        sourceFileName: relativePath,
         plugins: [
             [
                 require('babel-plugin-module-resolver'),       
@@ -27,7 +29,7 @@ function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: 
     } else {
         result = babel.transformSync(code, babelConfig);
     }
-    return result.code;
+    return result;
 }
 
 /**
@@ -38,20 +40,27 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
     const aliasMap = getAliasMap(this.nanachiOptions.platform);
     let ctx = this;
     const callback = this.async();
-    queues = queues.map(({ code = '', path: filePath, type, ast }) => {
+    queues = queues.map((item) => {
+        let { code = '', path: filePath, type, ast, fileMap } = item;
         const relativePath = type ? filePath.replace(/\.\w+$/, `.${MAP[this.nanachiOptions.platform]['EXT_NAME'][type] || type}`) : filePath;
+
+
+        let res;
         if (type === 'js') {
            
-            code = resolveAlias(code, aliasMap, relativePath, ast, ctx);
+            res = resolveAlias(code, aliasMap, relativePath, ast, ctx);
+            code = res.code;
         }
         if (type === 'ux') {
            
             code = code.toString().replace(/<script>([\s\S]*?)<\/script>/mg, function(match, jsCode) {
-                jsCode = resolveAlias(jsCode, aliasMap, relativePath, ast, ctx);
+                jsCode = resolveAlias(jsCode, aliasMap, relativePath, ast, ctx).code;
                 return `<script>${jsCode}</script>`;
             });
         }
         return {
+            ...item,
+            fileMap: res? res.map : fileMap,
             code,
             path: relativePath,
             type,

@@ -23,7 +23,7 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
     }
 
     const callback = this.async();
-    queues.forEach(({ code = '', path: relativePath}) => {
+    queues.forEach(({ code = '', path: relativePath, fileMap}) => {
         //qq轻应用，页面必须有样式，否则页面无法渲染，这是qq轻应用bug
         if ( this.nanachiOptions.platform === 'qq' && /[\/\\](pages|components)[\/\\]/.test(this.resourcePath) && path.parse(this.resourcePath).base === 'index.js' ) {
             //to do .css 有问题
@@ -33,6 +33,8 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
         }
 
        
+        const sourceMapPath = path.join(utils.getDisSourceMapDir(), relativePath);
+
         // 与其他技术融合，可能得提前需要app.js, app.json
         const fileBaseName = path.basename(relativePath);
         if (this.nanachiOptions.platform === 'wx' && ['app.js', 'app.json', 'app.wxss'].includes(fileBaseName)) {
@@ -43,7 +45,28 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
                     throw err;
                 }
             });
+
+
+            if (config.sourcemap && fileMap){
+                fs.ensureFileSync(sourceMapPath+'.map');
+                fs.writeFile(sourceMapPath+'.map', JSON.stringify(fileMap), function(err) {
+                    if (err) {
+                        throw err;
+                    }
+                });
+            }
+            
             return;
+        }
+        
+        if (config.sourcemap && fileMap){
+            fs.ensureFileSync(sourceMapPath+'.map');
+            fs.writeFile(sourceMapPath+'.map', JSON.stringify(fileMap), function(err) {
+                if (err) {
+                    throw err;
+                }
+            });
+
         }
     
         this.emitFile(relativePath, code, map);

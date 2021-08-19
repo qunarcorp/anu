@@ -24,7 +24,6 @@ class WxParser extends JavascriptParser_1.default {
             configFile: false,
             babelrc: false,
             comments: false,
-            minified: true,
             ast: true,
             plugins: [
                 [require('@babel/plugin-proposal-decorators'), { legacy: true }],
@@ -70,6 +69,7 @@ class WxParser extends JavascriptParser_1.default {
                 path: this.relativePath,
                 code: res.code,
                 ast: this.ast,
+                fileMap: res.map,
                 extraModules: this.extraModules
             });
             return res;

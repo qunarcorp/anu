@@ -14,6 +14,7 @@ try {
 
 const buildDir = userConfig.buildDir || 'dist';
 const sourceDir = userConfig.sourceDir || 'source';
+const sourcemap = userConfig.sourcemap != undefined ? userConfig.sourcemap : true;
 
 interface patchComponents {
     [patchName: string]: number | string;
@@ -56,6 +57,7 @@ export interface GlobalConfigMap {
     typescript?: boolean;
     WebViewRules?: any; // TODO
     nanachiVersion: string;
+    sourcemap: boolean,
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;
@@ -154,6 +156,7 @@ const config: GlobalConfigMap =  {
     nanachiVersion: nanachiConfig.version,
     patchComponents: {}, // 项目中使用的补丁组件
     pluginTags: {},
+    sourcemap,
     plugins: {}
 };
 

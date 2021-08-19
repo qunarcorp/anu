@@ -329,6 +329,10 @@ let utils = {
         const projectRootPath = this.getProjectRootPath();
         return path.join(projectRootPath, this.getDistRelativeDir());
     },
+    getDisSourceMapDir() {
+        const projectRootPath = this.getProjectRootPath();
+        return path.join(projectRootPath, 'sourcemap', config.buildType);
+    },
     getDistRelativeDir() {
         const isMultiple = userConfig.multiple || false;
         if (config.buildType === 'quick') {

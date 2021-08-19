@@ -413,6 +413,15 @@ let utils = {
         return path.join(projectRootPath, this.getDistRelativeDir());
     },
 
+    /**
+     * 获取sourceMap的绝对地址
+     * @returns 
+     */
+    getDisSourceMapDir():string{
+        const projectRootPath = this.getProjectRootPath();
+        return path.join(projectRootPath, 'sourcemap', config.buildType);
+    },
+
     getDistRelativeDir() {
         const isMultiple = userConfig.multiple || false;
         if (config.buildType === 'quick') {

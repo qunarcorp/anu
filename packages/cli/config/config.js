@@ -19,6 +19,7 @@ catch (err) {
 }
 const buildDir = userConfig.buildDir || 'dist';
 const sourceDir = userConfig.sourceDir || 'source';
+const sourcemap = userConfig.sourcemap != undefined ? userConfig.sourcemap : true;
 var Platforms;
 (function (Platforms) {
     Platforms["wx"] = "wx";
@@ -118,6 +119,7 @@ const config = {
     nanachiVersion: nanachiConfig.version,
     patchComponents: {},
     pluginTags: {},
+    sourcemap,
     plugins: {}
 };
 module.exports = config;

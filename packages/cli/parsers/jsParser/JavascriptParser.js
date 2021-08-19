@@ -63,10 +63,11 @@ class JavascriptParser {
     }
     parse() {
         return __awaiter(this, void 0, void 0, function* () {
-            const res = yield babel.transformAsync(this.code, Object.assign(Object.assign({}, this._babelPlugin), { filename: this.filepath }));
+            const res = yield babel.transformAsync(this.code, Object.assign(Object.assign({}, this._babelPlugin), { filename: this.filepath, sourceMaps: true }));
             this.extraModules = res.options.anu && res.options.anu.extraModules || this.extraModules;
             this.parsedCode = res.code;
             this.ast = res.ast;
+            this.map = res.map;
             return res;
         });
     }
@@ -76,6 +77,7 @@ class JavascriptParser {
             babelrc: false,
             comments: false,
             ast: true,
+            sourceMaps: 'both',
             plugins: [
                 function () {
                     return {

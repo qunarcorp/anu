@@ -74,11 +74,13 @@ class JavascriptParser{
     async parse():Promise<BabelRes> {
         const res: BabelRes = await babel.transformAsync(this.code, {
             ...this._babelPlugin,
-            filename: this.filepath
+            filename: this.filepath,
+            sourceMaps: true
         });
         this.extraModules = res.options.anu && res.options.anu.extraModules || this.extraModules;
         this.parsedCode = res.code;
         this.ast = res.ast;
+        this.map = res.map;//sourcemap
         return res;
     }
     getCodeForWebpack() {
@@ -87,6 +89,7 @@ class JavascriptParser{
             babelrc: false,
             comments: false,
             ast: true,
+            sourceMaps: 'both',
             plugins: [
                 function() {
                     return {
