@@ -59,6 +59,20 @@ function registerPageOrComponent(name, path, modules) {
 const visitor = {
     ClassDeclaration: helpers.classDeclaration,
     ClassExpression: helpers.classDeclaration,
+    ObjectProperty: {
+        enter(astPath) {
+            let node = astPath.node;
+            delete node.leadingComments;
+            delete node.trailingComments;
+        }
+    },
+    Statement: {
+        enter(astPath) {
+            let node = astPath.node;
+            delete node.leadingComments;
+            delete node.trailingComments;
+        }
+    },
     ClassMethod: {
         enter(astPath, state) {
             if (!astPath.node) {
