@@ -78,22 +78,6 @@ const visitor:babel.Visitor = {
     ClassDeclaration: helpers.classDeclaration,
     //babel 6 没有ClassDeclaration，只有ClassExpression
     ClassExpression: helpers.classDeclaration,
-    ObjectProperty: {
-        enter(astPath: NodePath<t.ObjectProperty>) {
-            let node = astPath.node;
-            // 删除注释
-            delete node.leadingComments;
-            delete node.trailingComments;
-        }
-    },
-    Statement: {
-        enter(astPath: NodePath<t.Statement>) {
-            let node = astPath.node;
-            // 删除注释
-            delete node.leadingComments;
-            delete node.trailingComments;
-        }
-    },
     ClassMethod: {
         enter(astPath: NodePath<t.ClassMethod>, state: any) {
             if (!astPath.node) {

@@ -10,6 +10,7 @@ function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: 
         configFile: false,
         babelrc: false,
         sourceMaps: true,
+        comments:false,
         sourceFileName: relativePath,
         plugins: [
             [

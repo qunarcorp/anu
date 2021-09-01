@@ -28,6 +28,7 @@ function resolveAlias(code, aliasMap, relativePath, ast, ctx) {
         configFile: false,
         babelrc: false,
         sourceMaps: true,
+        comments: false,
         sourceFileName: relativePath,
         plugins: [
             [

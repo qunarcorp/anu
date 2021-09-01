@@ -65,6 +65,7 @@ module.exports = async function(code: string, map: any, meta: any) {
     code = babel.transformSync(code, {
         configFile: false,
         babelrc: false,
+        comments: false,
         plugins: [
             ...require('../../packages/babelPlugins/transformEnv'),
             require('../../packages/babelPlugins/transformIfImport'),
