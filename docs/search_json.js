@@ -1592,7 +1592,7 @@ window.ydoc_plugin_search_json = {
         {
           "title": "removeStorageSync(string key)",
           "url": "/apis/storage.html#removestoragesyncstring-key",
-          "content": "removeStorageSync(string key)removeStorage 的同步版本。参数Object object\n\n属性\n类型\n默认值\n是否必须\n说明\n\n\n\n\nkey\nstring\n\n是\n本地缓存中指定的 key\n\n\n代码示例：React.api.removeStorageSync({ key: 'currentCity' });"
+          "content": "removeStorageSync(string key)removeStorage 的同步版本。参数Object object\n\n属性\n类型\n默认值\n是否必须\n说明\n\n\n\n\nkey\nstring\n\n是\n本地缓存中指定的 key\n\n\n代码示例：React.api.removeStorageSync('currentCity')"
         },
         {
           "title": "clearStorage(Object object)",

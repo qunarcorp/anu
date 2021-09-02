@@ -238,11 +238,25 @@ let visitor = {
             }
         }
     },
+    BinaryExpression:{
+        enter(astPath: any, state: any){
+            let expr = astPath.node;
+            try {
+                ['left','right'].forEach(v=>{
+                    if(t.isStringLiteral(expr[v])){
+                        expr[v].extra.raw = expr[v].extra.raw.replace(/\"/g,"'");//双引号转单引，为了兼容ali
+                    }
+                })
+            } catch (error) {
+                console.log('BinaryExpression-error',error);  
+            }
+        }
+    },
     JSXExpressionContainer: {
         exit(astPath: any, state: any) {
             let expr = astPath.node.expression;
 
-        
+
             //如果是位于属性中
             if (t.isJSXAttribute(astPath.parent)) {
                 attrValueHelper(astPath);

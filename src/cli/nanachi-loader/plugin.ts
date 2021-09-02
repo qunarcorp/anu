@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { resetNum, timerLog } from '../packages/utils/logger/index';
 import lintQueue from '../packages/utils/lintQueue';
 import config from '../config/config';
+import utils from '../packages/utils';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { NanachiOptions } from '../index';
@@ -84,7 +85,6 @@ function rebuildManifest(manifestJson:object, quickPageDisplayConifg:object) {
 }
 
 function writeInternalCommonRuntime() {
-    const cwd = process.cwd();
     const code = `
     export function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
     
@@ -97,12 +97,10 @@ function writeInternalCommonRuntime() {
     export function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
     `.trim();
 
-    const writeDistFilePath = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-        ? path.join(cwd, '../../dist', 'internal/runtimecommon.js')
-        : this.distCommonPath;
+    const writeDistFilePath = path.join(utils.getDistDir(), 'internal/runtimecommon.js');
 
-        fs.ensureFileSync(writeDistFilePath);
-        fs.writeFileSync(writeDistFilePath, code);
+    fs.ensureFileSync(writeDistFilePath);
+    fs.writeFileSync(writeDistFilePath, code);
 
 }
 

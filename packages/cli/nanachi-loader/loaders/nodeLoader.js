@@ -58,9 +58,11 @@ module.exports = function (code, map, meta) {
         code = babel.transformSync(code, {
             configFile: false,
             babelrc: false,
+            comments: false,
             plugins: [
                 ...require('../../packages/babelPlugins/transformEnv'),
                 require('../../packages/babelPlugins/transformIfImport'),
+                require('../../packages/babelPlugins/transformIfFun'),
                 patchMobx.bind(this)
             ]
         }).code;

@@ -13,9 +13,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const glob_1 = __importDefault(require("glob"));
 const path = __importStar(require("path"));
+const utils_1 = __importDefault(require("../../packages/utils"));
+const isMutilePack_1 = require("./isMutilePack");
 const cwd = process.cwd();
 const downLoadDir = path.join(cwd, '.CACHE/download');
-const mergeDir = path.join(cwd, '.CACHE/nanachi');
 const mergeFilesQueue = require('./mergeFilesQueue');
 const ignoreFiles = [
     'package-lock.json'
@@ -32,6 +33,12 @@ const mergeFiles = [
 const lockFiles = [
     'project.config.json'
 ];
+function getDownLoadDir() {
+    return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix());
+}
+function getMergeDir() {
+    return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
+}
 function isIgnoreFile(fileName) {
     return ignoreFiles.includes(fileName)
         || mergeFiles.includes(fileName)
@@ -48,17 +55,17 @@ function isMergeFile(fileName) {
 function isLockFile(fileName) {
     return lockFiles.includes(fileName);
 }
-function copyCurrentProject() {
+function copyCurrentProjectToDownLoad() {
     if (!fs_extra_1.default.existsSync(path.join(cwd, 'source'))
         && !fs_extra_1.default.existsSync(path.join(cwd, 'app.js'))) {
         return Promise.resolve(1);
     }
     let projectDirName = cwd.replace(/\\/g, '/').split('/').pop();
-    let files = glob_1.default.sync('./!(node_modules|dist|src|sign|build|.CACHE|.chaika_cache|nanachi)', {});
+    let files = glob_1.default.sync('./!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {});
     let allPromiseCopy = files
         .map(function (el) {
         let src = path.join(cwd, el);
-        let dist = path.join(downLoadDir, projectDirName, el);
+        let dist = path.join(getDownLoadDir(), projectDirName, el);
         if (/\.\w+$/.test(el)) {
             fs_extra_1.default.ensureFileSync(dist);
             return fs_extra_1.default.copyFile(src, dist);
@@ -70,8 +77,8 @@ function copyCurrentProject() {
     });
     return Promise.all(allPromiseCopy);
 }
-function copyOtherProject() {
-    let files = glob_1.default.sync(downLoadDir + '/**', { nodir: true });
+function copyDownLoadToNnc() {
+    let files = glob_1.default.sync(getDownLoadDir() + '/**', { nodir: true });
     files = files.filter((file) => {
         let fileName = path.parse(file).base;
         if (isIgnoreFile(fileName)) {
@@ -88,10 +95,10 @@ function copyOtherProject() {
         let dist = '';
         file = file.replace(/\\/g, '/');
         if (/\/source\//.test(file)) {
-            dist = path.join(mergeDir, 'source', file.split('/source/').pop());
+            dist = path.join(getMergeDir(), 'source', file.split('/source/').pop());
         }
         else {
-            dist = path.join(mergeDir, file.split('/').pop());
+            dist = path.join(getMergeDir(), file.split('/').pop());
         }
         fs_extra_1.default.ensureFileSync(dist);
         return fs_extra_1.default.copyFile(file, dist);
@@ -99,10 +106,9 @@ function copyOtherProject() {
     return Promise.all(allPromiseCopy);
 }
 function default_1() {
-    fs_extra_1.default.emptyDirSync(mergeDir);
-    return copyCurrentProject()
+    return copyCurrentProjectToDownLoad()
         .then(function () {
-        return copyOtherProject();
+        return copyDownLoadToNnc();
     })
         .then(function () {
         return Promise.resolve(1);

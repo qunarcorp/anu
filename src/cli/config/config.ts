@@ -1,4 +1,7 @@
+
 import * as path from 'path';
+// import utils from '../packages/utils/index';
+
 let userConfig: any = {};
 let nanachiConfig: any = {};
 try {
@@ -8,8 +11,10 @@ try {
 } catch (err) {
     // eslint-disable-next-line
 }
+
 const buildDir = userConfig.buildDir || 'dist';
 const sourceDir = userConfig.sourceDir || 'source';
+const sourcemap = userConfig.sourcemap != undefined ? userConfig.sourcemap : true;
 
 interface patchComponents {
     [patchName: string]: number | string;
@@ -52,6 +57,7 @@ export interface GlobalConfigMap {
     typescript?: boolean;
     WebViewRules?: any; // TODO
     nanachiVersion: string;
+    sourcemap: boolean,
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;
@@ -141,6 +147,7 @@ const config: GlobalConfigMap =  {
         disabledTitleBarPages: new Set()
     },
     buildType: 'wx',      //构建类型默认微信小程序
+    // 会被重新写入
     buildDir: buildDir,   //非快应用项目默认构建目录为dist
     sourceDir: sourceDir,  //默认生成的源码目录
     huawei: false,
@@ -149,8 +156,11 @@ const config: GlobalConfigMap =  {
     nanachiVersion: nanachiConfig.version,
     patchComponents: {}, // 项目中使用的补丁组件
     pluginTags: {},
+    sourcemap,
     plugins: {}
 };
+
+
 
 module.exports = config;
 export default config;

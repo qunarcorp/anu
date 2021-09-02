@@ -187,10 +187,17 @@ const visitor = {
             }
         }
         if (modules.componentType !== 'App') {
+            let pre = "";
+            let isNui = false;
+            if (/@qnpm\/nui$/.test(source)) {
+                isNui = true;
+                pre = source + '/source/components/';
+            }
             specifiers.forEach(item => {
                 modules.importComponents[item.local.name] = {
                     astPath: astPath,
-                    source: source,
+                    source: isNui ? pre + item.local.name.substr(1) + '/index' : source,
+                    importSpecifierName: item.local.name,
                     sourcePath: modules.sourcePath
                 };
             });

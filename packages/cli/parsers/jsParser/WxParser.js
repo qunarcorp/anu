@@ -48,6 +48,7 @@ class WxParser extends JavascriptParser_1.default {
                 ...require('../../packages/babelPlugins/transformEnv'),
                 [require('@babel/plugin-transform-template-literals'), { loose: true }],
                 require('../../packages/babelPlugins/transformIfImport'),
+                require('../../packages/babelPlugins/transformIfFun'),
                 ...this.filterCommonFile,
                 require('@babel/plugin-proposal-optional-chaining'),
                 ...require('../../packages/babelPlugins/patchAsyncAwait'),
@@ -68,6 +69,7 @@ class WxParser extends JavascriptParser_1.default {
                 path: this.relativePath,
                 code: res.code,
                 ast: this.ast,
+                fileMap: res.map,
                 extraModules: this.extraModules
             });
             return res;

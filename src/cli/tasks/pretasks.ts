@@ -9,39 +9,63 @@ import { REACT_LIB_MAP } from '../consts/index';
 import nodeResolve from 'resolve';
 import config from '../config/config';
 import { NanachiOptions } from '../index';
+import isMultiple from './chaikaMergeTask/isMutilePack';
 const utils = require('../packages/utils/index');
 
 const cliRoot = path.resolve(__dirname, '..');
 const getSubpackage = require('../packages/utils/getSubPackage');
 let cwd = process.cwd();
 
-//删除dist目录, 以及快应的各配置文件
-function getRubbishFiles(buildType: string){
 
+// 删除dist目录, 以及快应的各配置文件
+function getRubbishFiles(buildType: string){
+    const projectRootPath = utils.getProjectRootPath();
     let fileList = ['package-lock.json', 'yarn.lock'];
     buildType === 'quick'
         ? fileList = fileList.concat(
             [
                 'dist', 'build', 'sign', 'src', 'babel.config.js',
-                // chaika模式下，项目根目录(向上找两级)也要删除这些文件
-                '../../dist', '../../build', '../../sign', '../../src', '../../babel.config.js' 
-            ]
+            ].map(function(dir){
+                return path.join(projectRootPath, dir);
+            })
         )
-        : fileList = fileList.concat([utils.getDistName(buildType)]);
-    
-    //构建应用时，要删除source目录下其他的 React lib 文件。
-    let libList = Object.keys(REACT_LIB_MAP)
-        .map(function(key){
-            return `source/${REACT_LIB_MAP[key]}`;
+        : fileList = fileList.concat([utils.getDistDir()]);
+   
+   
+    let libList = Array.from(new Set(Object.values(REACT_LIB_MAP)));
+
+  
+    if (!isMultiple()) {
+        libList = libList.filter(function(libName) {
+            return libName !== REACT_LIB_MAP[buildType];
         })
-        .filter(function(libName){
-            return libName.split('/')[1] != REACT_LIB_MAP[buildType];
-        });
-    fileList = fileList.concat(libList);
+    } else {
+        // 多小程序构建模式下，不用删除对应source/ReactXXX.js
+        libList = [];
+    }
+  
+    fileList = fileList.concat(libList.map(function(libName){
+        return path.join(projectRootPath, 'source', libName);
+    }));
+
+
+    // 非制定目录构建
+    // if (!/dist\//.test(config.buildDir)) {
+    //     // 构建应用时，要删除source目录下其他的 React lib 文件。
+    //     let libList = Object.keys(REACT_LIB_MAP)
+    //     .map(function(key){
+    //         return `source/${REACT_LIB_MAP[key]}`;
+    //     })
+    //     .filter(function(libName){
+    //         return libName.split('/')[1] != REACT_LIB_MAP[buildType];
+    //     });
+    //     fileList = fileList.concat(libList);
+    // }
+
+   
     return fileList.map(function(file){
-        
         return {
-            id: path.join(cwd, file),
+            id: file,
             ACTION_TYPE: 'REMOVE'
         };
     });
@@ -69,7 +93,7 @@ function getQuickPkgFile() {
 
     if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
         // 项目根目录pkg.json 合并 scripts, devDependencies, 
-        const curProjectPath = path.join(cwd, '../../', 'package.json');
+        const curProjectPath = path.join(utils.getProjectRootPath(), 'package.json');
         let curProjectPkg = require(curProjectPath);
         curProjectPkg.scripts = curProjectPkg.scripts || {};
         ['scripts', "devDependencies"].forEach(function(key){
@@ -95,9 +119,7 @@ function getCopyFiles() {
     ];
     return files.map(fileName => ({
         id: path.join(cwd, 'source', fileName),
-        dist: process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-        ? path.join(cwd, '../../src/', fileName)
-        : path.join(cwd, 'src', fileName),
+        dist: path.join(utils.getProjectRootPath(), 'src', fileName),
         ACTION_TYPE: 'COPY'
     }))
 }
@@ -116,36 +138,21 @@ function getQuickBuildConfigFile(){
     } catch (e) {
     }
 
+    
     let defaultList = [
         {
             id: path.join(signDir, sign),
-            dist: path.join(cwd, sign),
+            dist: path.join(utils.getProjectRootPath(), sign),
             ACTION_TYPE: 'COPY'
         },
         {
             id: path.join(baseDir, babelConfig),
-            dist: path.join(cwd,  babelConfig),
+            dist: path.join(utils.getProjectRootPath(),  babelConfig),
             ACTION_TYPE: 'COPY'
         }
     ]
 
-    if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
-        defaultList = defaultList.concat([
-            {
-                id: path.join(signDir, sign),
-                dist: path.join(cwd, '../../', sign),
-                ACTION_TYPE: 'COPY'
-            },
-            {
-                id: path.join(baseDir, babelConfig),
-                dist: path.join(cwd, '../../', babelConfig),
-                ACTION_TYPE: 'COPY'
-            }
-        ])
-    }
-
     return defaultList;
-   
 
 }
 
@@ -167,7 +174,7 @@ function downloadSchneeUI(){
 
 
 function getReactPath(ReactLibName: string) {
-    return  path.join(cwd, 'source', ReactLibName);
+    return path.join(cwd, 'source', ReactLibName);
 }
 
 async function getRemoteReactFile(ReactLibName: string): Promise<Array<taskItem>>{
@@ -186,7 +193,7 @@ function getReactLibFile(ReactLibName: string): Array<taskItem> {
     let src = path.join(cliRoot, 'lib', ReactLibName);
     let dist = getReactPath(ReactLibName);
     try {
-        //文件有就不COPY
+        // 文件有就不COPY
         fs.accessSync(dist);
         return [];
     } catch (err) {
@@ -204,15 +211,20 @@ function getReactLibFile(ReactLibName: string): Array<taskItem> {
 //copy project.config.json
 function getProjectConfigFile(buildType: string) {
     if (buildType === 'quick' || buildType === 'h5') return [];
-    let fileName = 'project.config.json';
+    
+    const map = {
+        wx: 'project.config.json',
+        bu: 'project.swan.json',
+        ali: 'mini.project.json'
+    }
+    let fileName = map[buildType] || 'project.config.json';
     let src = '';
     fs.existsSync(path.join(cwd, fileName))
         ? src = path.join(cwd, fileName)
         : src = path.join(cwd, 'source', fileName);
 
-    let dist = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-        ? path.join(cwd, '../../dist/', fileName)
-        : path.join(cwd, 'dist', fileName);
+    const dist = path.join(utils.getDistDir(), fileName);
+   
     if (fs.existsSync(src)) {
         return [
             {
@@ -251,11 +263,11 @@ const helpers: {
 };
 
 function needInstallHapToolkit(){
-    //检查本地是否安装快应用的hap-toolkit工具
+    // 检查本地是否安装快应用的hap-toolkit工具
     try {
         //hap-toolkit中package.json没有main或者module字段, 无法用 nodeResolve 来判断是否存在。
         //nodeResolve.sync('hap-toolkit', { basedir: cwd });
-        let hapToolKitPath = path.join(cwd, 'node_modules', 'hap-toolkit');
+        let hapToolKitPath = path.join(utils.getProjectRootPath(), 'node_modules', 'hap-toolkit');
         fs.accessSync(hapToolKitPath);
         return false;
     } catch (err) {
@@ -352,7 +364,7 @@ export default async function runTask({ platform: buildType, beta, betaUi, compr
         tasks = tasks.concat(await getRemoteReactFile(ReactLibName));
         spinner.succeed(chalk.green.bold(`同步最新的${ReactLibName}成功!`));
     } else {
-        tasks = tasks.concat(getReactLibFile(ReactLibName));
+        // tasks = tasks.concat(getReactLibFile(ReactLibName));
     }
     
     //快应用下需要copy babel.config.js, 合并package.json等
@@ -368,9 +380,10 @@ export default async function runTask({ platform: buildType, beta, betaUi, compr
             );
         }
     }
+    
     injectPluginsConfig();
     
-    //copy project.config.json
+    // copy project.config.json
     tasks = tasks.concat(getProjectConfigFile(buildType));
 
     

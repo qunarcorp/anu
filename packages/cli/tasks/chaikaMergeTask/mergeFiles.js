@@ -1,16 +1,23 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const isMutilePack_1 = require("./isMutilePack");
+const utils_1 = __importDefault(require("../../packages/utils"));
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const cwd = process.cwd();
 const merge = require('lodash.mergewith');
 const shelljs = require('shelljs');
-const mergeDir = path.join(cwd, '.CACHE/nanachi');
 let mergeFilesQueue = require('./mergeFilesQueue');
 let diff = require('deep-diff');
 const buildType = process.argv[2].split(':')[1];
 const ignoreExt = ['.tgz'];
+function getMergeDir() {
+    return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
+}
 const ANU_ENV = buildType
     ? buildType === 'h5'
         ? 'web'
@@ -37,7 +44,7 @@ function getMergedAppJsConent(appJsSrcPath, pages = [], importSyntax = []) {
     allRoutesStr += getAppImportSyntaxCode(importSyntax);
     return new Promise(function (rel, rej) {
         let appJsSrcContent = '';
-        let appJsDist = path.join(mergeDir, 'source', 'app.js');
+        let appJsDist = path.join(getMergeDir(), 'source', 'app.js');
         try {
             appJsSrcContent = fs.readFileSync(appJsSrcPath).toString();
         }
@@ -188,7 +195,7 @@ function getUniqueSubPkgConfig(list = []) {
 }
 function getMergedXConfigContent(config) {
     let env = ANU_ENV;
-    let xConfigJsonDist = path.join(mergeDir, 'source', `${env}Config.json`);
+    let xConfigJsonDist = path.join(getMergeDir(), 'source', `${env}Config.json`);
     let ret = xDiff(config);
     for (let i in ret) {
         if (i.toLocaleLowerCase() === 'subpackages') {
@@ -211,7 +218,7 @@ function getSitemapContent(quickRules) {
     });
     const content = JSON.stringify({ rules: rulesList });
     return Promise.resolve({
-        dist: path.join(mergeDir, 'source/sitemap.json'),
+        dist: path.join(getMergeDir(), 'source/sitemap.json'),
         content
     });
 }
@@ -314,14 +321,14 @@ function getMergedPkgJsonContent(alias) {
             alias: alias
         }
     });
-    let dist = path.join(mergeDir, 'package.json');
+    let dist = path.join(getMergeDir(), 'package.json');
     return {
         dist: dist,
         content: JSON.stringify(distContent, null, 4)
     };
 }
 function getMiniAppProjectConfigJson(projectConfigQueue = []) {
-    let dist = path.join(mergeDir, 'project.config.json');
+    let dist = path.join(getMergeDir(), 'project.config.json');
     let distContent = '';
     if (projectConfigQueue.length) {
         distContent = JSON.stringify(require(projectConfigQueue[0]), null, 4);
@@ -335,6 +342,9 @@ function validateAppJsFileCount(queue) {
     let appJsFileCount = queue
         .filter(function (el) {
         return /\/app\.js$/.test(el);
+    })
+        .filter(function (el) {
+        return !/\/target\//.test(el);
     })
         .map(function (el) {
         return el.replace(/\\/g, '/').split('/download/').pop();
@@ -352,8 +362,12 @@ function validateAppJsFileCount(queue) {
     }
 }
 function validateMiniAppProjectConfigJson(queue) {
-    let projectConfigJsonList = queue.filter(function (el) {
+    let projectConfigJsonList = queue
+        .filter(function (el) {
         return /\/project\.config\.json$/.test(el);
+    })
+        .filter(function (el) {
+        return !/\/target\//.test(el);
     });
     if (projectConfigJsonList.length > 1) {
         console.log(chalk.bold.red('校验到多个拆库仓库中存在project.config.json. 在业务线的拆库工程中，最多只能有一个拆库需要包含project.config.jon:'), chalk.bold.red('\n' + JSON.stringify(projectConfigJsonList, null, 4)));
@@ -361,6 +375,7 @@ function validateMiniAppProjectConfigJson(queue) {
     }
 }
 function validateConfigFileCount(queue) {
+    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el) {
         return /Config\.json$/.test(el);
     });

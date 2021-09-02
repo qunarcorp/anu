@@ -15,9 +15,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs-extra"));
+const config_1 = __importDefault(require("../../config/config"));
 const utils = require('../../packages/utils/index');
 module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -31,24 +35,39 @@ module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
             exportCode = '';
         }
         const callback = this.async();
-        queues.forEach(({ code = '', path: relativePath }) => {
+        queues.forEach(({ code = '', path: relativePath, fileMap }) => {
             if (this.nanachiOptions.platform === 'qq' && /[\/\\](pages|components)[\/\\]/.test(this.resourcePath) && path.parse(this.resourcePath).base === 'index.js') {
                 if (!this._compilation.assets[relativePath]) {
                     this.emitFile(path.join(path.dirname(relativePath), 'index.qss'), '', map);
                 }
             }
+            const sourceMapPath = path.join(utils.getDisSourceMapDir(), relativePath);
             const fileBaseName = path.basename(relativePath);
             if (this.nanachiOptions.platform === 'wx' && ['app.js', 'app.json', 'app.wxss'].includes(fileBaseName)) {
-                const distPath = process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE'
-                    ? path.join(process.cwd(), '../../dist/', fileBaseName)
-                    : path.join(process.cwd(), '/dist/', fileBaseName);
+                const distPath = path.join(utils.getDistDir(), fileBaseName);
                 fs.ensureFileSync(distPath);
                 fs.writeFile(distPath, code, function (err) {
                     if (err) {
                         throw err;
                     }
                 });
+                if (config_1.default.sourcemap && fileMap) {
+                    fs.ensureFileSync(sourceMapPath + '.map');
+                    fs.writeFile(sourceMapPath + '.map', JSON.stringify(fileMap), function (err) {
+                        if (err) {
+                            throw err;
+                        }
+                    });
+                }
                 return;
+            }
+            if (config_1.default.sourcemap && fileMap) {
+                fs.ensureFileSync(sourceMapPath + '.map');
+                fs.writeFile(sourceMapPath + '.map', JSON.stringify(fileMap), function (err) {
+                    if (err) {
+                        throw err;
+                    }
+                });
             }
             this.emitFile(relativePath, code, map);
         });

@@ -3,6 +3,7 @@ import { NANACHI_CONFIG_PATH } from '../../consts/index';
 import * as fs from 'fs-extra';
 import nanachi from '../../index';
 import config from '../../config/config';
+import utils from '../../packages/utils';
 const { deepMerge } = require('../../packages/utils/index');
 interface BulidOptions {
     watch: boolean;
@@ -11,9 +12,11 @@ interface BulidOptions {
 }
 
 const build = async function(args: BulidOptions) {
+   
     try {
-        const { beta, betaUi, watch, compress, huawei, analysis, silent, typescript} = args;
+        const { beta, betaUi, watch, compress, huawei, analysis, silent, typescript, dir=''} = args;
         let { buildType } = args;
+      
         const nanachiConfig = {};
         // 360补丁
         if (buildType === '360') {
@@ -29,8 +32,19 @@ const build = async function(args: BulidOptions) {
             huawei,
             analysis,
             silent,
-            typescript
+            typescript,
+            dir
         };
+
+       
+       
+        // if (buildType !== 'quick' && dir) {
+        //     config.buildDir = config.buildDir.replace(/\/$/, '') + '/' + dir.replace(/^\//, '');
+        // }
+
+        config.buildDir = utils.getDistRelativeDir();
+
+
         // 合并nanachi.config.js中的用户自定义配置
         if (fs.existsSync(NANACHI_CONFIG_PATH)) {
             const userConfig = require(NANACHI_CONFIG_PATH);

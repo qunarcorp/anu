@@ -14,6 +14,7 @@ const t = __importStar(require("@babel/types"));
 const generator_1 = __importDefault(require("@babel/generator"));
 const path_1 = __importDefault(require("path"));
 const fs = __importStar(require("fs-extra"));
+const utils_1 = __importDefault(require("../utils"));
 function isChaikaMode() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 }
@@ -43,7 +44,7 @@ const visitor = {
             });
             if (!this.injectInportSpecifiers.length)
                 return;
-            const importSourcePath = path_1.default.relative(path_1.default.dirname(state.filename.replace(/\/source\//, '/dist/')), this.distCommonPath);
+            const importSourcePath = path_1.default.relative(path_1.default.parse(utils_1.default.getDistPathFromSoucePath(state.filename)).dir, this.distCommonPath);
             const specifiersAst = this.injectInportSpecifiers.map(name => t.importSpecifier(t.identifier(name), t.identifier(name)));
             const sourceAst = t.StringLiteral(!/^\./.test(importSourcePath) ? `./${importSourcePath}` : importSourcePath);
             astPath.node.body.unshift(t.importDeclaration(specifiersAst, sourceAst));
@@ -55,7 +56,7 @@ module.exports = [
         return {
             pre() {
                 this.injectInportSpecifiers = [];
-                this.distCommonPath = path_1.default.join(cwd, 'dist', 'internal/runtimecommon.js');
+                this.distCommonPath = path_1.default.join(utils_1.default.getDistDir(), 'internal/runtimecommon.js');
                 this.needWrite = false;
             },
             visitor,
@@ -69,11 +70,8 @@ module.exports = [
                 const exportCode = codesList.reduce(function (acc, curCode) {
                     return acc + `export ${curCode}\n\n\n`;
                 }, '');
-                const writeDistFilePath = isChaikaMode()
-                    ? path_1.default.join(cwd, '../../dist', 'internal/runtimecommon.js')
-                    : this.distCommonPath;
-                fs.ensureFileSync(writeDistFilePath);
-                fs.writeFileSync(writeDistFilePath, exportCode);
+                fs.ensureFileSync(this.distCommonPath);
+                fs.writeFileSync(this.distCommonPath, exportCode);
             }
         };
     }

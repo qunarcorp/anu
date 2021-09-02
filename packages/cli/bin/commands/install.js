@@ -25,10 +25,14 @@ const path = __importStar(require("path"));
 const fs = __importStar(require("fs-extra"));
 const axios_1 = __importDefault(require("axios"));
 const glob_1 = __importDefault(require("glob"));
+const isMutilePack_1 = require("../../tasks/chaikaMergeTask/isMutilePack");
+const config_1 = __importDefault(require("../../config/config"));
+const utils_1 = __importDefault(require("../../packages/utils"));
+const platforms_1 = __importDefault(require("../../consts/platforms"));
 const cwd = process.cwd();
 function writeVersions(moduleName, version) {
     let defaultVJson = {};
-    let vPath = path.join(cwd, '.CACHE/verson.json');
+    let vPath = path.join(cwd, `.CACHE/verson${isMutilePack_1.getMultiplePackDirPrefix()}.json`);
     fs.ensureFileSync(vPath);
     try {
         defaultVJson = require(vPath) || {};
@@ -36,11 +40,7 @@ function writeVersions(moduleName, version) {
     catch (err) {
     }
     defaultVJson[moduleName] = version;
-    fs.writeFile(vPath, JSON.stringify(defaultVJson, null, 4), (err) => {
-        if (err) {
-            console.log(err);
-        }
-    });
+    fs.writeFileSync(vPath, JSON.stringify(defaultVJson, null, 4));
 }
 function unPack(src, dist) {
     dist = path.join(dist, 'source');
@@ -64,6 +64,7 @@ function unPack(src, dist) {
         });
     }
     catch (err) {
+        console.log('[unPack error]:', err);
     }
 }
 function isOldChaikaConfig(name = "") {
@@ -71,7 +72,7 @@ function isOldChaikaConfig(name = "") {
 }
 function downLoadGitRepo(target, branch) {
     let cmd = `git clone ${target} -b ${branch}`;
-    let distDir = path.join(cwd, '.CACHE', 'download');
+    let distDir = path.join(cwd, '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix());
     let gitRepoName = target.split('/').pop().replace(/\.git$/, '');
     fs.removeSync(path.join(distDir, gitRepoName));
     fs.ensureDirSync(distDir);
@@ -89,7 +90,7 @@ function downLoadGitRepo(target, branch) {
 function getNanachiChaikaConfig() {
     let nanachiUserConfig = {};
     try {
-        nanachiUserConfig = require(path.join(cwd, 'nanachi.config'));
+        nanachiUserConfig = require(path.join(utils_1.default.getProjectRootPath(), 'nanachi.config'));
     }
     catch (err) {
         if (/SyntaxError/.test(err)) {
@@ -113,7 +114,7 @@ function downLoadBinaryLib(binaryLibUrl, patchModuleName) {
         catch (err) {
             console.log(chalk_1.default.bold.red(`${err.toString()} for ${binaryLibUrl}`));
         }
-        let libDist = path.join(cwd, `.CACHE/lib/${path.basename(patchModuleName)}`);
+        const libDist = path.join(utils_1.default.getProjectRootPath(), `.CACHE/lib/${path.basename(patchModuleName)}`, isMutilePack_1.getMultiplePackDirPrefix());
         fs.ensureFileSync(libDist);
         fs.writeFile(libDist, data, function (err) {
             if (err) {
@@ -121,7 +122,8 @@ function downLoadBinaryLib(binaryLibUrl, patchModuleName) {
                 return;
             }
             console.log(chalk_1.default.green(`安装依赖包 ${binaryLibUrl} 成功.`));
-            unPack(libDist, path.join(cwd, `.CACHE/download/${patchModuleName}`));
+            const unPackDist = path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), patchModuleName);
+            unPack(libDist, unPackDist);
         });
         writeVersions(patchModuleName, binaryLibUrl.split('/').pop());
     });
@@ -143,13 +145,23 @@ function downLoadPkgDepModule() {
             downLoadGitRepo(gitRepo, depModules[key]);
         }
         else if (isOldChaikaConfig(`${key}@${depModules[key]}`)) {
-            require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'))(`${key}@${depModules[key]}`, downLoadGitRepo, downLoadBinaryLib);
+            const ret = require(path.join(utils_1.default.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall'))(`${key}@${depModules[key]}`);
+            if (ret.type === 'git') {
+                downLoadGitRepo(ret.gitRepo, ret.branchName);
+            }
+            else {
+                downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
+            }
         }
         else {
         }
     });
 }
 function default_1(name, opts) {
+    if (opts.platform && platforms_1.default.some((v) => v.buildType === opts.platform)) {
+        config_1.default.buildType = opts.platform;
+    }
+    console.log(chalk_1.default.bold.yellow(`传入的平台参数：${opts.platform}，处理后的平台参数：${config_1.default.buildType}`));
     if (process.env.NANACHI_CHAIK_MODE != 'CHAIK_MODE') {
         console.log(chalk_1.default.bold.red('需在package.json中配置{"nanachi": {"chaika": true }}, 拆库开发功能请查阅文档: https://rubylouvre.github.io/nanachi/documents/chaika.html'));
         process.exit(1);
@@ -165,7 +177,13 @@ function default_1(name, opts) {
         };
     }
     if (isOldChaikaConfig(name)) {
-        require(path.join(cwd, 'node_modules', '@qnpm/chaika-patch'))(name, downLoadGitRepo, downLoadBinaryLib);
+        const ret = require(path.join(utils_1.default.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall'))(name);
+        if (ret.type === 'git') {
+            downLoadGitRepo(ret.gitRepo, ret.branchName);
+        }
+        else {
+            downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
+        }
         return;
     }
     if (/\.git$/.test(name) && opts.branch && typeof opts.branch === 'string') {

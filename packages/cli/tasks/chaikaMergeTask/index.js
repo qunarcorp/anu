@@ -23,32 +23,29 @@ const copySource_1 = __importDefault(require("./copySource"));
 const mergeFiles_1 = __importDefault(require("./mergeFiles"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs-extra"));
+const isMutilePack_1 = require("./isMutilePack");
 const cwd = process.cwd();
+function changeWorkingDir() {
+    process.chdir(path.join(cwd, '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix()));
+}
 function makeSymLink() {
     let currentNpmDir = path.join(cwd, 'node_modules');
-    let targetNpmDir = path.join(cwd, '.CACHE/nanachi/node_modules');
+    let targetNpmDir = path.join(cwd, '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix(), 'node_modules');
     if (!fs.existsSync(targetNpmDir)) {
         fs.symlinkSync(currentNpmDir, targetNpmDir);
         return;
     }
 }
-function removeDir(p) {
-    try {
-        fs.removeSync(p);
-    }
-    catch (err) {
-    }
-}
 function default_1() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield removeDir(path.join(cwd, '.CACHE/nanachi'));
             yield copySource_1.default();
             yield mergeFiles_1.default();
             makeSymLink();
+            changeWorkingDir();
         }
         catch (err) {
-            console.log(err);
+            console.log('chaikaMerge error:', err);
         }
     });
 }

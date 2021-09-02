@@ -74,14 +74,14 @@ export default function({
     externals.push(/runtimecommon\.js/);
     
     let aliasMap = require('../packages/utils/calculateAliasConfig')();
-    let distPath = '';
     // chaika 模式下要打包到yourProject/dist中
-    if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
-        distPath = path.resolve(cwd, '../../' ,utils.getDistName(platform));
-    } else {
-        distPath = path.resolve(cwd, utils.getDistName(platform));
-    }
-    
+    // if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
+    //     distPath = path.resolve(cwd, '../../' , utils.getDistName(platform));
+    // } else {
+    //     distPath = path.resolve(cwd, utils.getDistName(platform));
+    // }
+    let distPath = path.resolve(utils.getDistDir());
+ 
     if (platform === 'h5') {
         distPath = path.join(distPath, intermediateDirectoryName);
     }
@@ -98,15 +98,7 @@ export default function({
         };
     }
 
-    // node_modules pkg
-    const nodeRules = [{
-        test: /node_modules[\\/](?!schnee-ui[\\/])/,
-        use: [].concat(
-            fileLoader, 
-            postLoaders, 
-            aliasLoader, 
-            nodeLoader) 
-    }];
+
     const copyAssetsRules = [{
         from: '**',
         to: 'assets',
@@ -187,12 +179,65 @@ export default function({
         return __jsLorder
     };
 
+    function isJsFile(sourcePath: string) {
+        return /\.[jt]sx?$/.test(sourcePath);
+    }
+
+    function isNpmFile(sourcePath: string) {
+        return /\/node_modules\//.test(sourcePath);
+    }
+
+    function isPatchUiComponentsFile(sourcePath: string) {
+        return /\/node_modules\/schnee-ui\//.test(sourcePath);
+    }
+
+    function isThirdNpmUiComponentsFile(sourcePath: string) {
+        return /\/node_modules\/.+\/components\//.test(sourcePath)
+    }
+
+    function isReactFile(sourcePath: string) {
+        return /\/React\w+\.js$/.test(sourcePath);
+    }
+
+    const nodeRules = [{
+        // test: /node_modules[\\/](?!schnee-ui[\\/])/,
+        test: function(sourcePath: string) {
+            return isNpmFile(sourcePath) && !isThirdNpmUiComponentsFile(sourcePath);
+        },
+        use: [].concat(
+            fileLoader, 
+            postLoaders, 
+            aliasLoader, 
+            nodeLoader
+        ) 
+    }];
+
     const mergeRule = [].concat(
         {
-            test: /\.[jt]sx?$/,
+            //test: /\.[jt]sx?$/,
+            test: function(sourcePath: string) {
+                if (isJsFile(sourcePath)) {
+                    if (isNpmFile(sourcePath)) {
+                        if (isPatchUiComponentsFile(sourcePath)) {
+                            return true;
+                        } else if (isThirdNpmUiComponentsFile(sourcePath)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else if (isReactFile(sourcePath)) {
+                        return false;
+                    } {
+                        return true;
+                    }
+                } else {
+                    return false;
+                }
+              
+            },
             //loader是从后往前处理
-            use:  jsLorder() ,
-            exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
+            use: jsLorder(),
+            // exclude: /node_modules[\\/](?!schnee-ui[\\/])|React/,
         },
         platform !== 'h5' ? nodeRules : [],
         {
@@ -202,7 +247,8 @@ export default function({
                 useCache ? cacheLorder : [],
                 postLoaders,
                 nodeLoader, 
-                reactLoader)
+                reactLoader
+            )
         },
         {
             test: /\.(s[ca]ss|less|css)$/,
@@ -289,6 +335,15 @@ export default function({
     }
     let entry = path.join(cwd, 'source/app');
     if (typescript) { entry += '.tsx' };
+    const barNameMap = {
+        quick: '快应用',
+        wx: '微信小程序',
+        ali: '支付宝小程序',
+        bu: '百度小程序',
+        qq: 'QQ小程序',
+        tt: '头条小程序',
+        h5: 'H5'
+    }
     return {
         entry: entry,
         mode: 'development',
@@ -300,7 +355,17 @@ export default function({
             rules: mergeRule
         },
         plugins: [
-            new WebpackBar(),
+            new WebpackBar({
+                name: 'Webpack: '+ barNameMap[platform],
+                reporter: {
+                    change(ctx, changedFileInfo) {
+                        console.log(this, changedFileInfo);
+                        // Called when compile finished
+                         ctx.options.reporters = [];
+                        return '';
+                    },
+                }
+            }),
             ...mergePlugins
         ],
         resolve: {
