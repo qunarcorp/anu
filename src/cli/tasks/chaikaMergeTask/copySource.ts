@@ -75,7 +75,7 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
     }
     
     let projectDirName = cwd.replace(/\\/g, '/').split('/').pop();
-    let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi)', {
+    let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
         //nodir: true
     });
 
