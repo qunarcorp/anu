@@ -142,10 +142,30 @@ const visitor = {
                 modules.className = name;
                 helpers.render.exit(astPath, '无状态组件', name, modules);
                 modules.registerStatement = utils_1.default.createRegisterStatement(name, name);
-            }
-            if (astPath.parentPath.type === 'ExportDefaultDeclaration' &&
-                modules.componentType === 'Component') {
-                astPath.node.body.body.unshift(template_1.default(utils_1.default.shortcutOfCreateElement())());
+                let funData = [];
+                let body = astPath.node.body.body;
+                for (let i = 0; i < body.length; i++) {
+                    const element = body[i];
+                    if (element.type == 'VariableDeclaration') {
+                        element.declarations.forEach(declaration => {
+                            let dataName;
+                            if (declaration.id.type == 'ArrayPattern') {
+                                dataName = declaration.id.elements[0].name;
+                            }
+                            else {
+                                dataName = declaration.id.name;
+                            }
+                            funData.push(dataName);
+                        });
+                    }
+                }
+                if (funData.length > 0) {
+                    const funDataElement = `this.FUN_DATA = {${funData.join(',')}}`;
+                    body.splice(-1, 0, template_1.default(funDataElement)({
+                        FUN_DATA: 'FUN_DATA'
+                    }));
+                }
+                body.unshift(template_1.default(utils_1.default.shortcutOfCreateElement())());
             }
         }
     },

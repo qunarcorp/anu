@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2021-08-06T06
+ * 运行于微信小程序的React by 司徒正美 Copyright 2021-09-22T13
  * IE9+
  */
 
@@ -981,6 +981,9 @@ function updateMiniApp(instance) {
         state: instance.state || null,
         context: instance.context
     });
+    if (instance.FUN_DATA) {
+        Object.assign(data, instance.FUN_DATA);
+    }
     if (instance.wx.setData) {
         instance.wx.setData(data);
     } else {

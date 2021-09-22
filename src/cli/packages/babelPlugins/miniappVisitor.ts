@@ -207,15 +207,37 @@ const visitor:babel.Visitor = {
                     name,
                     name
                 );
+                // 给useState或自定义的变量增加输出
+                let funData: any = [];
+                let body = astPath.node.body.body;
+                for (let i = 0; i < body.length; i++) {
+                    const element = body[i];
+                    if (element.type == 'VariableDeclaration') {
+                        element.declarations.forEach(declaration => {
+                            let dataName;
+                            if (declaration.id.type == 'ArrayPattern') {
+                                dataName = declaration.id.elements[0].name;
+                            } else {
+                                dataName = declaration.id.name;
+                            }
+                            funData.push(dataName);
+                        });
             }
 
-            if (
-                astPath.parentPath.type === 'ExportDefaultDeclaration' &&
-                modules.componentType === 'Component'
-            ) {
-                astPath.node.body.body.unshift(
+                }
+            
+                if(funData.length > 0 ){
+                    const funDataElement = `this.FUN_DATA = {${funData.join(',')}}`;
+
+                    body.splice(-1, 0, template(funDataElement)({
+                        FUN_DATA: 'FUN_DATA'
+                    }) as any)
+                }
+                
+                body.unshift(
                     template(utils.shortcutOfCreateElement())() as any
                 );
+
             }
         }
     },
