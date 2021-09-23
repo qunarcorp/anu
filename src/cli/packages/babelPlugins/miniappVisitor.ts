@@ -207,6 +207,7 @@ const visitor:babel.Visitor = {
                     name,
                     name
                 );
+
                 // 给useState或自定义的变量增加输出
                 let funData: any = [];
                 let body = astPath.node.body.body;
@@ -214,16 +215,17 @@ const visitor:babel.Visitor = {
                     const element = body[i];
                     if (element.type == 'VariableDeclaration') {
                         element.declarations.forEach(declaration => {
-                            let dataName;
                             if (declaration.id.type == 'ArrayPattern') {
-                                dataName = declaration.id.elements[0].name;
+                                funData.push(declaration.id.elements[0].name);
+                            } else if (declaration.id.type == 'ObjectPattern') {
+                                declaration.id.properties.forEach(property => {
+                                    funData.push(property.value.name)
+                                });
                             } else {
-                                dataName = declaration.id.name;
+                                funData.push(declaration.id.name);
                             }
-                            funData.push(dataName);
                         });
-            }
-
+                    }
                 }
             
                 if(funData.length > 0 ){
