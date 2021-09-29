@@ -26,8 +26,8 @@ export {
     useState,
     useReducer,
     useEffect,
-    useMemo,
     useLayoutEffect,
+    useMemo,
     useCallback,
     useRef,
     useContext, //这个不对

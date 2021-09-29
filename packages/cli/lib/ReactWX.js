@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2021-09-22T13
+ * 运行于微信小程序的React by 司徒正美 Copyright 2021-09-26T03
  * IE9+
  */
 
@@ -2777,6 +2777,9 @@ function useReducer(reducer, initValue, initAction) {
 function useEffect(create, deps) {
     return useEffectImpl(create, deps, PASSIVE, "passive", "unpassive");
 }
+function useLayoutEffect(create, deps) {
+    return useEffectImpl(create, deps, HOOK, "layout", "unlayout");
+}
 
 var MemoComponent = miniCreateClass(function MemoComponent(obj) {
     this.render = obj.render;
@@ -2825,6 +2828,7 @@ var React = getWindow().React = {
     useCallback: useCallback,
     useMemo: useMemo,
     useEffect: useEffect,
+    useLayoutEffect: useLayoutEffect,
     useContext: useContext,
     useComponent: useComponent,
     useRef: useRef,

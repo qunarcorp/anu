@@ -1,5 +1,5 @@
 /**
- * 运行于支付宝小程序的React by 司徒正美 Copyright 2021-09-22
+ * 运行于支付宝小程序的React by 司徒正美 Copyright 2021-09-29
  */
 
 var arrayPush = Array.prototype.push;
@@ -2853,6 +2853,9 @@ function useReducer(reducer, initValue, initAction) {
 function useEffect(create, deps) {
     return useEffectImpl(create, deps, PASSIVE, "passive", "unpassive");
 }
+function useLayoutEffect(create, deps) {
+    return useEffectImpl(create, deps, HOOK, "layout", "unlayout");
+}
 
 function createRef() {
     return {
@@ -2908,6 +2911,7 @@ var React = getWindow().React = {
     useCallback: useCallback,
     useMemo: useMemo,
     useEffect: useEffect,
+    useLayoutEffect: useLayoutEffect,
     useContext: useContext,
     useComponent: useComponent,
     useRef: useRef,
