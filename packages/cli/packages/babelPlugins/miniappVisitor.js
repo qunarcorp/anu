@@ -649,6 +649,16 @@ const visitor = {
             }
         }
     },
+    JSXFragment: {
+        enter(astPath) {
+            if (astPath.parentPath.node.type == 'ReturnStatement') {
+                astPath.replaceWith(t.jSXElement(t.jsxOpeningElement(t.jsxIdentifier('view'), []), t.jSXClosingElement(t.jsxIdentifier('view')), astPath.node.children));
+            }
+            else {
+                astPath.replaceWithMultiple(astPath.node.children);
+            }
+        }
+    },
     JSXText(astPath) {
         if (astPath.parentPath.type == 'JSXElement') {
             var textNode = astPath.node;

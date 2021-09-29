@@ -74,7 +74,7 @@ function registerPageOrComponent(name: string, path: NodePath<t.ExportDefaultDec
     }
 }
 
-const visitor:babel.Visitor = {
+const visitor: babel.Visitor = {
     ClassDeclaration: helpers.classDeclaration,
     //babel 6 没有ClassDeclaration，只有ClassExpression
     ClassExpression: helpers.classDeclaration,
@@ -151,7 +151,7 @@ const visitor:babel.Visitor = {
                 if (modules.componentType === 'App') {
                     needRegisterApp = true;
                 }
-                
+
                 //当render域里有赋值时, BlockStatement下面有的不是returnStatement,
                 //而是VariableDeclaration
                 helpers.render.exit(
@@ -172,18 +172,18 @@ const visitor:babel.Visitor = {
          * typescript装饰器补丁
          * typescript不支持关闭自带装饰器编译，参考:https://github.com/microsoft/TypeScript/issues/16882。
          * 使用装饰器时class P {}会编译成let P = class P {}，与原先编译器逻辑冲突，此处去掉let P =
-         *  */ 
+         *  */
         enter(astPath) {
             const decl = astPath.get('declarations')[0];
             if (
-                config.typescript && 
-                astPath.parent.type === 'Program' && 
-                decl.type === 'VariableDeclarator' && 
+                config.typescript &&
+                astPath.parent.type === 'Program' &&
+                decl.type === 'VariableDeclarator' &&
                 decl.get('init').type === 'ClassExpression'
             ) {
                 const body = (decl.get('init').get('body') as any).node;
                 const id = (decl.get('init').get('id') as any).node;
-                const superClass =  (decl.get('init').get('superClass') as any).node;
+                const superClass = (decl.get('init').get('superClass') as any).node;
                 astPath.replaceWith(t.classDeclaration(id, superClass, body));
             }
         }
@@ -202,12 +202,14 @@ const visitor:babel.Visitor = {
             ) {
                 //需要想办法处理无状态组件
                 modules.className = name;
+
                 helpers.render.exit(astPath, '无状态组件', name, modules);
                 modules.registerStatement = utils.createRegisterStatement(
                     name,
                     name
                 );
 
+                
                 // 给useState或自定义的变量增加输出
                 let funData: any = [];
                 let body = astPath.node.body.body;
@@ -227,15 +229,15 @@ const visitor:babel.Visitor = {
                         });
                     }
                 }
-            
-                if(funData.length > 0 ){
+
+                if (funData.length > 0) {
                     const funDataElement = `this.FUN_DATA = {${funData.join(',')}}`;
 
                     body.splice(-1, 0, template(funDataElement)({
                         FUN_DATA: 'FUN_DATA'
                     }) as any)
                 }
-                
+
                 body.unshift(
                     template(utils.shortcutOfCreateElement())() as any
                 );
@@ -256,7 +258,7 @@ const visitor:babel.Visitor = {
                     throw '"' + modules.className + '"组件越级不能引用pages下面的样式\n\t' + source
                 }
             }
-            
+
             extraModules.push(source);
             astPath.remove();
         }
@@ -292,7 +294,7 @@ const visitor:babel.Visitor = {
         if (modules.componentType !== 'App') {
             let pre = "";
             let isNui = false;
-            if(/@qnpm\/nui$/.test(source)){
+            if (/@qnpm\/nui$/.test(source)) {
                 isNui = true;
                 pre = source + '/source/components/'
             }
@@ -300,7 +302,7 @@ const visitor:babel.Visitor = {
                 // 重点，保持所有引入的组件名及它们的路径，用于<import />
                 modules.importComponents[item.local.name] = {
                     astPath: astPath,
-                    source: isNui ? pre + item.local.name.substr(1) + '/index' : source,  
+                    source: isNui ? pre + item.local.name.substr(1) + '/index' : source,
                     importSpecifierName: item.local.name,
                     sourcePath: modules.sourcePath
                 };
@@ -324,11 +326,11 @@ const visitor:babel.Visitor = {
             ) {
                 for (var i in modules.importComponents) {
                     var value = modules.importComponents[i];
-                    if(value.astPath && i === parentClass){
-                        modules.usedComponents['anu-' +i.toLowerCase()] = 
+                    if (value.astPath && i === parentClass) {
+                        modules.usedComponents['anu-' + i.toLowerCase()] =
                             // calculateComponentsPath(value, i); tsc todo 参数一个还是两个？
-                            calculateComponentsPath(value); 
-                        value.astPath = null;     
+                            calculateComponentsPath(value);
+                        value.astPath = null;
                     }
                 }
             }
@@ -340,17 +342,17 @@ const visitor:babel.Visitor = {
                 return;
             }
             var json = modules.config;
-        
+
             //将app.js中的import语句变成pages数组
             if (modules.componentType === 'App') {
                 json.pages = modules.pages;
                 delete modules.pages;
             }
-            
+
             //支付宝在这里会做属性名转换
             helpers.configName(json, modules.componentType, modules.sourcePath);
-            
-            
+
+
             var keys = Object.keys(modules.usedComponents),
                 usings: {
                     [props: string]: string;
@@ -361,7 +363,7 @@ const visitor:babel.Visitor = {
                     usings[name] = modules.usedComponents[name];
                 });
             }
-            
+
             if (buildType == 'quick') {
                 var obj = quickFiles[modules.sourcePath];
                 if (obj) {
@@ -389,19 +391,19 @@ const visitor:babel.Visitor = {
                 json = require('../utils/mergeConfigJson')(modules, json);
 
                 let relPath = '';
-               
+
                 if (/\/node_modules\//.test(modules.sourcePath.replace(/\\/g, '/'))) {
-                    relPath = 'npm/' + path.relative( path.join(cwd, 'node_modules'), modules.sourcePath);
+                    relPath = 'npm/' + path.relative(path.join(cwd, 'node_modules'), modules.sourcePath);
                 } else {
-                    relPath =  path.relative(path.resolve(cwd, 'source'), modules.sourcePath);
+                    relPath = path.relative(path.resolve(cwd, 'source'), modules.sourcePath);
                 }
-                
+
                 // xConfig.json中 除了 'window', 'tabBar', 'pages', 'subpackages', 'preloadRule, 其他属性都需要合并到app.json里
                 if (/app\.js/.test(relPath)) {
                     const ignoreAppJsonProp = ['window', 'tabBar', 'pages', 'subpackages', 'preloadRule'];
                     let xConfigJson = {} as any;
                     try {
-                        xConfigJson = require( path.join(process.cwd(), 'source', `${buildType}Config.json`));
+                        xConfigJson = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
                     } catch (err) {
                         // eslint-disable-next-line
                     }
@@ -412,7 +414,7 @@ const visitor:babel.Visitor = {
                         }
                     });
                 }
-                
+
                 modules.queue.push({
                     path: relPath,
                     code: JSON.stringify(json, null, 4),
@@ -560,20 +562,20 @@ const visitor:babel.Visitor = {
             // 反解析可选链， 解析成 && 逻辑表达式
             if (!t.isJSXExpressionContainer(astPath.parentPath)) return;
             let modules = utils.getAnu(state);
-            var {node} = astPath;
+            var { node } = astPath;
             var callee = node.callee;
             var args = node.arguments;
 
-            var opSepList:any = generate(callee).code.split('?.');
+            var opSepList: any = generate(callee).code.split('?.');
             // [ 'this.state.a',
             //   'this.state.a.b',
             //   'this.state.a.b.c',
             //   'this.state.a.b.c.d.map' ]
-            opSepList = opSepList.map(function(el:string, idx:number) {
+            opSepList = opSepList.map(function (el: string, idx: number) {
                 return opSepList.slice(0, idx + 1).join('.');
             });
 
-            function geMemExp(x:string) {
+            function geMemExp(x: string) {
                 var list = x.split('.');
                 var memEpr = t.memberExpression(
                     list[0] === 'this' ? t.thisExpression() : t.identifier(list[0]),
@@ -589,7 +591,7 @@ const visitor:babel.Visitor = {
                 return memEpr;
             }
 
-            function getLogic(opSepList:any) {
+            function getLogic(opSepList: any) {
                 var left = opSepList[0];
                 var right = opSepList[1];
                 var logicExp = t.logicalExpression('&&', left, right);
@@ -600,7 +602,7 @@ const visitor:babel.Visitor = {
                 return logicExp;
             }
 
-            opSepList = opSepList.map(function(el:any){
+            opSepList = opSepList.map(function (el: any) {
                 return geMemExp(el);
             })
 
@@ -627,8 +629,8 @@ const visitor:babel.Visitor = {
             var m = getLogic(opSepList);
             m.right = t.callExpression(m.right, args);
             astPath.replaceWith(m);
-            
-            
+
+
         }
     },
     CallExpression: {
@@ -661,7 +663,7 @@ const visitor:babel.Visitor = {
             }
             //处理循环语
             if (utils.isLoopMap(astPath)) {
-               
+
                 //添加上第二参数
                 if (!args[1] && args[0].type === 'FunctionExpression') {
                     args[1] = t.identifier('this');
@@ -717,7 +719,7 @@ const visitor:babel.Visitor = {
             if (buildType === 'quick') {
                 ignorePrevAttri(astPath, nodeName);
             }
-            
+
             if (nodeName === 'span' && buildType === 'quick') {
                 //如果是快应用，<text><span></span></text>不变， <div><span></span></div>变<div><text></text></div>
                 let p = astPath.parentPath.findParent(function (parent) {
@@ -746,7 +748,7 @@ const visitor:babel.Visitor = {
             nodeName = helpers.nodeName(astPath, modules) || nodeName;
             // https://mp.weixin.qq.com/wxopen/plugindevdoc?appid=wx56c8f077de74b07c&token=1011820682&lang=zh_CN#-
             if (buildType === 'wx' && config.pluginTags && config.pluginTags[nodeName]) { // 暂时只有wx支持
-                modules.usedComponents[nodeName] =  config.pluginTags[nodeName];
+                modules.usedComponents[nodeName] = config.pluginTags[nodeName];
                 return;
             }
             let bag = modules.importComponents[nodeName];
@@ -768,16 +770,16 @@ const visitor:babel.Visitor = {
                     // 存下删除的依赖路径
                     if (bag.source !== 'schnee-ui') modules.extraModules.push(bag.source);
                     bag.astPath.remove();
-                    
+
                     bag.astPath = null;
                 } catch (err) {
                     // eslint-disable-next-line
                 }
-                
-                
+
+
                 // let useComponentsPath = calculateComponentsPath(bag, nodeName); // tsc: 原来有两个参数 第二个参数有用吗？
                 let useComponentsPath = calculateComponentsPath(bag);
-                
+
                 modules.usedComponents['anu-' + nodeName.toLowerCase()] = useComponentsPath;
                 (astPath.node.name as t.JSXIdentifier).name = 'React.useComponent';
 
@@ -837,7 +839,7 @@ const visitor:babel.Visitor = {
                     );
                     (astPath.node.value as any).value = relativePath; // tsc todo
                 }
-                if (attrName === 'open-type' && srcValue === 'getUserInfo' && buildType == 'ali' ) {
+                if (attrName === 'open-type' && srcValue === 'getUserInfo' && buildType == 'ali') {
                     (astPath.node.value as any).value = "getAuthorize"; // tsc todo
                     let attrs = (parentPath.node as any).attributes;
                     attrs.push(
@@ -864,7 +866,7 @@ const visitor:babel.Visitor = {
                     var isIdentifier = styleType === 'Identifier';
                     // 华为编辑器行内样式特殊处理
 
-    
+
                     if (
                         isIdentifier ||
                         MemberExpression ||
@@ -954,7 +956,22 @@ const visitor:babel.Visitor = {
             }
         }
     },
-
+    JSXFragment:{
+        // 兼容空标签
+        enter(astPath: NodePath<t.JSXFragment>){
+            if(astPath.parentPath.node.type == 'ReturnStatement'){
+                astPath.replaceWith(
+                    t.jSXElement(
+                        t.jsxOpeningElement(t.jsxIdentifier('view'), []),
+                        t.jSXClosingElement(t.jsxIdentifier('view')),
+                        astPath.node.children,
+                    ),
+                )
+            }else{
+                astPath.replaceWithMultiple(astPath.node.children);
+            }
+        }
+    },
     JSXText(astPath: NodePath<t.JSXText>) {
         //去掉内联元素内部的所有换行符
         if (astPath.parentPath.type == 'JSXElement') {
