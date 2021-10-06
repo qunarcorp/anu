@@ -67,10 +67,10 @@ const visitor = {
             if (!this.injectInportSpecifiers.length) return;
           
           
-            const importSourcePath = path.relative(
-                path.parse(utils.getDistPathFromSoucePath(state.filename)).dir,
+            const importSourcePath = utils.fixWinPath(path.relative(
+                path.parse(utils.getDistPathFromSoucePath(utils.fixWinPath(state.filename))).dir,
                 this.distCommonPath
-            );
+            ));
             const specifiersAst = this.injectInportSpecifiers.map(name => t.importSpecifier(t.identifier(name), t.identifier(name)));
             // from 'a/b/c' => from './a/b/c'
             const sourceAst = t.StringLiteral(
