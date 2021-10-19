@@ -73,6 +73,11 @@ export function updateMiniApp (instance) {
         context: instance.context
     });
 
+    // 考虑无状态组件
+    if (instance.FUN_DATA){
+        Object.assign(data, instance.FUN_DATA);
+    }
+
     if (instance.wx.setData) {
         instance.wx.setData(data);
     } else {

@@ -1,5 +1,5 @@
 /**
- * 运行于支付宝小程序的React by 司徒正美 Copyright 2021-08-06
+ * 运行于支付宝小程序的React by 司徒正美 Copyright 2021-09-29
  */
 
 var arrayPush = Array.prototype.push;
@@ -653,6 +653,9 @@ function updateMiniApp(instance) {
         state: instance.state || null,
         context: instance.context
     });
+    if (instance.FUN_DATA) {
+        Object.assign(data, instance.FUN_DATA);
+    }
     if (instance.wx.setData) {
         instance.wx.setData(data);
     } else {
@@ -2712,6 +2715,9 @@ function useReducer(reducer, initValue, initAction) {
 function useEffect(create, deps) {
     return useEffectImpl(create, deps, PASSIVE, "passive", "unpassive");
 }
+function useLayoutEffect(create, deps) {
+    return useEffectImpl(create, deps, HOOK, "layout", "unlayout");
+}
 
 var MemoComponent = miniCreateClass(function MemoComponent(obj) {
     this.render = obj.render;
@@ -2773,4 +2779,4 @@ if (typeof swan != "undefined") {
 registerAPIs(React, apiContainer, more);
 
 export default React;
-export { Children, createElement, Component, PureComponent, createRef, memo, useState, useReducer, useCallback, useMemo, useEffect, useContext, useComponent, useRef };
+export { Children, createElement, Component, PureComponent, createRef, memo, useState, useReducer, useCallback, useMemo, useEffect, useLayoutEffect, useContext, useComponent, useRef };

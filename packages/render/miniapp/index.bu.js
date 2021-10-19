@@ -35,6 +35,7 @@ import {
     useCallback,
     useMemo,
     useEffect,
+    useLayoutEffect,
     useContext,
     useRef
 } from "react-core/hooks";
@@ -107,6 +108,7 @@ export {
     useCallback,
     useMemo,
     useEffect,
+    useLayoutEffect,
     useContext,
     useComponent,
     useRef

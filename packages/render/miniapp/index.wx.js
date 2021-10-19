@@ -35,6 +35,7 @@ import {
     useCallback,
     useMemo,
     useEffect,
+    useLayoutEffect,
     useContext,
     useRef
 } from "react-core/hooks";
@@ -81,6 +82,7 @@ let React = (getWindow().React = {
     useCallback,
     useMemo,
     useEffect,
+    useLayoutEffect,
     useContext,
     useComponent,
     useRef,
