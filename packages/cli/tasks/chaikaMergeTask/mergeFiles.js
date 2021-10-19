@@ -13,7 +13,7 @@ const merge = require('lodash.mergewith');
 const shelljs = require('shelljs');
 let mergeFilesQueue = require('./mergeFilesQueue');
 let diff = require('deep-diff');
-const buildType = process.argv[2].split(':')[1];
+const buildType = process.argv.length > 2 ? process.argv[2].split(':')[1] : 'wx';
 const ignoreExt = ['.tgz'];
 function getMergeDir() {
     return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
