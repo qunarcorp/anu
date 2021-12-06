@@ -19,5 +19,9 @@ export interface Log {
 }
 
 export const build: Array<string> = [];
-export const error: Array<Log> = [];
+export let error: Array<Log> = [];
 export const warning: Array<Log> = [];
+
+export const setError =  (newError: Array<Log>) => {
+    error = newError;
+};

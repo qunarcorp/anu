@@ -27,6 +27,8 @@ module.exports = function (code, map, meta) {
                 meta
             });
             try {
+                const newError = queue_1.error.filter(v => v.id !== this.resourcePath);
+                queue_1.setError(newError);
                 yield parser.parse();
             }
             catch (err) {

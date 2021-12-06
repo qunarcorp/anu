@@ -1,6 +1,6 @@
 import JavascriptParserFactory from '../../parsers/jsParser/JavascriptParserFactory';
 import utils from '../../packages/utils/index';
-import { error } from '../../packages/utils/logger/queue';
+import { error, setError } from '../../packages/utils/logger/queue';
 
 export interface NanachiQueue {
     code: string;
@@ -28,6 +28,11 @@ module.exports = async function(code: string, map: any, meta: any) {
         });
 
         try {
+
+            // error队列清空本页错误
+            const newError = error.filter(v => v.id !== this.resourcePath);
+            setError(newError);
+
             await parser.parse();
         } catch (err) {
             //生产环境中构建时候如果构建错误，立马退出，抛错。
@@ -38,7 +43,7 @@ module.exports = async function(code: string, map: any, meta: any) {
             error.push({
                 id: this.resourcePath,
                 msg: err
-            });
+            });   
         }
        
         let result = {

@@ -8,5 +8,6 @@ export interface Log {
     };
 }
 export declare const build: Array<string>;
-export declare const error: Array<Log>;
+export declare let error: Array<Log>;
 export declare const warning: Array<Log>;
+export declare const setError: (newError: Log[]) => void;
