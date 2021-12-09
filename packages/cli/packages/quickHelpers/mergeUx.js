@@ -49,6 +49,9 @@ let map = {
         });
         let reg = /components[\\/](\w+)/;
         var componentName = sourcePath.match(reg)[1];
+        if (/\@qnpm\/nui/.test(sourcePath)) {
+            componentName = 'N' + componentName;
+        }
         result.code = `import ${componentName}, { React } from './index.js';
         export default  React.registerComponent(${componentName}, '${componentName}');`;
     }
