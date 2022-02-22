@@ -31,7 +31,9 @@ const mergeFiles = [
     'package.json'
 ];
 const lockFiles = [
-    'project.config.json'
+    'project.config.json',
+    'project.swan.json',
+    'mini.config.json',
 ];
 function getDownLoadDir() {
     return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix());

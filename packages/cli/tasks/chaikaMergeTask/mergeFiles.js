@@ -18,6 +18,20 @@ const ignoreExt = ['.tgz'];
 function getMergeDir() {
     return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
 }
+const projectConfigJsonMap = {
+    'wx': {
+        reg: /\/project\.config\.json$/,
+        fileName: 'project.config.json',
+    },
+    'bu': {
+        reg: /\/project\.swan\.json$/,
+        fileName: 'project.swan.json',
+    },
+    'ali': {
+        reg: /\/mini\.config\.json$/,
+        fileName: 'mini.config.json',
+    },
+};
 const ANU_ENV = buildType
     ? buildType === 'h5'
         ? 'web'
@@ -143,10 +157,10 @@ function getFilesMap(queue = []) {
             map['importSyntax'] = map['importSyntax'].concat(imports);
             return;
         }
-        if (/\/project\.config\.json$/.test(file)) {
+        const projectConfigReg = (projectConfigJsonMap[buildType] || projectConfigJsonMap.wx).reg;
+        if (projectConfigReg.test(file)) {
             map['projectConfigJson'] = map['projectConfigJson'] || [];
             map['projectConfigJson'].push(file);
-            return;
         }
         var reg = new RegExp(env + 'Config.json$');
         map['xconfig'] = map['xconfig'] || [];
@@ -328,10 +342,15 @@ function getMergedPkgJsonContent(alias) {
     };
 }
 function getMiniAppProjectConfigJson(projectConfigQueue = []) {
-    let dist = path.join(getMergeDir(), 'project.config.json');
+    const projectConfigFileName = (projectConfigJsonMap[buildType] || projectConfigJsonMap.wx).fileName;
+    let dist = path.join(getMergeDir(), projectConfigFileName);
     let distContent = '';
     if (projectConfigQueue.length) {
-        distContent = JSON.stringify(require(projectConfigQueue[0]), null, 4);
+        const configJson = require(projectConfigQueue[0]);
+        if (process.env.appid) {
+            configJson.appid = process.env.appid;
+        }
+        distContent = JSON.stringify(configJson, null, 4);
     }
     return {
         dist: dist,

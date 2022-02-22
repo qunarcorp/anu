@@ -28,7 +28,9 @@ const mergeFiles: any = [
 
 //这种文件全局只能有一个, 不参与合并
 const lockFiles: any = [
-    'project.config.json'
+    'project.config.json',
+    'project.swan.json',
+    'mini.config.json',
 ];
 
 
