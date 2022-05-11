@@ -2845,6 +2845,12 @@ if (typeof wx != "undefined") {
     React.appType = "tt";
 }
 registerAPIs(React, apiContainer, more);
-
+var fn  =  React.api.setStorageSync;
+React.api.setStorageSync = function(...args) {
+  fn(...args)
+  if (typeof args[0] === 'string') {
+    React.api.getStorageSync(args[0])
+  }
+}
 export default React;
 export { Children, createElement, Component, PureComponent, memo, createRef, useState, useReducer, useCallback, useMemo, useEffect, useContext, useComponent, useRef };
