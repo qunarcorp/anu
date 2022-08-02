@@ -1,3 +1,5 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const buildType = process.env.ANU_ENV;
 const supportPlat = ['wx', 'bu', 'qq', 'ali'];
 const keys = {
@@ -43,6 +45,9 @@ module.exports = function (modules, json) {
     if (!json[keys[buildType]].length) {
         delete json[keys[buildType]];
     }
-    json.pages = routes;
+    let set = new Set();
+    routes.forEach((route) => set.add(route));
+    let pages = Array.from(set);
+    json.pages = pages;
     return json;
 };
