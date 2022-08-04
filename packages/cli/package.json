@@ -1,6 +1,6 @@
 {
   "name": "nanachi-cli",
-  "version": "1.8.13-beta.0",
+  "version": "1.8.13-beta.1",
   "description": "cli tool for nanachi",
   "bin": {
     "nanachi": "./bin/index.js"
@@ -17,7 +17,7 @@
   "homepage": "https://qunarcorp.github.io/anu",
   "dependencies": {
     "@babel/core": "7.7.4",
-    "@babel/generator": "^7.7.4",
+    "@babel/generator": "7.7.4",
     "@babel/helper-annotate-as-pure": "7.7.4",
     "@babel/helper-builder-binary-assignment-operator-visitor": "7.7.4",
     "@babel/helper-builder-react-jsx": "7.7.4",
@@ -63,7 +63,7 @@
     "@babel/plugin-syntax-optional-chaining": "7.7.4",
     "@babel/plugin-syntax-typescript": "7.7.4",
     "@babel/plugin-transform-arrow-functions": "7.7.4",
-    "@babel/plugin-transform-async-to-generator": "^7.7.4",
+    "@babel/plugin-transform-async-to-generator": "7.7.4",
     "@babel/plugin-transform-block-scoped-functions": "7.7.4",
     "@babel/plugin-transform-block-scoping": "7.7.4",
     "@babel/plugin-transform-classes": "7.7.4",
@@ -92,8 +92,8 @@
     "@babel/plugin-transform-template-literals": "7.7.4",
     "@babel/plugin-transform-typescript": "7.7.4",
     "@babel/plugin-transform-unicode-regex": "7.7.4",
-    "@babel/preset-env": "^7.7.4",
-    "@babel/preset-react": "^7.7.4",
+    "@babel/preset-env": "7.7.4",
+    "@babel/preset-react": "7.7.4",
     "@babel/register": "7.7.4",
     "@babel/runtime": "7.7.4",
     "@babel/template": "7.7.4",
