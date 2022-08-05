@@ -2,14 +2,15 @@ import { string } from "postcss-selector-parser";
 
 //分包配置
 const buildType = process.env.ANU_ENV;
-const supportPlat: any = ['wx', 'bu', 'qq', 'ali'];
+const supportPlat: any = ['wx', 'bu', 'qq', 'ali', 'tt'];
 const keys: {
     [props: string]: string;
 } = {
     ali: 'subPackages',
     bu: 'subPackages',
     wx: 'subpackages',
-    qq: 'subpackages'
+    qq: 'subpackages',
+    tt: 'subpackages'
 };
 const getSubpackage = require('./getSubPackage');
 module.exports = function (modules: any, json: any) {
@@ -22,11 +23,17 @@ module.exports = function (modules: any, json: any) {
 
     if (!json.pages) return json;
 
+    // 去重，防止主包和公共包重命名后路由出现多份的情况。
+    let set = new Set();
+    json.pages.forEach((route: string) => set.add(route));
+    json.pages = Array.from(set);
+
+
     json[keys[buildType]] = json[keys[buildType]] || [];
     const subPackages = getSubpackage(buildType);
 
     let routes = json.pages.slice();
-    
+
     subPackages.forEach(function (el: any) {
         let { name, resource } = el;
         /**
@@ -46,7 +53,7 @@ module.exports = function (modules: any, json: any) {
             delete subPackagesItem.name;
         }
 
-       
+
 
         //核心是根据配置中的 resource 创建正则，去遍历出 pages 中的的匹配这个正则的路由。
         let reg = new RegExp('^' + resource + '$');
@@ -59,7 +66,7 @@ module.exports = function (modules: any, json: any) {
 
                 //如果匹配到分包，需要从 pages 中将分包的路径删除掉
                 let subPage = routes.splice(_index, 1)[0];
-                
+
                 // pages/demo/syntax/multiple/index => multiple/index
                 subPackagesItem.pages.push(subPage.replace(resource + '/', ''));
             }
@@ -71,11 +78,6 @@ module.exports = function (modules: any, json: any) {
         delete json[keys[buildType]];
     }
 
-    // 去重，防止主包和公共包重命名后路由出现多份的情况。
-    let set = new Set();
-    routes.forEach((route:string)=>set.add(route));
-    let pages = Array.from(set);
-
-    json.pages = pages;
+    json.pages = routes;
     return json;
 }

@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const buildType = process.env.ANU_ENV;
-const supportPlat = ['wx', 'bu', 'qq', 'ali'];
+const supportPlat = ['wx', 'bu', 'qq', 'ali', 'tt'];
 const keys = {
     ali: 'subPackages',
     bu: 'subPackages',
     wx: 'subpackages',
-    qq: 'subpackages'
+    qq: 'subpackages',
+    tt: 'subpackages'
 };
 const getSubpackage = require('./getSubPackage');
 module.exports = function (modules, json) {
@@ -18,6 +19,9 @@ module.exports = function (modules, json) {
     }
     if (!json.pages)
         return json;
+    let set = new Set();
+    json.pages.forEach((route) => set.add(route));
+    json.pages = Array.from(set);
     json[keys[buildType]] = json[keys[buildType]] || [];
     const subPackages = getSubpackage(buildType);
     let routes = json.pages.slice();
@@ -45,9 +49,6 @@ module.exports = function (modules, json) {
     if (!json[keys[buildType]].length) {
         delete json[keys[buildType]];
     }
-    let set = new Set();
-    routes.forEach((route) => set.add(route));
-    let pages = Array.from(set);
-    json.pages = pages;
+    json.pages = routes;
     return json;
 };
