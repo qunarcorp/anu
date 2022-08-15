@@ -135,7 +135,7 @@ class NanachiWebpackPlugin {
             this.timer.end();
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);
             if (config_1.default.buildType === 'quick') {
-                const filePath = path_1.default.join(cwd, 'src/manifest.json');
+                const filePath = path_1.default.join(cwd, '../../../', 'src/manifest.json');
                 const originManifestJson = require(filePath);
                 const newMenifest = rebuildManifest(originManifestJson, globalStore_1.default.quickPageDisplayConifg);
                 fs_extra_1.default.writeFile(filePath, JSON.stringify(newMenifest, null, 4), (err) => {
