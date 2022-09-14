@@ -44,7 +44,7 @@ export function dispatchEvent(e) {
     };
 
     if (app && app.onCollectLogs && rbeaconType.test(eventType)) {
-        app.onCollectLogs(dataset, eventType, fiber.stateNode);
+        app.onCollectLogs(dataset, eventType, fiber.stateNode, fiber);
     }
 
     Renderer.batchedUpdates(function() {
