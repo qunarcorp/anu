@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2021-09-26T03
+ * 运行于微信小程序的React by 司徒正美 Copyright 2022-09-14T02
  * IE9+
  */
 
@@ -1101,7 +1101,7 @@ function dispatchEvent(e) {
         value: value
     };
     if (app && app.onCollectLogs && rbeaconType.test(eventType)) {
-        app.onCollectLogs(dataset, eventType, fiber.stateNode);
+        app.onCollectLogs(dataset, eventType, fiber.stateNode, fiber);
     }
     Renderer.batchedUpdates(function () {
         var fn = instance.$$eventCached[eventUid];
