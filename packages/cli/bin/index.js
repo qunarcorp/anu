@@ -110,7 +110,7 @@ platforms_1.default.forEach(function (el) {
             if (isChaika) {
                 try {
                     if (!process.env.JENKINS_URL) {
-                        installDefaultModule_1.default(buildType);
+                        yield installDefaultModule_1.default(buildType);
                     }
                     yield index_2.default();
                 }
