@@ -15,6 +15,7 @@ ydoc serve
 ## 如何修改文档
 进入以下路径 /anu/docs/docs，所有修改都在此目录下进行
 
+
 ## 如何发布文档到线上
 该路径下需要存在 index.html | jsx | md : /anu/docs
  
@@ -29,4 +30,5 @@ ydoc serve
 - search_json.js
 - ydoc.json
 - readme.md
+
 其余 /anu/docs 下的文件全部删除，然后从 build 开始执行
