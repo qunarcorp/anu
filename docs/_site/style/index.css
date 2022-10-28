@@ -98,12 +98,12 @@
     background: url('../images/GitHub.png') no-repeat 10px;
     background-size: 16px 16px;
 }
-.content{
+.m-content .content{
     position: relative;
     width: 100%;
     text-align: center;
 }
-.content .bg1{
+.m-content .content .bg1{
     position: absolute;
     left: -50%;
     height: 1150px;
@@ -111,7 +111,7 @@
     border-radius: 70% 70% 0 0;
     background:rgba(239,243,246,1);
 }
-.content .title{
+.m-content .content .title{
     position: relative;
     z-index: 2;
     margin: 0 auto;
@@ -123,20 +123,17 @@
     line-height:40px;
     padding: 60px 0 86px 0;
 }
-.content .title .text{
+.m-content .content .title .text{
     margin-bottom: 10px;
 }
-.content .title .bg2{
+.m-content .content .title .bg2{
     width: 40px;
     height: 4px;
     background:rgba(6,205,131,1);
     border-radius:2px;
     margin: 0 auto;
 }
-
-
-
-.content .introduce{
+.m-content .content .introduce{
     padding-bottom: 30px;
     width: 100%;
     position: relative;
@@ -146,7 +143,7 @@
     flex-wrap: wrap; */
     background: rgba(239,243,246,1);
 }
-.content .introduce .bulk{
+.m-content .content .introduce .bulk{
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -157,10 +154,10 @@
     text-align: center;
     background:rgba(239,243,246,1);
 }
-.content .introduce .bulk img {
+.m-content .content .introduce .bulk img {
     height: 150px;
 }
-.content .introduce .bulk .text1{
+.m-content .content .introduce .bulk .text1{
     margin: 28px 0 13px 0;
     height:30px;
     font-size:22px;
@@ -170,7 +167,7 @@
     line-height:30px;
     padding: 0 12px;
 }
-.content .introduce .bulk .text2{
+.m-content .content .introduce .bulk .text2{
     height:22px;
     font-size:16px;
     font-family:PingFangSC-Regular;
@@ -250,7 +247,7 @@
     .m-content{
         padding-top: .3rem;
     }
-    .content .title{
+    .m-content .content .title{
         padding: 60px 0 56px 0;
     }
     /* .content .introduce .bulk{
