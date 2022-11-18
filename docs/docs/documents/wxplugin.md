@@ -14,9 +14,10 @@ https://mp.weixin.qq.com/wxopen/plugindevdoc?appid=wx56c8f077de74b07c&token=1011
 ```json
 {
     "plugins": {
-        "goodsSharePlugin": {
+        "goodsSharePlugin": {//pluginName
           "version": "2.1.4",
           "name": "share-button",
+          "tagName": "share-button",//可不写。当tagName和name一致时，可不写！！！
           "provider": "wx56c8f077de74b07c"
         }
      }
@@ -28,9 +29,9 @@ https://mp.weixin.qq.com/wxopen/plugindevdoc?appid=wx56c8f077de74b07c&token=1011
 plugin:{
   "share-button": "plugin://goodsSharePlugin/share-button"
 }
-```
 
-后面的值的计算公式为 `plugin://${pluginName}/{tagName}`
+```
+整体计算公式是：`${name}: plugin://${pluginName}/${tagName?tagName:name}`
 
 
 

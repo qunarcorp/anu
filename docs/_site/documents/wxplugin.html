@@ -10,9 +10,10 @@
 <p>在wxConfig.json添加</p>
 <pre><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"plugins"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
-        <span class="token property">"goodsSharePlugin"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">"goodsSharePlugin"</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token comment">//pluginName</span>
           <span class="token property">"version"</span><span class="token operator">:</span> <span class="token string">"2.1.4"</span><span class="token punctuation">,</span>
           <span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"share-button"</span><span class="token punctuation">,</span>
+          <span class="token property">"tagName"</span><span class="token operator">:</span> <span class="token string">"share-button"</span><span class="token punctuation">,</span><span class="token comment">//可不写。当tagName和name一致时，可不写！！！</span>
           <span class="token property">"provider"</span><span class="token operator">:</span> <span class="token string">"wx56c8f077de74b07c"</span>
         <span class="token punctuation">}</span>
      <span class="token punctuation">}</span>
@@ -22,8 +23,9 @@
 <pre><code class="language-json">plugin<span class="token operator">:</span><span class="token punctuation">{</span>
   <span class="token property">"share-button"</span><span class="token operator">:</span> <span class="token string">"plugin://goodsSharePlugin/share-button"</span>
 <span class="token punctuation">}</span>
+
 </code></pre>
-<p>后面的值的计算公式为 <code>plugin://${pluginName}/{tagName}</code></p>
+<p>整体计算公式是：<code>${name}: plugin://${pluginName}/${tagName?tagName:name}</code></p>
 <pre><code class="language-html"><span class="token markup"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token punctuation">></span></span></span>
 { this.state.ANU_ENV == 'wx'  &amp;&amp; 
   <span class="token markup"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token special-attr"><span class="token attr-name">style</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span><span class="token value css language-css"><span class="token property">margin</span><span class="token punctuation">:</span> 4px 0px</span><span class="token punctuation">"</span></span></span><span class="token punctuation">></span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>share-button</span> <span class="token attr-name">product</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span>{this.state.product}</span> <span class="token punctuation">/></span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">></span></span> }</span>

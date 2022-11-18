@@ -569,7 +569,7 @@ window.ydoc_plugin_search_json = {
         {
           "title": "使用",
           "url": "/documents/wxplugin.html#使用",
-          "content": "使用在wxConfig.json添加{    \"plugins\": {\n        \"goodsSharePlugin\": {\n          \"version\": \"2.1.4\",\n          \"name\": \"share-button\",\n          \"provider\": \"wx56c8f077de74b07c\"\n        }\n     }\n}\n我们在内部就转换成一个对象plugin:{  \"share-button\": \"plugin://goodsSharePlugin/share-button\"\n}\n后面的值的计算公式为 plugin://${pluginName}/{tagName}{ this.state.ANU_ENV == 'wx'  && \n   }\n\n微信小程序的插件需要在后台中配置使用，可以用wx799d4d93a341b368 这个appid进行测试\n"
+          "content": "使用在wxConfig.json添加{    \"plugins\": {\n        \"goodsSharePlugin\": {//pluginName\n          \"version\": \"2.1.4\",\n          \"name\": \"share-button\",\n          \"tagName\": \"share-button\",//可不写。当tagName和name一致时，可不写！！！\n          \"provider\": \"wx56c8f077de74b07c\"\n        }\n     }\n}\n我们在内部就转换成一个对象plugin:{  \"share-button\": \"plugin://goodsSharePlugin/share-button\"\n}\n\n整体计算公式是：${name}: plugin://${pluginName}/${tagName?tagName:name}{ this.state.ANU_ENV == 'wx'  && \n   }\n\n微信小程序的插件需要在后台中配置使用，可以用wx799d4d93a341b368 这个appid进行测试\n"
         }
       ]
     },
