@@ -315,8 +315,10 @@ function injectPluginsConfig() {
                 delete userConfig[key];
                 throw `${key}配置项必须包含name字段`;
             }
-            config.pluginTags[name] = `plugin://${key}/${name}`;
+            const tagName = userConfig.plugins[key].tagName;
+            config.pluginTags[name] = `plugin://${key}/${tagName ? tagName : name}`;
             delete userConfig.plugins[key].name;
+            delete userConfig.plugins[key].tagName;
         });
         config.plugins = userConfig.plugins;
     }
