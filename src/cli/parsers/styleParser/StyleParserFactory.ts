@@ -1,4 +1,5 @@
 import webpack = require("webpack");
+import webpackV5 = require("webpack-new");
 
 import SassParser from './SassParser';
 import LessParser from './LessParser';

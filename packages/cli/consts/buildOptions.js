@@ -15,6 +15,14 @@ const BUILD_OPTIONS = {
     'dir': {
         alias: 'd',
         desc: '自定义打包输出目录'
+    },
+    'future': {
+        alias: 'f',
+        desc: '使用 webpack 5 进行编译'
+    },
+    'breakchange': {
+        alias: 'b',
+        desc: '使用更高性能但是可能导致产物和旧版本不一致的 webpack 配置'
     }
 };
 exports.default = BUILD_OPTIONS;

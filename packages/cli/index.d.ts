@@ -19,6 +19,7 @@ export interface NanachiOptions {
     plugins?: Array<webpack.Plugin>;
     analysis?: boolean;
     silent?: boolean;
+    future?: boolean;
     complete?: Function;
 }
 declare function nanachi(options?: NanachiOptions): Promise<void>;

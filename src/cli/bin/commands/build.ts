@@ -12,9 +12,8 @@ interface BulidOptions {
 }
 
 const build = async function(args: BulidOptions) {
-   
     try {
-        const { beta, betaUi, watch, compress, huawei, analysis, silent, typescript, dir=''} = args;
+        const { beta, betaUi, watch, compress, huawei, analysis, silent, future, breakchange, typescript, dir=''} = args;
         let { buildType } = args;
       
         const nanachiConfig = {};
@@ -32,6 +31,8 @@ const build = async function(args: BulidOptions) {
             huawei,
             analysis,
             silent,
+            future,
+            breakchange,
             typescript,
             dir
         };

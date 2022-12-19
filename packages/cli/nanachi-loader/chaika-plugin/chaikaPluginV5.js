@@ -15,8 +15,10 @@ class ChaikaPlugin {
         });
         compiler.hooks.watchRun.tap(id, () => {
             const { watchFileSystem } = compiler;
+            console.log(watchFileSystem);
             const watcher = watchFileSystem.watcher || watchFileSystem.wfs.watcher;
-            const changedFile = Object.keys(watcher.mtimes || compiler.modifiedFiles || {});
+            console.log(watcher);
+            const changedFile = Object.keys(watcher.mtimes);
             const sourceReg = /\/source\//;
             changedFile.forEach((file) => {
                 const patchedFile = file.replace(/\\/g, '/');

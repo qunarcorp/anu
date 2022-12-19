@@ -11,6 +11,7 @@ import * as t from '@babel/types';
 import { NanachiOptions } from '../index';
 import globalStore from '../packages/utils/globalStore';
 import webpack = require('webpack');
+import webpackV5 = require('webpack-new');
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
@@ -122,52 +123,91 @@ class NanachiWebpackPlugin implements webpack.Plugin {
         };
     }
     apply(compiler: NanachiCompiler) {
-
+        /* NormalModule 适配 webpack 5，兼容写法*/
         compiler.hooks.compilation.tap(id, (compilation) => {
-            compilation.hooks.normalModuleLoader.tap(id, (loaderContext) => {
-                loaderContext.nanachiOptions = this.nanachiOptions;
-            });
+            if (Object.isFrozen(compilation.hooks)) {
+                // for webpack 5
+                const NormalModule = compiler.webpack.NormalModule;
+                NormalModule.getCompilationHooks(compilation).loader.tap(id, (loaderContext) => {
+                    loaderContext.nanachiOptions = this.nanachiOptions;
+                });
+            } else {
+                // for webpack 4
+                compilation.hooks.normalModuleLoader.tap(id, (loaderContext) => {
+                    loaderContext.nanachiOptions = this.nanachiOptions;
+                });
+            }
         });
         
-        // 删除webpack打包产物
-        compiler.hooks.emit.tap(id, (compilation) => {
-            // if (this.nanachiOptions.platform === 'h5') {
-            //     // 生成pageConfig 文件 用于动态加载情况下，读取页面配置信息
-            //     const { code } = generate(t.exportDefaultDeclaration(pageConfig));
-            //     compilation.assets['pageConfig.js'] = {
-            //         source: function() {
-            //             return code;
-            //         },
-            //         size: function() {
-            //             return code.length;
-            //         }
-            //     };
-            // }
-            const reg = new RegExp(compiler.options.output.filename+"");
-            Object.keys(compilation.assets).forEach(key => {
-                if (reg.test(key)) {
-                    delete compilation.assets[key];
-                }
+        // 删除webpack打包产物 （即 index.bundle.js）
+        // webpack 5 兼容写法，isFrozen 不能用所以只能通过全局变量区分
+        if (global.useWebpackFuture) {
+            compiler.hooks.compilation.tap(id, (compilation) => {
+                const reg = new RegExp(compiler.options.output.filename+"");
+                compilation.hooks.processAssets.tap(
+                    {
+                        name: id,
+                        stage: compilation.PROCESS_ASSETS_STAGE_ANALYSE, // 此 stage 相对较晚，可以处理原删除逻辑
+                    }, 
+                    (assets) => {
+                        Object.keys(assets).forEach(key => {
+                            if (reg.test(key)) {
+                                delete assets[key];
+                            }
+                        }); 
+                    }
+                );
             });
-        });
+        } else {
+            compiler.hooks.emit.tap(id, (compilation) => {
+                // if (this.nanachiOptions.platform === 'h5') {
+                //     // 生成pageConfig 文件 用于动态加载情况下，读取页面配置信息
+                //     const { code } = generate(t.exportDefaultDeclaration(pageConfig));
+                //     compilation.assets['pageConfig.js'] = {
+                //         source: function() {
+                //             return code;
+                //         },
+                //         size: function() {
+                //             return code.length;
+                //         }
+                //     };
+                // }
+                const reg = new RegExp(compiler.options.output.filename+"");
+                Object.keys(compilation.assets).forEach(key => {
+                    if (reg.test(key)) {
+                        delete compilation.assets[key];
+                    }
+                });
+            })
+        }
+       
 
-        compiler.hooks.run.tapAsync(id, async (compilation, callback) => {
+        compiler.hooks.run.tapAsync(id, (compilation, callback) => {
             this.timer.start();
             resetNum();
             callback();
         });
 
-        compiler.hooks.beforeCompile.tapAsync(id, async (compilation, callback) => {
+        // compiler.hooks.beforeCompile.tapAsync(id, async (compilation, callback) => {
+        //     // 这么做是因为服务于缓存编译
+        //     if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
+        //         writeInternalCommonRuntime();
+        //     }
+        //     callBeforeCompileFn(nanachiUserConfig);
+        //     callBeforeCompileOnceFn(nanachiUserConfig);
+        //     callback(); // 报错
+        // });
+        compiler.hooks.beforeCompile.tapAsync(id, (compilation, callback) => {
             // 这么做是因为服务于缓存编译
             if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
                 writeInternalCommonRuntime();
             }
             callBeforeCompileFn(nanachiUserConfig);
             callBeforeCompileOnceFn(nanachiUserConfig);
-            callback();
+            callback(); // 报错
         });
 
-        compiler.hooks.watchRun.tapAsync(id, async (compilation, callback) => {
+        compiler.hooks.watchRun.tapAsync(id, (compilation, callback) => {
             this.timer.start();
             resetNum();
             callback();

@@ -18,7 +18,7 @@ const copy_webpack_plugin_1 = __importDefault(require("copy-webpack-plugin"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const { exec } = require('child_process');
-const webpack_1 = __importDefault(require("webpack"));
+const webpack_new_1 = __importDefault(require("webpack-new"));
 const utils = require('../packages/utils/index');
 const configurations_1 = require("./h5/configurations");
 const quickAPIList_1 = __importDefault(require("../consts/quickAPIList"));
@@ -34,7 +34,7 @@ const H5AliasList = ['react', '@react', 'react-dom', 'react-loadable', '@qunar-d
 const isChaikaMode = function () {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 };
-const WebpackBar = require('webpackbar');
+const WebpackBar = require('../compiled/webpackbarV5.js');
 const quickConfigFileName = config_1.default.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
     ? "quickConfig.huawei.json"
     : "quickConfig.json";
@@ -80,7 +80,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         console.log(`\n\n本次构建是否要走缓存：${useCache}`);
     }
     if (!useCache) {
-        exec(`rm -rf ${cacheDirectory}`, (err, stdout, stderr) => { });
+        exec(`rm -rf ${cacheDirectory}`, () => { });
     }
     const cacheLorder = {
         loader: require.resolve("cache-loader-hash"),
@@ -189,7 +189,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         }
     }
     if (platform === 'h5') {
-        mergePlugins.push(new webpack_1.default.IgnorePlugin({
+        mergePlugins.push(new webpack_new_1.default.IgnorePlugin({
             resourceRegExp: /\.(\w?ux|pem)$/,
         }));
     }
@@ -207,6 +207,8 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         tt: '头条小程序',
         h5: 'H5'
     };
+    const optimization = (global.breakchange) ? { usedExports: true } : (undefined);
+    console.log(optimization);
     return {
         entry: entry,
         mode: 'development',
@@ -237,7 +239,8 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         watchOptions: {
             ignored: /dist/
         },
-        externals
+        externals,
+        optimization,
     };
 }
 exports.default = default_1;

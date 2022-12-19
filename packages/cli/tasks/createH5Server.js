@@ -13,11 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const webpack_dev_server_1 = __importDefault(require("webpack-dev-server"));
+const webpack_dev_server_new_1 = __importDefault(require("webpack-dev-server-new"));
 const get_port_1 = __importDefault(require("get-port"));
 const webpack_config_1 = __importDefault(require("../config/h5/webpack.config"));
+const webpack_config_2 = __importDefault(require("../configV5/h5/webpack.config"));
 let app;
+let appV5;
 const PORT = 8080;
-function default_1(compiler) {
+function createH5Server(compiler) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!app) {
             const port = yield get_port_1.default({
@@ -45,5 +48,35 @@ function default_1(compiler) {
         }
     });
 }
-exports.default = default_1;
+exports.createH5Server = createH5Server;
+;
+function createH5ServerV5(compiler) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!appV5) {
+            const port = yield get_port_1.default({
+                port: PORT
+            });
+            appV5 = new webpack_dev_server_new_1.default(compiler, {
+                publicPath: webpack_config_2.default.output.publicPath,
+                host: '0.0.0.0',
+                port,
+                historyApiFallback: {
+                    rewrites: [{
+                            from: /.*/g,
+                            to: '/web/'
+                        }]
+                },
+                disableHostCheck: true,
+                hot: true,
+                stats: 'errors-only',
+                overlay: true,
+                watchOptions: {
+                    poll: 500
+                }
+            });
+            yield appV5.start();
+        }
+    });
+}
+exports.createH5ServerV5 = createH5ServerV5;
 ;

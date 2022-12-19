@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -101,36 +92,61 @@ class NanachiWebpackPlugin {
     }
     apply(compiler) {
         compiler.hooks.compilation.tap(id, (compilation) => {
-            compilation.hooks.normalModuleLoader.tap(id, (loaderContext) => {
-                loaderContext.nanachiOptions = this.nanachiOptions;
-            });
+            if (Object.isFrozen(compilation.hooks)) {
+                const NormalModule = compiler.webpack.NormalModule;
+                NormalModule.getCompilationHooks(compilation).loader.tap(id, (loaderContext) => {
+                    loaderContext.nanachiOptions = this.nanachiOptions;
+                });
+            }
+            else {
+                compilation.hooks.normalModuleLoader.tap(id, (loaderContext) => {
+                    loaderContext.nanachiOptions = this.nanachiOptions;
+                });
+            }
         });
-        compiler.hooks.emit.tap(id, (compilation) => {
-            const reg = new RegExp(compiler.options.output.filename + "");
-            Object.keys(compilation.assets).forEach(key => {
-                if (reg.test(key)) {
-                    delete compilation.assets[key];
-                }
+        if (global.useWebpackFuture) {
+            compiler.hooks.compilation.tap(id, (compilation) => {
+                const reg = new RegExp(compiler.options.output.filename + "");
+                compilation.hooks.processAssets.tap({
+                    name: id,
+                    stage: compilation.PROCESS_ASSETS_STAGE_ANALYSE,
+                }, (assets) => {
+                    Object.keys(assets).forEach(key => {
+                        if (reg.test(key)) {
+                            delete assets[key];
+                        }
+                    });
+                });
             });
-        });
-        compiler.hooks.run.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
+        }
+        else {
+            compiler.hooks.emit.tap(id, (compilation) => {
+                const reg = new RegExp(compiler.options.output.filename + "");
+                Object.keys(compilation.assets).forEach(key => {
+                    if (reg.test(key)) {
+                        delete compilation.assets[key];
+                    }
+                });
+            });
+        }
+        compiler.hooks.run.tapAsync(id, (compilation, callback) => {
             this.timer.start();
             index_1.resetNum();
             callback();
-        }));
-        compiler.hooks.beforeCompile.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
+        });
+        compiler.hooks.beforeCompile.tapAsync(id, (compilation, callback) => {
             if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
                 writeInternalCommonRuntime();
             }
             callBeforeCompileFn(nanachiUserConfig);
             callBeforeCompileOnceFn(nanachiUserConfig);
             callback();
-        }));
-        compiler.hooks.watchRun.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
+        });
+        compiler.hooks.watchRun.tapAsync(id, (compilation, callback) => {
             this.timer.start();
             index_1.resetNum();
             callback();
-        }));
+        });
         compiler.hooks.done.tap(id, () => {
             this.timer.end();
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);

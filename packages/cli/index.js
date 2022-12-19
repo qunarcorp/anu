@@ -20,6 +20,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const webpack_1 = __importDefault(require("webpack"));
+const webpack_new_1 = __importDefault(require("webpack-new"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs-extra"));
 const platforms_1 = __importDefault(require("./consts/platforms"));
@@ -27,28 +28,39 @@ const queue_1 = require("./packages/utils/logger/queue");
 const index_1 = require("./packages/utils/logger/index");
 const chalk_1 = __importDefault(require("chalk"));
 const webpackConfig_1 = __importDefault(require("./config/webpackConfig"));
+const webpackConfig_2 = __importDefault(require("./configV5/webpackConfig"));
 const babel = __importStar(require("@babel/core"));
 const child_process_1 = require("child_process");
 const index_2 = __importDefault(require("./packages/utils/index"));
 const config_1 = __importDefault(require("./config/config"));
 const runBeforeParseTasks_1 = __importDefault(require("./tasks/runBeforeParseTasks"));
-const createH5Server_1 = __importDefault(require("./tasks/createH5Server"));
+const createH5Server_1 = require("./tasks/createH5Server");
 const configurations_1 = require("./config/h5/configurations");
 const OS = __importStar(require("os"));
 const rd = __importStar(require("rd"));
 function nanachi(options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { watch = false, platform = 'wx', beta = false, betaUi = false, compress = false, compressOption = {}, huawei = false, typescript = false, rules = [], prevLoaders = [], postLoaders = [], prevJsLoaders = [], postJsLoaders = [], prevCssLoaders = [], postCssLoaders = [], plugins = [], analysis = false, silent = false, complete = () => { } } = options;
+        const { watch = false, platform = 'wx', beta = false, betaUi = false, compress = false, compressOption = {}, huawei = false, typescript = false, rules = [], prevLoaders = [], postLoaders = [], prevJsLoaders = [], postJsLoaders = [], prevCssLoaders = [], postCssLoaders = [], plugins = [], analysis = false, silent = false, future = false, breakchange = false, complete = () => { } } = options;
+        if (future) {
+            console.log('future');
+            global.useWebpackFuture = true;
+        }
+        if (breakchange) {
+            console.log('break');
+            global.breakchange = true;
+        }
         function callback(err, stats) {
             if (err) {
-                console.log(chalk_1.default.red(err.toString()));
+                console.log(err);
                 return;
             }
             showLog();
             const info = stats.toJson();
             if (stats.hasWarnings() && !silent) {
                 info.warnings.forEach(warning => {
-                    if (!/Critical dependency: the request of a dependency is an expression/.test(warning)) {
+                    if (!/Critical dependency: the request of a dependency is an expression/.test(warning)
+                        && !/Critical dependency: the request of a dependency is an expression/.test(warning.message)
+                        && !/\@ctrip\/pay-tinyapp-libs/.test(warning.message)) {
                         console.log(chalk_1.default.yellow('Warning:\n'), index_2.default.cleanLog(warning));
                     }
                 });
@@ -62,7 +74,19 @@ function nanachi(options = {}) {
                 });
             }
             if (platform === 'h5') {
-                const configPath = watch ? './config/h5/webpack.config.js' : './config/h5/webpack.config.prod.js';
+                let configPath;
+                if (future) {
+                    configPath = './config/h5/';
+                }
+                else {
+                    configPath = './configV5/h5/';
+                }
+                if (watch) {
+                    configPath += 'webpack.config.js';
+                }
+                else {
+                    configPath += 'webpack.config.prod.js';
+                }
                 const webpackH5Config = require(configPath);
                 if (typescript)
                     webpackH5Config.entry += '.tsx';
@@ -72,9 +96,14 @@ function nanachi(options = {}) {
                         fs.copySync(path.resolve(__dirname, './packages/360helpers/template'), path.resolve(cwd, 'src'));
                     }
                 }
-                const compilerH5 = webpack_1.default(webpackH5Config);
+                let compilerH5 = future ? webpack_new_1.default(webpackH5Config) : webpack_1.default(webpackH5Config);
                 if (watch) {
-                    createH5Server_1.default(compilerH5);
+                    if (future) {
+                        createH5Server_1.createH5ServerV5(compilerH5);
+                    }
+                    else {
+                        createH5Server_1.createH5Server(compilerH5);
+                    }
                 }
                 else {
                     compilerH5.run(function (err, stats) {
@@ -138,26 +167,50 @@ function nanachi(options = {}) {
             if (compress) {
                 postLoaders.unshift('nanachi-compress-loader');
             }
-            const webpackConfig = webpackConfig_1.default({
-                watch,
-                platform,
-                compress,
-                compressOption,
-                beta,
-                betaUi,
-                plugins,
-                typescript,
-                analysis,
-                prevLoaders,
-                postLoaders,
-                prevJsLoaders,
-                postJsLoaders,
-                prevCssLoaders,
-                postCssLoaders,
-                rules,
-                huawei
-            });
-            const compiler = webpack_1.default(webpackConfig);
+            let webpackConfig;
+            if (future) {
+                webpackConfig = webpackConfig_2.default({
+                    watch,
+                    platform,
+                    compress,
+                    compressOption,
+                    beta,
+                    betaUi,
+                    plugins,
+                    typescript,
+                    analysis,
+                    prevLoaders,
+                    postLoaders,
+                    prevJsLoaders,
+                    postJsLoaders,
+                    prevCssLoaders,
+                    postCssLoaders,
+                    rules,
+                    huawei
+                });
+            }
+            else {
+                webpackConfig = webpackConfig_1.default({
+                    watch,
+                    platform,
+                    compress,
+                    compressOption,
+                    beta,
+                    betaUi,
+                    plugins,
+                    typescript,
+                    analysis,
+                    prevLoaders,
+                    postLoaders,
+                    prevJsLoaders,
+                    postJsLoaders,
+                    prevCssLoaders,
+                    postCssLoaders,
+                    rules,
+                    huawei
+                });
+            }
+            let compiler = future ? webpack_new_1.default(webpackConfig) : webpack_1.default(webpackConfig);
             if (watch) {
                 compiler.watch({}, callback);
             }
@@ -227,6 +280,7 @@ function getWebViewRules() {
     if (config_1.default.buildType != 'quick')
         return;
     let webViewRoutes = getWebViewRoutes();
+    console.log(webViewRoutes);
     webViewRoutes.forEach(function (pagePath) {
         return __awaiter(this, void 0, void 0, function* () {
             babel.transformFileSync(pagePath, {

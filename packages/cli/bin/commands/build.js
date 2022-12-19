@@ -28,7 +28,7 @@ const { deepMerge } = require('../../packages/utils/index');
 const build = function (args) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const { beta, betaUi, watch, compress, huawei, analysis, silent, typescript, dir = '' } = args;
+            const { beta, betaUi, watch, compress, huawei, analysis, silent, future, breakchange, typescript, dir = '' } = args;
             let { buildType } = args;
             const nanachiConfig = {};
             if (buildType === '360') {
@@ -44,6 +44,8 @@ const build = function (args) {
                 huawei,
                 analysis,
                 silent,
+                future,
+                breakchange,
                 typescript,
                 dir
             };

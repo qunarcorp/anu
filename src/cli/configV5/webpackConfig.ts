@@ -10,7 +10,7 @@ import { NanachiOptions } from '../index';
 import * as path from 'path';
 import * as fs from 'fs';
 const { exec } = require('child_process');
-import webpack from 'webpack';
+import webpack from 'webpack-new';
 const utils = require('../packages/utils/index');
 import { intermediateDirectoryName } from './h5/configurations';
 import quickAPIList from '../consts/quickAPIList';
@@ -18,6 +18,7 @@ import config from './config';
 
 // const SpeedMeasurePlugin = require("speed-measure-webpack-plugin");
 // const smp = new SpeedMeasurePlugin(); 
+
 //各种loader
 //生成文件
 const fileLoader = require.resolve('../nanachi-loader/loaders/fileLoader');
@@ -42,7 +43,7 @@ const isChaikaMode = function() {
 }
 
 
-const WebpackBar = require('webpackbar');
+const WebpackBar = require('../compiled/webpackbarV5.js');
 // json 配置文件名
 const quickConfigFileName: string =
   config.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
@@ -137,13 +138,13 @@ export default function({
      * 3 - 非微信平台不开启缓存
      * 4 - 没有 BUILD_ENV（编译环境不缓存）
      * **/ 
-    const useCache = !watch && !JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV
+    const useCache = !watch && !JSON.parse(skipNanachiCache as string) && platform == 'wx' && !!BUILD_ENV
     if(!!JENKINS_URL) {
-        console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
+        console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache as string)} \n 是否微信平台: ${platform == 'wx'} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
         console.log(`\n\n本次构建是否要走缓存：${useCache}`)
     }
     if(!useCache) { // 这个删除是在编译之前执行的，时间长了会忘记这个顺序（以为程序出了问题，为啥internal没有被删除，第一次编译会生成internal，第二次编译检测internal有没有生成，如果有走缓存没有删除没用的缓存避免缓存错乱）
-        exec(`rm -rf ${cacheDirectory}`, (err, stdout, stderr) => {});
+        exec(`rm -rf ${cacheDirectory}`, () => {});
     } 
     
     const cacheLorder =  {
@@ -347,6 +348,10 @@ export default function({
         tt: '头条小程序',
         h5: 'H5'
     }
+
+    const optimization = (global.breakchange) ? { usedExports: true } : (undefined);
+    console.log(optimization);
+
     return {
         entry: entry,
         mode: 'development',
@@ -385,7 +390,8 @@ export default function({
         watchOptions: {
             ignored: /dist/
         },
-        externals
+        externals,
+        optimization,
         // performance: {
         //     hints: 'warning',
         //     assetFilter(filename) {

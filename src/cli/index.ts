@@ -1,4 +1,5 @@
 import webpack from 'webpack';
+import webpackV5 from 'webpack-new';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import platforms from './consts/platforms';
@@ -6,6 +7,7 @@ import { build as buildLog, Log, warning, error } from './packages/utils/logger/
 import { errorLog, warningLog } from './packages/utils/logger/index';
 import chalk from 'chalk';
 import getWebPackConfig from './config/webpackConfig';
+import getWebPackConfigV5 from './configV5/webpackConfig';
 import * as babel from '@babel/core';
 import { spawnSync as spawn } from 'child_process';
 import utils from './packages/utils/index';
@@ -13,7 +15,7 @@ import globalConfig from './config/config';
 
 
 import runBeforeParseTasks from './tasks/runBeforeParseTasks';
-import createH5Server from './tasks/createH5Server';
+import {createH5Server, createH5ServerV5} from './tasks/createH5Server';
 import { validatePlatforms } from './config/config';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import { intermediateDirectoryName } from './config/h5/configurations';
@@ -40,6 +42,7 @@ export interface NanachiOptions {
     plugins?: Array<webpack.Plugin>;
     analysis?: boolean;
     silent?: boolean;
+    future?: boolean;
     complete?: Function;
 }
 
@@ -68,17 +71,26 @@ async function nanachi(options: NanachiOptions = {}) {
         plugins = [],
         analysis = false,
         silent = false, // 是否显示warning
+        future = false, // 是否使用 webpack 5 进行打包
+        breakchange = false, // 是否使用可能导致产物不一致的 webpack 5 配置
         // maxAssetSize = 20480, // 最大资源限制，超出报warning
         complete = () => { }
     } = options;
 
+    if (future) {
+        console.log('future');
+        global.useWebpackFuture = true;
+    }
+    if (breakchange) {
+        console.log('break');
+        global.breakchange = true;
+    }
 
-   
-
-    function callback(err: Error, stats?: webpack.Stats) {
+    function callback(err: Error, stats?: webpack.Stats | webpackV5.Stats) {
         if (err) {
             // eslint-disable-next-line
-            console.log(chalk.red(err.toString()));
+            console.log(err);
+            //console.log(chalk.red(err.toString())); // 不适合调试用
             return;
         }
        
@@ -87,7 +99,10 @@ async function nanachi(options: NanachiOptions = {}) {
         if (stats.hasWarnings() && !silent) {
             info.warnings.forEach(warning => {
                 // webpack require语句中包含变量会报warning: Critical dependency，此处过滤掉这个warning
-                if (!/Critical dependency: the request of a dependency is an expression/.test(warning)) {
+                /* NEW: webpack 5 兼容写法，同时过滤引入的警告 */
+                if (!/Critical dependency: the request of a dependency is an expression/.test(warning) 
+                    && !/Critical dependency: the request of a dependency is an expression/.test(warning.message)
+                    && !/\@ctrip\/pay-tinyapp-libs/.test(warning.message)) {
                     // eslint-disable-next-line
                     console.log(chalk.yellow('Warning:\n'), utils.cleanLog(warning));
                 }
@@ -104,7 +119,19 @@ async function nanachi(options: NanachiOptions = {}) {
         }
 
         if (platform === 'h5') {
-            const configPath = watch ? './config/h5/webpack.config.js' : './config/h5/webpack.config.prod.js';
+            /* NEW: 新增区分配置*/
+            let configPath;
+            if (future) {
+                configPath = './config/h5/';
+            } else {
+                configPath = './configV5/h5/';
+            }
+            if (watch) {
+                configPath += 'webpack.config.js';
+            } else {
+                configPath += 'webpack.config.prod.js';
+            }
+
             const webpackH5Config = require(configPath);
             if (typescript) webpackH5Config.entry += '.tsx';
 
@@ -122,9 +149,16 @@ async function nanachi(options: NanachiOptions = {}) {
                     )
                 }
             }
-            const compilerH5 = webpack(webpackH5Config);
+
+            /* NEW: 新增区分配置*/
+            let compilerH5 = future ? webpackV5(webpackH5Config) : webpack(webpackH5Config); 
+            
             if (watch) {
-                createH5Server(compilerH5);
+                if(future) {
+                    createH5ServerV5(compilerH5 as webpackV5.Compiler);
+                } else {
+                    createH5Server(compilerH5 as webpack.Compiler);
+                }
             } else {
                 compilerH5.run(function(err, stats) {
                     if (globalConfig['360mode']) {
@@ -187,8 +221,6 @@ async function nanachi(options: NanachiOptions = {}) {
             throw '检测到app.tsx，请使用typescript模式编译(-t/--typescript)';
         }
 
-        
-        
         injectBuildEnv({
             platform,
             compress,
@@ -205,30 +237,52 @@ async function nanachi(options: NanachiOptions = {}) {
             postLoaders.unshift('nanachi-compress-loader');
         }
 
-        const webpackConfig: webpack.Configuration = getWebPackConfig({
-            watch,
-            platform,
-            compress,
-            compressOption,
-            beta,
-            betaUi,
-            plugins,
-            typescript,
-            analysis,
-            prevLoaders,
-            postLoaders,
-            prevJsLoaders,
-            postJsLoaders,
-            prevCssLoaders,
-            postCssLoaders,
-            rules,
-            huawei
-            // maxAssetSize
-        });
+        /* NEW: 新增区分配置*/
+        let webpackConfig; 
+        if (future) {
+            webpackConfig = getWebPackConfigV5({
+                watch,
+                platform,
+                compress,
+                compressOption,
+                beta,
+                betaUi,
+                plugins,
+                typescript,
+                analysis,
+                prevLoaders,
+                postLoaders,
+                prevJsLoaders,
+                postJsLoaders,
+                prevCssLoaders,
+                postCssLoaders,
+                rules,
+                huawei
+            });
+        } else {
+            webpackConfig = getWebPackConfig({
+                watch,
+                platform,
+                compress,
+                compressOption,
+                beta,
+                betaUi,
+                plugins,
+                typescript,
+                analysis,
+                prevLoaders,
+                postLoaders,
+                prevJsLoaders,
+                postJsLoaders,
+                prevCssLoaders,
+                postCssLoaders,
+                rules,
+                huawei
+                // maxAssetSize
+            });
+        }
 
-       
-        const compiler = webpack(webpackConfig);
-
+        let compiler = future ? webpackV5(webpackConfig) : webpack(webpackConfig);
         if (watch) {
             compiler.watch({}, callback);
         } else {
@@ -320,6 +374,7 @@ function getWebViewRules() {
     const cwd = process.cwd();
     if (globalConfig.buildType != 'quick') return;
     let webViewRoutes = getWebViewRoutes();
+    console.log(webViewRoutes);
 
     webViewRoutes.forEach(async function (pagePath) {
         babel.transformFileSync(pagePath, {
