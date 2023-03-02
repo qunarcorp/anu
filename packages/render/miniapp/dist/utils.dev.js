@@ -16,7 +16,7 @@ exports.runCallbacks = runCallbacks;
 exports.useComponent = useComponent;
 exports.handleSuccess = handleSuccess;
 exports.handleFail = handleFail;
-exports.classCached = exports.registeredComponents = exports.usingComponents = exports.delayMounts = void 0;
+exports.classCached = exports.asyncComponents = exports.registeredComponents = exports.usingComponents = exports.delayMounts = void 0;
 
 var _util = require("react-core/util");
 
@@ -73,8 +73,11 @@ var delayMounts = [];
 exports.delayMounts = delayMounts;
 var usingComponents = [];
 exports.usingComponents = usingComponents;
-var registeredComponents = {};
+var registeredComponents = {}; // 使用分包异步化的组件
+
 exports.registeredComponents = registeredComponents;
+var asyncComponents = {};
+exports.asyncComponents = asyncComponents;
 
 function getCurrentPage() {
   var app = _getApp();
@@ -191,7 +194,18 @@ function runCallbacks(cb, success, fail, complete) {
 
 function useComponent(props) {
   var is = props.is;
-  var clazz = registeredComponents[is];
+  var clazz = registeredComponents[is]; // 异步获取组件
+
+  if (!clazz) {
+    if (asyncComponents[is]) {
+      asyncComponents[is].push((0, _util.get)(_createRenderer.Renderer.currentOwner));
+    } else {
+      asyncComponents[is] = [(0, _util.get)(_createRenderer.Renderer.currentOwner)];
+    }
+
+    return;
+  }
+
   props.key = this.key != null ? this.key : props['data-instance-uid'] || new Date() - 0; //delete props.is;
 
   clazz.displayName = is;

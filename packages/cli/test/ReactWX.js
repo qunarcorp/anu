@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2022-09-14T02
+ * 运行于微信小程序的React by 司徒正美 Copyright 2023-03-02T08
  * IE9+
  */
 
@@ -963,6 +963,7 @@ function callGlobalHook(method, e) {
 var delayMounts = [];
 var usingComponents = [];
 var registeredComponents = {};
+var asyncComponents = {};
 function getCurrentPage() {
     var app = _getApp();
     return app.$$page && app.$$page.reactInstance;
@@ -1036,6 +1037,14 @@ function isReferenceType(val) {
 function useComponent(props) {
     var is = props.is;
     var clazz = registeredComponents[is];
+    if (!clazz) {
+        if (asyncComponents[is]) {
+            asyncComponents[is].push(get(Renderer.currentOwner));
+        } else {
+            asyncComponents[is] = [get(Renderer.currentOwner)];
+        }
+        return;
+    }
     props.key = this.key != null ? this.key : props['data-instance-uid'] || new Date() - 0;
     clazz.displayName = is;
     if (this.ref !== null) {
@@ -2753,6 +2762,12 @@ function registerComponent(type, name) {
         var wx = this;
         defer(function () {
           usingComponents[name] = type;
+          var fiberList = asyncComponents[name];
+          if (fiberList && fiberList.length) {
+            var fiber = fiberList.shift();
+            Renderer.macrotasks.unshift(fiber.return);
+            Renderer.scheduleWork();
+          }
           var uuid = wx.dataset.instanceUid || null;
           refreshComponent(type.reactInstances, wx, uuid);
         });

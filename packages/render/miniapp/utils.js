@@ -47,6 +47,8 @@ export function callGlobalHook (method, e) {
 export var delayMounts = [];
 export var usingComponents = [];
 export var registeredComponents = {};
+// 使用分包异步化的组件
+export var asyncComponents = {};
 
 export function getCurrentPage () {
     var app = _getApp();
@@ -153,6 +155,16 @@ export function runCallbacks ( cb, success, fail, complete ) {
 export function useComponent(props) {
     var is = props.is;
     var clazz = registeredComponents[is];
+    // 异步获取组件
+    if (!clazz){
+        if (asyncComponents[is]){
+            asyncComponents[is].push(get(Renderer.currentOwner));
+        } else {
+            asyncComponents[is] = [get(Renderer.currentOwner)];
+        }
+        return;
+    }
+      
     props.key = this.key != null ? this.key :  (props['data-instance-uid'] || new Date() - 0);
     //delete props.is;
     clazz.displayName = is;

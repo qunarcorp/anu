@@ -1,5 +1,6 @@
-import { registeredComponents, usingComponents, refreshComponent, detachComponent } from './utils';
+import { registeredComponents, usingComponents, refreshComponent, detachComponent, asyncComponents } from './utils';
 import { dispatchEvent } from './eventSystem';
+import { Renderer } from '../../core/createRenderer';
 
 
 var defer = (function() {
@@ -73,6 +74,14 @@ export function registerComponent(type, name) {
                 let wx = this;
                 defer(() => {
                     usingComponents[name] = type;
+
+                    // 异步化组件重新dfs遍历组件的fiber树，产出新组件实例	
+                    const fiberList = asyncComponents[name];
+                    if (fiberList && fiberList.length) {
+                        const fiber = fiberList.shift();
+                        Renderer.macrotasks.unshift(fiber.return);
+                        Renderer.scheduleWork();
+                    }
                     //如果原生微信与nanachi混合使用，外面的reactInstances在这个方法内可能出错，因此必须在这里
                     //通过type.reactInstances来取
                     let uuid = wx.dataset.instanceUid || null;
