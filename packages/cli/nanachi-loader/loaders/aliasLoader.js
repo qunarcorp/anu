@@ -21,10 +21,74 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("../../consts/index");
 const babel = __importStar(require("@babel/core"));
+const path = __importStar(require("path"));
 const alias_1 = __importDefault(require("../../consts/alias"));
 const calculateAlias_1 = __importDefault(require("../../packages/utils/calculateAlias"));
+const config_1 = __importDefault(require("../../config/config"));
+const buildType = config_1.default['buildType'];
+const visitor = {
+    ImportDeclaration(astPath, state) {
+        if (buildType !== 'wx') {
+            return;
+        }
+        let node = astPath.node;
+        let source = node.source.value;
+        if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
+            return;
+        }
+        if (/\/components\//.test(source)) {
+            return;
+        }
+        const specifiers = node.specifiers;
+        const currentPath = state.file.opts.sourceFileName;
+        const dir = path.dirname(currentPath);
+        const sourceAbsolute = path.join(dir, source);
+        let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
+        let currentExec, importExec;
+        for (let i = 0, len = global.subpackages.length; i < len; i++) {
+            const subpackage = global.subpackages[i];
+            if (currentPath.startsWith(`${subpackage.resource}`)) {
+                currentPageInPackagesIndex = i;
+                currentExec = true;
+            }
+            if (sourceAbsolute.startsWith(`${subpackage.resource}`)) {
+                importComponentInPackagesIndex = i;
+                importExec = true;
+            }
+            if (currentExec && importExec) {
+                break;
+            }
+        }
+        if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
+            const specifierNameList = specifiers.map(specifier => {
+                return specifier.local.name;
+            });
+            const list = specifierNameList.map(name => `${name} = v.${name};\n`);
+            const code = `
+                let ${specifierNameList.join(',')};
+                require.async("${source}").then(v => {
+                    ${list}
+                }).catch(({v, errMsg}) => {
+                    console.error("异步获取js出错",v, errMsg);
+                })
+            `;
+            const result = babel.transformSync(code, {
+                ast: true,
+                sourceType: 'unambiguous'
+            });
+            astPath.insertAfter(result.ast);
+            astPath.remove();
+        }
+    },
+};
+function checkRequireAsync() {
+    return {
+        visitor
+    };
+}
 function resolveAlias(code, aliasMap, relativePath, ast, ctx) {
     const babelConfig = {
+        ast: true,
         configFile: false,
         babelrc: false,
         sourceMaps: true,
@@ -38,7 +102,8 @@ function resolveAlias(code, aliasMap, relativePath, ast, ctx) {
                         return calculateAlias_1.default(ctx.resourcePath, moduleName, ctx._compiler.options.externals);
                     }
                 }
-            ]
+            ],
+            buildType === 'wx' ? checkRequireAsync : null,
         ]
     };
     let result;
@@ -62,6 +127,7 @@ module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
             if (type === 'js') {
                 res = resolveAlias(code, aliasMap, relativePath, ast, ctx);
                 code = res.code;
+                ast = res.ast;
             }
             if (type === 'ux') {
                 code = code.toString().replace(/<script>([\s\S]*?)<\/script>/mg, function (match, jsCode) {

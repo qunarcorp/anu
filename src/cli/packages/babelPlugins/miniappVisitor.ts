@@ -364,6 +364,11 @@ const visitor: babel.Visitor = {
                 });
             }
 
+            // 分包异步化配置输出
+            if(modules.componentPlaceholder && Object.keys(modules.componentPlaceholder).length){
+                json.componentPlaceholder = modules.componentPlaceholder;
+            }
+
             if (buildType == 'quick') {
                 var obj = quickFiles[modules.sourcePath];
                 if (obj) {
@@ -769,7 +774,7 @@ const visitor: babel.Visitor = {
                 try {
                     // 存下删除的依赖路径
                     if (bag.source !== 'schnee-ui') modules.extraModules.push(bag.source);
-                    bag.astPath.remove();
+                    bag.astPath.remove();//删除引入的import 组件语句
 
                     bag.astPath = null;
                 } catch (err) {
@@ -779,6 +784,40 @@ const visitor: babel.Visitor = {
 
                 // let useComponentsPath = calculateComponentsPath(bag, nodeName); // tsc: 原来有两个参数 第二个参数有用吗？
                 let useComponentsPath = calculateComponentsPath(bag);
+
+                 /**
+                 * 1、确认文件存在的位置
+                 * 2、判断引用的文件是否是存在其他分包
+                 * 3、是则新增占位组件
+                 */
+                  if(buildType == 'wx'){
+                    let currentPageInPackagesIndex = -1,importComponentInPackagesIndex = -1;
+                    let currentExec,importExec;
+                    for (let i = 0,len = global.subpackages.length; i < len; i++) {
+                        const subpackage = global.subpackages[i];
+                        if(modules.current.startsWith(`/source/${subpackage.resource}`)){
+                            currentPageInPackagesIndex = i;
+                            currentExec = true;
+                        }
+
+                        if(useComponentsPath.startsWith(`/${subpackage.resource}`)){
+                            importComponentInPackagesIndex = i;
+                            importExec = true;
+                        }
+
+                        if(currentExec && importExec){
+                            break;
+                        }
+                    }
+
+                    // 新增分包配置
+                    let componentPlaceholder = modules.componentPlaceholder || {};
+                    if(importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex){
+                        componentPlaceholder['anu-' + nodeName.toLowerCase()] = 'view';
+                        modules.componentPlaceholder = componentPlaceholder;  
+                    }                             
+                }
+        
 
                 modules.usedComponents['anu-' + nodeName.toLowerCase()] = useComponentsPath;
                 (astPath.node.name as t.JSXIdentifier).name = 'React.useComponent';

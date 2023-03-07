@@ -258,6 +258,9 @@ const visitor = {
                     usings[name] = modules.usedComponents[name];
                 });
             }
+            if (modules.componentPlaceholder && Object.keys(modules.componentPlaceholder).length) {
+                json.componentPlaceholder = modules.componentPlaceholder;
+            }
             if (buildType == 'quick') {
                 var obj = quickFiles[modules.sourcePath];
                 if (obj) {
@@ -557,6 +560,29 @@ const visitor = {
                 catch (err) {
                 }
                 let useComponentsPath = calculateComponentsPath_1.default(bag);
+                if (buildType == 'wx') {
+                    let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
+                    let currentExec, importExec;
+                    for (let i = 0, len = global.subpackages.length; i < len; i++) {
+                        const subpackage = global.subpackages[i];
+                        if (modules.current.startsWith(`/source/${subpackage.resource}`)) {
+                            currentPageInPackagesIndex = i;
+                            currentExec = true;
+                        }
+                        if (useComponentsPath.startsWith(`/${subpackage.resource}`)) {
+                            importComponentInPackagesIndex = i;
+                            importExec = true;
+                        }
+                        if (currentExec && importExec) {
+                            break;
+                        }
+                    }
+                    let componentPlaceholder = modules.componentPlaceholder || {};
+                    if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
+                        componentPlaceholder['anu-' + nodeName.toLowerCase()] = 'view';
+                        modules.componentPlaceholder = componentPlaceholder;
+                    }
+                }
                 modules.usedComponents['anu-' + nodeName.toLowerCase()] = useComponentsPath;
                 astPath.node.name.name = 'React.useComponent';
                 var attrs = astPath.node.attributes;

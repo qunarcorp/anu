@@ -1,12 +1,92 @@
 import { MAP } from '../../consts/index';
 import * as babel from '@babel/core';
+import * as t from '@babel/types';
+import * as path from 'path';
+import { NodePath } from '@babel/core';
 import { NanachiLoaderStruct } from './nanachiLoader';
 import getAliasMap, { Alias } from '../../consts/alias';
 import calculateAlias from '../../packages/utils/calculateAlias';
+import config from '../../config/config';
+const buildType = config['buildType'];
+
+const visitor: babel.Visitor = {
+    ImportDeclaration(astPath: NodePath<t.ImportDeclaration>, state: any) {
+        if (buildType !== 'wx') {
+            return;
+        }
+
+        let node = astPath.node;
+        let source = node.source.value;
+
+        if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
+            return;
+        }
+
+        if (/\/components\//.test(source)) {
+            return;
+        }
+
+        const specifiers = node.specifiers;
+        const currentPath = state.file.opts.sourceFileName;
+        const dir = path.dirname(currentPath);
+        const sourceAbsolute = path.join(dir, source);
+
+        let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
+        let currentExec, importExec;
+        for (let i = 0, len = global.subpackages.length; i < len; i++) {
+            const subpackage = global.subpackages[i];
+            if (currentPath.startsWith(`${subpackage.resource}`)) {
+                currentPageInPackagesIndex = i;
+                currentExec = true;
+            }
+
+            if (sourceAbsolute.startsWith(`${subpackage.resource}`)) {
+                importComponentInPackagesIndex = i;
+                importExec = true;
+            }
+
+            if (currentExec && importExec) {
+                break;
+            }
+        }
+
+        // 如果是分包则对进行转换
+        if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
+            const specifierNameList = specifiers.map(specifier => {
+                return specifier.local.name;
+            });
+
+            const list = specifierNameList.map(name => `${name} = v.${name};\n`);
+            const code = `
+                let ${specifierNameList.join(',')};
+                require.async("${source}").then(v => {
+                    ${list}
+                }).catch(({v, errMsg}) => {
+                    console.error("异步获取js出错",v, errMsg);
+                })
+            `;
+            const result = babel.transformSync(code, {
+                ast: true,
+                sourceType: 'unambiguous'
+            });
+
+            astPath.insertAfter(result.ast);
+            astPath.remove();
+        }
+
+    },
+};
+
+function checkRequireAsync() {
+    return {
+        visitor
+    };
+}
 
 //提取package.json中的别名配置
 function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: any, ctx: any) {
     const babelConfig: babel.TransformOptions = {
+        ast: true,
         configFile: false,
         babelrc: false,
         sourceMaps: true,
@@ -21,7 +101,8 @@ function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: 
                         return calculateAlias(ctx.resourcePath, moduleName, ctx._compiler.options.externals);
                     }
                 }
-            ]
+            ],
+            buildType === 'wx' ? checkRequireAsync: null,// 校验是否是异步js
         ]
     };
     let result;
@@ -51,6 +132,7 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
            
             res = resolveAlias(code, aliasMap, relativePath, ast, ctx);
             code = res.code;
+            ast = res.ast;
         }
         if (type === 'ux') {
            

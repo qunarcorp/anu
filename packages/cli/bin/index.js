@@ -119,6 +119,15 @@ platforms_1.default.forEach(function (el) {
                     process.exit(1);
                 }
             }
+            let xConfigJson = {};
+            try {
+                xConfigJson = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
+                const subpackages = xConfigJson.subpackages || [];
+                global.subpackages = subpackages;
+            }
+            catch (err) {
+                console.log('[error] 记录全局subpackages出错');
+            }
             require('./commands/build')(Object.assign(Object.assign({}, options), { watch: compileType === 'watch', buildType }));
         }));
     });
