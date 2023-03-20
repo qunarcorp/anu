@@ -30,6 +30,6 @@ const attributes: any = {
         rules: ['onsubmit', 'bindsubmit']
     },
     button: {
-        rules: ['ongetphonenumber', 'onGetAuthorize']
+        rules: ['ongetphonenumber', 'ongetauthorize']
     }
 };
