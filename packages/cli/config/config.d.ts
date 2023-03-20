@@ -22,6 +22,10 @@ declare enum Platforms {
     QIHOO = "360"
 }
 export declare type validatePlatforms = 'wx' | 'qq' | 'ali' | 'bu' | 'tt' | 'quick' | 'h5' | '360';
+interface SyncPlatformConfig {
+    putMainInMultiSubPkgUse: string[];
+    multiPkglimit: number;
+}
 export interface GlobalConfigMap {
     buildType: validatePlatforms;
     buildDir: string;
@@ -36,6 +40,9 @@ export interface GlobalConfigMap {
     WebViewRules?: any;
     nanachiVersion: string;
     sourcemap: boolean;
+    publicPkg: boolean;
+    requireAsync: boolean;
+    syncPlatformConfig: SyncPlatformConfig;
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;

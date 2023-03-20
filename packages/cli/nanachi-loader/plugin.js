@@ -21,6 +21,7 @@ const lintQueue_1 = __importDefault(require("../packages/utils/lintQueue"));
 const config_1 = __importDefault(require("../config/config"));
 const utils_1 = __importDefault(require("../packages/utils"));
 const globalStore_1 = __importDefault(require("../packages/utils/globalStore"));
+const publicPkg_1 = require("../packages/utils/publicPkg");
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
@@ -89,6 +90,168 @@ function writeInternalCommonRuntime() {
     fs_extra_1.default.ensureFileSync(writeDistFilePath);
     fs_extra_1.default.writeFileSync(writeDistFilePath, code);
 }
+function setDepInMain(dependencies) {
+    dependencies === null || dependencies === void 0 ? void 0 : dependencies.forEach((dep) => {
+        var _a;
+        publicPkg_1.publicPkgComponentReference[dep].putMain = true;
+        setDepInMain((_a = publicPkg_1.publicPkgComponentReference[dep]) === null || _a === void 0 ? void 0 : _a.dependencies);
+    });
+}
+function filterPublicPkgComponentReference(publicPkgReference) {
+    const { putMainInMultiSubPkgUse = [], multiPkglimit = 3 } = config_1.default.syncPlatformConfig;
+    let movePublicFile = Object.keys(publicPkgReference).filter(publicFile => {
+        const { subpkgUse, dependencies, name, putMain } = publicPkgReference[publicFile];
+        if (putMain) {
+            return false;
+        }
+        let exsitMain = Object.keys(subpkgUse).some(v => v === 'MAIN');
+        if (exsitMain) {
+            setDepInMain(dependencies);
+            return false;
+        }
+        exsitMain = putMainInMultiSubPkgUse.some(v => {
+            const re = new RegExp(v);
+            return re.test(publicFile);
+        });
+        if (exsitMain) {
+            setDepInMain(dependencies);
+            return false;
+        }
+        const newSubpkgUse = Object.assign({}, subpkgUse);
+        delete newSubpkgUse[publicPkg_1.ASYNC_FILE_NAME];
+        const referencePkgNum = Object.keys(newSubpkgUse).length;
+        return referencePkgNum < multiPkglimit;
+    });
+    movePublicFile = movePublicFile.filter(v => !publicPkgReference[v].putMain);
+    return movePublicFile;
+}
+let deleteAssete = [];
+function copyAsset(params) {
+    const { compilation, publicFile, subResource } = params;
+    Object.keys(compilation.assets).forEach(asset => {
+        if (asset.startsWith(`${publicFile}.`)) {
+            compilation.assets[subResource + '/' + asset] = compilation.assets[asset];
+            deleteAssete.push(asset);
+        }
+    });
+}
+function changeReferComponentPath(params, isFirst) {
+    const { compilation, publicFile, subResource, filePath } = params;
+    const { subpkgUse, dependencies, name } = publicPkg_1.publicPkgComponentReference[publicFile];
+    if (isFirst) {
+        subpkgUse[subResource].forEach((j) => {
+            const codeString = compilation.assets[j]._value;
+            let code = JSON.parse(codeString);
+            code.usingComponents[name] = `${subResource}/${publicFile}.json`;
+            compilation.assets[j]._value = JSON.stringify(code);
+        });
+    }
+    else {
+        const fullFilePath = filePath + '.json';
+        const codeString = compilation.assets[fullFilePath]._value;
+        let code = JSON.parse(codeString);
+        code.usingComponents[name] = `${subResource}/${publicFile}.json`;
+        compilation.assets[fullFilePath]._value = JSON.stringify(code);
+    }
+}
+function changeReferCommonPath(params, isFirst) {
+    const { compilation, publicFile, subResource, filePath } = params;
+    const { subpkgUse, dependencies, name } = publicPkg_1.publicPkgCommonReference[publicFile];
+    const newPath = `${subResource}/${publicFile}.js`;
+    if (isFirst) {
+        subpkgUse[subResource].forEach((j) => {
+            const fullFilePath = j + '.js';
+            const releatePath = utils_1.default.getRelativePath(fullFilePath, newPath);
+            let codeString = compilation.assets[fullFilePath]._value;
+            codeString = codeString.replace(name, releatePath);
+            compilation.assets[fullFilePath]._value = codeString;
+        });
+    }
+    else {
+        const fullFilePath = filePath + '.js';
+        const releatePath = utils_1.default.getRelativePath(fullFilePath, newPath);
+        let codeString = compilation.assets[fullFilePath]._value;
+        codeString = codeString.replace(name, releatePath);
+        compilation.assets[fullFilePath]._value = codeString;
+    }
+}
+function visitDependency(params) {
+    const { compilation, publicPkgReference, publicFile, subResource, filePath, type } = params;
+    const { subpkgUse, dependencies, name } = publicPkgReference[publicFile];
+    dependencies.forEach((dep) => {
+        Object.keys(publicPkgReference[dep].subpkgUse).forEach((subpkg) => {
+            if (subpkg === publicPkg_1.ASYNC_FILE_NAME) {
+                migrate({
+                    compilation,
+                    publicFile: dep,
+                    subResource,
+                    filePath,
+                    type
+                }, false);
+            }
+        });
+        const innerDependencies = publicPkgReference[dep].dependencies;
+        if (innerDependencies) {
+            visitDependency({
+                compilation,
+                publicPkgReference,
+                publicFile: dep,
+                subResource,
+                filePath: `${subResource}/${dep}`,
+                type,
+            });
+        }
+    });
+}
+;
+function migrate(params, isFirst) {
+    copyAsset(params);
+    if (params.type === publicPkg_1.ReferenceType.COMPONENTS) {
+        changeReferComponentPath(params, isFirst);
+    }
+    else {
+        changeReferCommonPath(params, isFirst);
+    }
+}
+function migrateStrategy(compilation, movePublicFile, publicPkgReference, type) {
+    movePublicFile.forEach((publicFile) => {
+        const { subpkgUse, dependencies, name } = publicPkgReference[publicFile];
+        Object.keys(subpkgUse).forEach((subpkg) => {
+            if (subpkg !== publicPkg_1.ASYNC_FILE_NAME) {
+                subpkgUse[subpkg].forEach((path) => {
+                    migrate({
+                        compilation,
+                        publicFile,
+                        subResource: subpkg,
+                        filePath: path,
+                        type
+                    }, true);
+                });
+                if (dependencies) {
+                    visitDependency({
+                        compilation,
+                        publicPkgReference,
+                        publicFile,
+                        subResource: subpkg,
+                        filePath: `${subpkg}/${publicFile}`,
+                        type,
+                    });
+                }
+            }
+        });
+    });
+    deleteAssete.forEach(asset => {
+        delete compilation.assets[asset];
+    });
+}
+function managePublicPkgComponentReference(compilation) {
+    const movePublicFile = filterPublicPkgComponentReference(publicPkg_1.publicPkgComponentReference);
+    migrateStrategy(compilation, movePublicFile, publicPkg_1.publicPkgComponentReference, publicPkg_1.ReferenceType.COMPONENTS);
+}
+function managePublicPkgCommonReference(compilation) {
+    const movePublicFile = filterPublicPkgComponentReference(publicPkg_1.publicPkgCommonReference);
+    migrateStrategy(compilation, movePublicFile, publicPkg_1.publicPkgCommonReference, publicPkg_1.ReferenceType.COMMON);
+}
 class NanachiWebpackPlugin {
     constructor({ platform = 'wx', compress = false, beta = false, betaUi = false } = {}) {
         this.timer = new timer_1.default();
@@ -112,6 +275,12 @@ class NanachiWebpackPlugin {
                     delete compilation.assets[key];
                 }
             });
+            if (!config_1.default.publicPkg || config_1.default.requireAsync) {
+                return;
+            }
+            managePublicPkgComponentReference(compilation);
+            managePublicPkgCommonReference(compilation);
+            debugger;
         });
         compiler.hooks.run.tapAsync(id, (compilation, callback) => __awaiter(this, void 0, void 0, function* () {
             this.timer.start();

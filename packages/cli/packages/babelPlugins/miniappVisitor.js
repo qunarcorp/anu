@@ -20,6 +20,7 @@ const calculateComponentsPath_1 = __importDefault(require("../utils/calculateCom
 const globalStore_1 = __importDefault(require("../utils/globalStore"));
 const config_1 = __importDefault(require("../../config/config"));
 const transformConfig_1 = __importDefault(require("./transformConfig"));
+const publicPkg_1 = require("../utils/publicPkg");
 const buildType = config_1.default['buildType'];
 const quickhuaweiStyle = require('../quickHelpers/huaweiStyle');
 const ignoreAttri = require('../quickHelpers/ignoreAttri');
@@ -510,6 +511,7 @@ const visitor = {
     },
     JSXOpeningElement: {
         enter: function (astPath, state) {
+            var _a, _b;
             let nodeName = astPath.node.name.name;
             if (buildType === 'quick') {
                 ignorePrevAttri(astPath, nodeName);
@@ -560,35 +562,79 @@ const visitor = {
                 catch (err) {
                 }
                 let useComponentsPath = calculateComponentsPath_1.default(bag);
-                if (buildType == 'wx') {
-                    let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
-                    let currentExec, importExec;
-                    for (let i = 0, len = global.subpackages.length; i < len; i++) {
-                        const subpackage = global.subpackages[i];
-                        if (modules.current.startsWith(`/source/${subpackage.resource}`)) {
-                            currentPageInPackagesIndex = i;
-                            currentExec = true;
-                        }
-                        if (useComponentsPath.startsWith(`/${subpackage.resource}`)) {
-                            importComponentInPackagesIndex = i;
-                            importExec = true;
-                        }
-                        if (currentExec && importExec) {
-                            break;
-                        }
-                    }
-                    let componentPlaceholder = modules.componentPlaceholder || {};
-                    if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
-                        componentPlaceholder['anu-' + nodeName.toLowerCase()] = 'view';
-                        modules.componentPlaceholder = componentPlaceholder;
-                    }
-                }
                 modules.usedComponents['anu-' + nodeName.toLowerCase()] = useComponentsPath;
                 astPath.node.name.name = 'React.useComponent';
                 var attrs = astPath.node.attributes;
                 modules.is && modules.is.push(nodeName);
                 attrs.push(t.jsxAttribute(t.jsxIdentifier('is'), t.jsxExpressionContainer(t.stringLiteral(nodeName))));
                 attrs.push(utils_1.default.createAttribute('data-instance-uid', utils_1.default.createDynamicAttributeValue('i', astPath, modules.indexArr || ['0'])));
+                if (config_1.default.publicPkg) {
+                    if (config_1.default.requireAsync) {
+                        let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
+                        let currentExec, importExec;
+                        for (let i = 0, len = global.subpackages.length; i < len; i++) {
+                            const subpackage = global.subpackages[i];
+                            if (modules.current.startsWith(`/source/${subpackage.resource}`)) {
+                                currentPageInPackagesIndex = i;
+                                currentExec = true;
+                            }
+                            if (useComponentsPath.startsWith(`/${subpackage.resource}`)) {
+                                importComponentInPackagesIndex = i;
+                                importExec = true;
+                            }
+                            if (currentExec && importExec) {
+                                break;
+                            }
+                        }
+                        let componentPlaceholder = modules.componentPlaceholder || {};
+                        if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
+                            componentPlaceholder['anu-' + nodeName.toLowerCase()] = 'view';
+                            modules.componentPlaceholder = componentPlaceholder;
+                        }
+                    }
+                    else {
+                        if (!useComponentsPath.startsWith(`/async/`)) {
+                            return;
+                        }
+                        const newUseComponentsPath = useComponentsPath.substring(1);
+                        let referenceConfig = ((_a = publicPkg_1.publicPkgComponentReference[newUseComponentsPath]) === null || _a === void 0 ? void 0 : _a.subpkgUse) || {};
+                        let relPath = '';
+                        if (/\/node_modules\//.test(modules.sourcePath.replace(/\\/g, '/'))) {
+                            relPath = 'npm/' + path.relative(path.join(cwd, 'node_modules'), modules.sourcePath);
+                        }
+                        else {
+                            relPath = path.relative(path.resolve(cwd, 'source'), modules.sourcePath);
+                        }
+                        const relativePath = relPath.replace(/\.\w+$/, `.json`);
+                        let referenceSubName = '';
+                        if (relativePath.startsWith('async/')) {
+                            referenceSubName = 'ASYNC';
+                            const noSuffixRelativePath = relPath.replace(/\.\w+$/, ``);
+                            let currentDep = ((_b = publicPkg_1.publicPkgComponentReference[noSuffixRelativePath]) === null || _b === void 0 ? void 0 : _b.dependencies) || [];
+                            currentDep.push(newUseComponentsPath);
+                            publicPkg_1.publicPkgComponentReference[noSuffixRelativePath].dependencies = currentDep;
+                        }
+                        else {
+                            const referenceSubPkg = global.subpackages.find(v => relativePath.startsWith(`${v.resource}`));
+                            referenceSubName = referenceSubPkg ? referenceSubPkg.resource : 'MAIN';
+                        }
+                        let referenceSubFileList = referenceConfig[referenceSubName] || [];
+                        referenceSubFileList.push(relativePath);
+                        if (publicPkg_1.publicPkgComponentReference[newUseComponentsPath]) {
+                            publicPkg_1.publicPkgComponentReference[newUseComponentsPath].subpkgUse = {
+                                [referenceSubName]: referenceSubFileList
+                            };
+                        }
+                        else {
+                            publicPkg_1.publicPkgComponentReference[newUseComponentsPath] = {
+                                subpkgUse: {
+                                    [referenceSubName]: referenceSubFileList,
+                                },
+                                name: 'anu-' + nodeName.toLowerCase(),
+                            };
+                        }
+                    }
+                }
             }
             else {
                 if (nodeName != 'React.useComponent') {

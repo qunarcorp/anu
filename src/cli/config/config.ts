@@ -44,6 +44,17 @@ enum Platforms {
 
 export type validatePlatforms = 'wx' | 'qq' | 'ali' | 'bu' | 'tt' | 'quick' | 'h5' | '360';
 
+/**
+ * 存在公共包，但不支持分包异步化的平台，分包规则：
+ * 方案：根据分包数、配置决定放置主包还是分包。
+ *      分包数：在多个分包时，n个分包及以上引用放在主包，n个以下放在各自分包中，n为multiPkglimit，默认是3。
+ *      配置：配置放到主包/分包的文件/文件夹
+ * 优先级：配置（不配置默认按下一优先级考虑，也就是按分包数考虑）>分包数
+ */
+interface SyncPlatformConfig {
+    putMainInMultiSubPkgUse: string[];//分配到主包的文件/文件夹，正则字符串
+    multiPkglimit: number;
+}
 export interface GlobalConfigMap {
     buildType: validatePlatforms;      //构建类型默认微信小程序
     buildDir: string;   //非快应用项目默认构建目录为dist
@@ -58,6 +69,9 @@ export interface GlobalConfigMap {
     WebViewRules?: any; // TODO
     nanachiVersion: string;
     sourcemap: boolean,
+    publicPkg: boolean,
+    requireAsync: boolean,
+    syncPlatformConfig: SyncPlatformConfig,
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;
@@ -157,6 +171,12 @@ const config: GlobalConfigMap =  {
     patchComponents: {}, // 项目中使用的补丁组件
     pluginTags: {},
     sourcemap,
+    publicPkg: false,// 是否包含公共包
+    requireAsync: false,// 是否是分包异步化
+    syncPlatformConfig: {
+        putMainInMultiSubPkgUse: [],
+        multiPkglimit: 3,
+    },// 是否是分包异步化
     plugins: {}
 };
 

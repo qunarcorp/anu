@@ -25,59 +25,110 @@ const path = __importStar(require("path"));
 const alias_1 = __importDefault(require("../../consts/alias"));
 const calculateAlias_1 = __importDefault(require("../../packages/utils/calculateAlias"));
 const config_1 = __importDefault(require("../../config/config"));
+const publicPkg_1 = require("../../packages/utils/publicPkg");
 const buildType = config_1.default['buildType'];
+function managePublicPkgCommonReferenceInAsync(astPath, state) {
+    let node = astPath.node;
+    let source = node.source.value;
+    if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
+        return;
+    }
+    if (/\/components\//.test(source)) {
+        return;
+    }
+    const specifiers = node.specifiers;
+    const currentPath = state.file.opts.sourceFileName;
+    const dir = path.dirname(currentPath);
+    const sourceAbsolute = path.join(dir, source);
+    let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
+    let currentExec, importExec;
+    for (let i = 0, len = global.subpackages.length; i < len; i++) {
+        const subpackage = global.subpackages[i];
+        if (currentPath.startsWith(`${subpackage.resource}`)) {
+            currentPageInPackagesIndex = i;
+            currentExec = true;
+        }
+        if (sourceAbsolute.startsWith(`${subpackage.resource}`)) {
+            importComponentInPackagesIndex = i;
+            importExec = true;
+        }
+        if (currentExec && importExec) {
+            break;
+        }
+    }
+    if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
+        const specifierNameList = specifiers.map(specifier => {
+            return specifier.local.name;
+        });
+        const list = specifierNameList.map(name => `${name} = v.${name};\n`);
+        const code = `
+            let ${specifierNameList.join(',')};
+            require.async("${source}").then(v => {
+                ${list}
+            }).catch(({v, errMsg}) => {
+                console.error("异步获取js出错",v, errMsg);
+            })
+        `;
+        const result = babel.transformSync(code, {
+            ast: true,
+            sourceType: 'unambiguous'
+        });
+        astPath.insertAfter(result.ast);
+        astPath.remove();
+    }
+}
+function managePublicPkgCommonReferenceInSync(astPath, state) {
+    var _a, _b;
+    let node = astPath.node;
+    let source = node.source.value;
+    if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
+        return;
+    }
+    if (/\/components\//.test(source)) {
+        return;
+    }
+    const currentPath = state.file.opts.sourceFileName.replace(/\.\w+$/, '');
+    const dir = path.dirname(currentPath);
+    const sourceAbsolute = path.join(dir, source).replace(/\.\w+$/, '');
+    if (!sourceAbsolute.startsWith('async/')) {
+        return;
+    }
+    let referenceConfig = ((_a = publicPkg_1.publicPkgCommonReference[sourceAbsolute]) === null || _a === void 0 ? void 0 : _a.subpkgUse) || {};
+    let referenceSubName = '';
+    if (currentPath.startsWith('async/')) {
+        referenceSubName = 'ASYNC';
+        let currentDep = ((_b = publicPkg_1.publicPkgCommonReference[currentPath]) === null || _b === void 0 ? void 0 : _b.dependencies) || [];
+        currentDep.push(sourceAbsolute);
+        publicPkg_1.publicPkgCommonReference[currentPath].dependencies = currentDep;
+    }
+    else {
+        const referenceSubPkg = global.subpackages.find(v => currentPath.startsWith(`${v.resource}`));
+        referenceSubName = referenceSubPkg ? referenceSubPkg.resource : 'MAIN';
+    }
+    let referenceSubFileList = referenceConfig[referenceSubName] || [];
+    referenceSubFileList.push(currentPath);
+    if (publicPkg_1.publicPkgCommonReference[sourceAbsolute]) {
+        publicPkg_1.publicPkgCommonReference[sourceAbsolute].subpkgUse = {
+            [referenceSubName]: referenceSubFileList
+        };
+    }
+    else {
+        publicPkg_1.publicPkgCommonReference[sourceAbsolute] = {
+            subpkgUse: {
+                [referenceSubName]: referenceSubFileList,
+            },
+            name: source,
+        };
+    }
+}
 const visitor = {
     ImportDeclaration(astPath, state) {
-        if (buildType !== 'wx') {
+        if (config_1.default.requireAsync) {
+            managePublicPkgCommonReferenceInAsync(astPath, state);
             return;
         }
-        let node = astPath.node;
-        let source = node.source.value;
-        if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
-            return;
-        }
-        if (/\/components\//.test(source)) {
-            return;
-        }
-        const specifiers = node.specifiers;
-        const currentPath = state.file.opts.sourceFileName;
-        const dir = path.dirname(currentPath);
-        const sourceAbsolute = path.join(dir, source);
-        let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
-        let currentExec, importExec;
-        for (let i = 0, len = global.subpackages.length; i < len; i++) {
-            const subpackage = global.subpackages[i];
-            if (currentPath.startsWith(`${subpackage.resource}`)) {
-                currentPageInPackagesIndex = i;
-                currentExec = true;
-            }
-            if (sourceAbsolute.startsWith(`${subpackage.resource}`)) {
-                importComponentInPackagesIndex = i;
-                importExec = true;
-            }
-            if (currentExec && importExec) {
-                break;
-            }
-        }
-        if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
-            const specifierNameList = specifiers.map(specifier => {
-                return specifier.local.name;
-            });
-            const list = specifierNameList.map(name => `${name} = v.${name};\n`);
-            const code = `
-                let ${specifierNameList.join(',')};
-                require.async("${source}").then(v => {
-                    ${list}
-                }).catch(({v, errMsg}) => {
-                    console.error("异步获取js出错",v, errMsg);
-                })
-            `;
-            const result = babel.transformSync(code, {
-                ast: true,
-                sourceType: 'unambiguous'
-            });
-            astPath.insertAfter(result.ast);
-            astPath.remove();
+        else {
+            managePublicPkgCommonReferenceInSync(astPath, state);
         }
     },
 };
@@ -103,7 +154,7 @@ function resolveAlias(code, aliasMap, relativePath, ast, ctx) {
                     }
                 }
             ],
-            buildType === 'wx' ? checkRequireAsync : null,
+            config_1.default.publicPkg ? checkRequireAsync : {},
         ]
     };
     let result;

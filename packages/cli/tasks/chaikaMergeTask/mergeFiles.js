@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const isMutilePack_1 = require("./isMutilePack");
 const utils_1 = __importDefault(require("../../packages/utils"));
+const config_1 = __importDefault(require("../../config/config"));
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
@@ -110,7 +111,10 @@ function getFilesMap(queue = []) {
             return;
         }
         if (/\/app\.json$/.test(file)) {
-            var { alias = {}, pages = [], rules = [], imports = [], order = 0 } = require(file);
+            var { alias = {}, async = {}, pages = [], rules = [], imports = [], order = 0, publicPkg = {} } = require(file);
+            if (publicPkg) {
+                map['publicPkg'] = publicPkg;
+            }
             if (alias) {
                 map['alias'] = map['alias'] || [];
                 map['alias'].push({
@@ -118,6 +122,9 @@ function getFilesMap(queue = []) {
                     content: alias,
                     type: 'alias'
                 });
+            }
+            if (async) {
+                map['async'] = async;
             }
             if (pages.length) {
                 let allInjectRoutes = pages.reduce(function (ret, route) {
@@ -394,7 +401,6 @@ function validateMiniAppProjectConfigJson(queue) {
     }
 }
 function validateConfigFileCount(queue) {
-    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el) {
         return /Config\.json$/.test(el);
     });
@@ -415,11 +421,30 @@ function validateConfigFileCount(queue) {
     }
 }
 function default_1() {
+    var _a, _b, _c;
     let queue = Array.from(mergeFilesQueue);
     validateAppJsFileCount(queue);
     validateConfigFileCount(queue);
     validateMiniAppProjectConfigJson(queue);
     let map = getFilesMap(queue);
+    if ((_a = map.publicPkg) === null || _a === void 0 ? void 0 : _a.open) {
+        config_1.default.publicPkg = true;
+        if ((_c = (_b = map.publicPkg) === null || _b === void 0 ? void 0 : _b.asyncPlatform) === null || _c === void 0 ? void 0 : _c.includes(buildType)) {
+            config_1.default.requireAsync = true;
+            map.xconfig.push({
+                content: {
+                    subpackages: map.publicPkg.asyncSubpackages
+                }
+            });
+        }
+        else {
+            config_1.default.requireAsync = false;
+            config_1.default.syncPlatformConfig = map.publicPkg.syncPlatformConfig;
+        }
+    }
+    else {
+        config_1.default.publicPkg = false;
+    }
     let tasks = [
         getMergedAppJsConent(getAppJsSourcePath(queue), map.pages, map.importSyntax),
         getMergedXConfigContent(map.xconfig),

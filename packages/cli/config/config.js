@@ -120,6 +120,12 @@ const config = {
     patchComponents: {},
     pluginTags: {},
     sourcemap,
+    publicPkg: false,
+    requireAsync: false,
+    syncPlatformConfig: {
+        putMainInMultiSubPkgUse: [],
+        multiPkglimit: 3,
+    },
     plugins: {}
 };
 module.exports = config;

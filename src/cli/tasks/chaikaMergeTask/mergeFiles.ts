@@ -5,6 +5,7 @@
 
 import { getMultiplePackDirPrefix } from './isMutilePack';
 import utils from '../../packages/utils';
+import config from '../../config/config';
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
@@ -143,7 +144,11 @@ function getFilesMap(queue: any = []) {
             return;
         }
         if (/\/app\.json$/.test(file)) {
-            var { alias = {}, pages = [], rules = [], imports = [], order = 0 } = require(file);
+            var { alias = {}, async = {}, pages = [], rules = [], imports = [], order = 0, publicPkg = {} } = require(file);
+            if (publicPkg){
+                map['publicPkg'] = publicPkg;
+            }
+
             if (alias) {
                 map['alias'] = map['alias'] || [];
                 map['alias'].push({
@@ -151,6 +156,10 @@ function getFilesMap(queue: any = []) {
                     content: alias,
                     type: 'alias'
                 });
+            }
+
+            if (async){
+                map['async'] = async;
             }
 
             if (pages.length) {
@@ -471,7 +480,6 @@ function validateMiniAppProjectConfigJson(queue: any) {
 
 //校验config.json路径是否正确
 function validateConfigFileCount(queue: any) {
-    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el: any) {
         return /Config\.json$/.test(el);
     });
@@ -506,6 +514,26 @@ export default function () {
     validateMiniAppProjectConfigJson(queue);
 
     let map: any = getFilesMap(queue);
+
+    // 分包异步化校验及处理
+    if (map.publicPkg?.open){
+        config.publicPkg = true;
+        if (map.publicPkg?.asyncPlatform?.includes(buildType)){
+            config.requireAsync = true;
+            map.xconfig.push({
+                content: {
+                    subpackages: map.publicPkg.asyncSubpackages
+                }
+            });
+        } else {
+            config.requireAsync = false;
+            config.syncPlatformConfig = map.publicPkg.syncPlatformConfig;
+        }
+    } else {
+        config.publicPkg = false;
+    }
+    
+
     let tasks = [
         //app.js路由注入
         getMergedAppJsConent(getAppJsSourcePath(queue), map.pages, map.importSyntax),

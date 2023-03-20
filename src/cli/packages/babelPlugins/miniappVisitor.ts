@@ -9,6 +9,7 @@ import calculateComponentsPath from '../utils/calculateComponentsPath';
 import globalStore from '../utils/globalStore';
 import config from '../../config/config';
 import transformConfig from './transformConfig';
+import { publicPkgComponentReference } from '../utils/publicPkg'
 const buildType = config['buildType'];
 const quickhuaweiStyle = require('../quickHelpers/huaweiStyle');
 const ignoreAttri = require('../quickHelpers/ignoreAttri');
@@ -785,40 +786,6 @@ const visitor: babel.Visitor = {
                 // let useComponentsPath = calculateComponentsPath(bag, nodeName); // tsc: 原来有两个参数 第二个参数有用吗？
                 let useComponentsPath = calculateComponentsPath(bag);
 
-                 /**
-                 * 1、确认文件存在的位置
-                 * 2、判断引用的文件是否是存在其他分包
-                 * 3、是则新增占位组件
-                 */
-                  if(buildType == 'wx'){
-                    let currentPageInPackagesIndex = -1,importComponentInPackagesIndex = -1;
-                    let currentExec,importExec;
-                    for (let i = 0,len = global.subpackages.length; i < len; i++) {
-                        const subpackage = global.subpackages[i];
-                        if(modules.current.startsWith(`/source/${subpackage.resource}`)){
-                            currentPageInPackagesIndex = i;
-                            currentExec = true;
-                        }
-
-                        if(useComponentsPath.startsWith(`/${subpackage.resource}`)){
-                            importComponentInPackagesIndex = i;
-                            importExec = true;
-                        }
-
-                        if(currentExec && importExec){
-                            break;
-                        }
-                    }
-
-                    // 新增分包配置
-                    let componentPlaceholder = modules.componentPlaceholder || {};
-                    if(importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex){
-                        componentPlaceholder['anu-' + nodeName.toLowerCase()] = 'view';
-                        modules.componentPlaceholder = componentPlaceholder;  
-                    }                             
-                }
-        
-
                 modules.usedComponents['anu-' + nodeName.toLowerCase()] = useComponentsPath;
                 (astPath.node.name as t.JSXIdentifier).name = 'React.useComponent';
 
@@ -844,6 +811,90 @@ const visitor: babel.Visitor = {
                         )
                     )
                 );
+
+                if (config.publicPkg){
+                    if (config.requireAsync) {
+                        /**
+                        * 1、确认文件存在的位置
+                        * 2、判断引用的文件是否是存在其他分包
+                        * 3、是则新增占位组件
+                        */
+                        let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
+                        let currentExec, importExec;
+                        for (let i = 0,len = global.subpackages.length; i < len; i++) {
+                            const subpackage = global.subpackages[i];
+                            if(modules.current.startsWith(`/source/${subpackage.resource}`)){
+                                currentPageInPackagesIndex = i;
+                                currentExec = true;
+                            }
+    
+                            if(useComponentsPath.startsWith(`/${subpackage.resource}`)){
+                                importComponentInPackagesIndex = i;
+                                importExec = true;
+                            }
+    
+                            if(currentExec && importExec){
+                                break;
+                            }
+                        }
+    
+                        // 新增分包配置
+                        let componentPlaceholder = modules.componentPlaceholder || {};
+                        if(importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex){
+                            componentPlaceholder['anu-' + nodeName.toLowerCase()] = 'view';
+                            modules.componentPlaceholder = componentPlaceholder;  
+                        }           
+                    } else {
+                        if (!useComponentsPath.startsWith(`/async/`)) {
+                            return
+                        }
+
+                        const newUseComponentsPath = useComponentsPath.substring(1);
+                        let referenceConfig = publicPkgComponentReference[newUseComponentsPath]?.subpkgUse || {};
+
+                        let relPath = '';
+                        if (/\/node_modules\//.test(modules.sourcePath.replace(/\\/g, '/'))) {
+                            relPath = 'npm/' + path.relative(path.join(cwd, 'node_modules'), modules.sourcePath);
+                        } else {
+                            relPath = path.relative(path.resolve(cwd, 'source'), modules.sourcePath);
+                        }
+
+                        const relativePath = relPath.replace(/\.\w+$/, `.json`);
+
+                        let referenceSubName = '';
+                        if (relativePath.startsWith('async/')) {
+                            referenceSubName = 'ASYNC';
+                            const noSuffixRelativePath = relPath.replace(/\.\w+$/, ``);
+
+                            let currentDep = publicPkgComponentReference[noSuffixRelativePath]?.dependencies || [];
+                            currentDep.push(newUseComponentsPath);
+                            // 层级查询，此处肯定存在
+                            publicPkgComponentReference[noSuffixRelativePath].dependencies = currentDep;
+                            
+                        } else {
+                            const referenceSubPkg = global.subpackages.find(v => relativePath.startsWith(`${v.resource}`));
+                            referenceSubName = referenceSubPkg ? referenceSubPkg.resource : 'MAIN';
+                        }
+
+                        let referenceSubFileList: string[] = referenceConfig[referenceSubName] || [];
+                        referenceSubFileList.push(relativePath);
+
+                        if (publicPkgComponentReference[newUseComponentsPath]) {
+                            publicPkgComponentReference[newUseComponentsPath].subpkgUse = {
+                                [referenceSubName]: referenceSubFileList
+                            };
+                        } else {
+                            publicPkgComponentReference[newUseComponentsPath] = {
+                                subpkgUse: {
+                                    [referenceSubName]: referenceSubFileList,
+                                },
+                                name: 'anu-' + nodeName.toLowerCase(),
+                            }
+                        }
+                        
+                    }
+                                      
+                }
             } else {
                 if (nodeName != 'React.useComponent') {
                     helpers.nodeName(astPath, modules);

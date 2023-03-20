@@ -41,6 +41,7 @@ declare let utils: {
     isCheckQuickConfigFileExist(configFile: string): boolean;
     getProjectRootPath(): string;
     getDistDir(): string;
+    getRelativePath(file1: string, file2: string): string;
     getDisSourceMapDir(): string;
     getDistRelativeDir(): string;
     getDistPathFromSoucePath(sourcePath: string): string;

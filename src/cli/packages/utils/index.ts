@@ -414,6 +414,20 @@ let utils = {
     },
 
     /**
+     * 获取file2对于file1的相对路径。同级要加./
+     * @param file1 
+     * @param file2 
+     * @returns 
+     */
+    getRelativePath(file1: string, file2: string){
+        const relativePath = path.relative(path.dirname(file1), file2);
+        if (relativePath.indexOf('..') !== 0) {
+            return `./${relativePath}`;
+        } else {
+            return relativePath;
+        }
+    },
+    /**
      * 获取sourceMap的绝对地址
      * @returns 
      */

@@ -7,73 +7,138 @@ import { NanachiLoaderStruct } from './nanachiLoader';
 import getAliasMap, { Alias } from '../../consts/alias';
 import calculateAlias from '../../packages/utils/calculateAlias';
 import config from '../../config/config';
+import { publicPkgCommonReference } from '../../packages/utils/publicPkg';
+
 const buildType = config['buildType'];
+
+/**
+ * 支持分包异步化时的处理
+ */
+function managePublicPkgCommonReferenceInAsync(astPath: NodePath<t.ImportDeclaration>, state: any) {
+
+    let node = astPath.node;
+    let source = node.source.value;
+
+    if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
+        return;
+    }
+
+    if (/\/components\//.test(source)) {
+        return;
+    }
+
+    const specifiers = node.specifiers;
+    const currentPath = state.file.opts.sourceFileName;
+    const dir = path.dirname(currentPath);
+    const sourceAbsolute = path.join(dir, source);
+
+    let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
+    let currentExec, importExec;
+    for (let i = 0, len = global.subpackages.length; i < len; i++) {
+        const subpackage = global.subpackages[i];
+        if (currentPath.startsWith(`${subpackage.resource}`)) {
+            currentPageInPackagesIndex = i;
+            currentExec = true;
+        }
+
+        if (sourceAbsolute.startsWith(`${subpackage.resource}`)) {
+            importComponentInPackagesIndex = i;
+            importExec = true;
+        }
+
+        if (currentExec && importExec) {
+            break;
+        }
+    }
+
+    // 如果是分包则对进行转换
+    if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
+        const specifierNameList = specifiers.map(specifier => {
+            return specifier.local.name;
+        });
+
+        const list = specifierNameList.map(name => `${name} = v.${name};\n`);
+        const code = `
+            let ${specifierNameList.join(',')};
+            require.async("${source}").then(v => {
+                ${list}
+            }).catch(({v, errMsg}) => {
+                console.error("异步获取js出错",v, errMsg);
+            })
+        `;
+        const result = babel.transformSync(code, {
+            ast: true,
+            sourceType: 'unambiguous'
+        });
+
+        astPath.insertAfter(result.ast);
+        astPath.remove();
+    }
+}
+
+/**
+ * 不支持分包异步化时的处理
+ */
+function managePublicPkgCommonReferenceInSync(astPath: NodePath<t.ImportDeclaration>, state: any) {
+    
+    let node = astPath.node;
+    let source = node.source.value;
+
+    if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
+        return;
+    }
+
+    if (/\/components\//.test(source)) {
+        return;
+    }
+
+    const currentPath = state.file.opts.sourceFileName.replace(/\.\w+$/, '');
+    const dir = path.dirname(currentPath);
+    const sourceAbsolute = path.join(dir, source).replace(/\.\w+$/, '');
+
+    if (!sourceAbsolute.startsWith('async/')) {
+        return;
+    }
+
+    let referenceConfig = publicPkgCommonReference[sourceAbsolute]?.subpkgUse || {};
+    let referenceSubName = '';
+    if (currentPath.startsWith('async/')) {
+        referenceSubName = 'ASYNC';
+        let currentDep = publicPkgCommonReference[currentPath]?.dependencies || [];
+        currentDep.push(sourceAbsolute);
+        // 层级查询，此处肯定存在
+        publicPkgCommonReference[currentPath].dependencies = currentDep;        
+    } else {
+        const referenceSubPkg = global.subpackages.find(v => currentPath.startsWith(`${v.resource}`));
+        referenceSubName = referenceSubPkg ? referenceSubPkg.resource : 'MAIN';
+    }
+
+    let referenceSubFileList: string[] = referenceConfig[referenceSubName] || [];
+    referenceSubFileList.push(currentPath);
+
+    if (publicPkgCommonReference[sourceAbsolute]) {
+        publicPkgCommonReference[sourceAbsolute].subpkgUse = {
+            [referenceSubName]: referenceSubFileList
+        };
+    } else {
+        publicPkgCommonReference[sourceAbsolute] = {
+            subpkgUse: {
+                [referenceSubName]: referenceSubFileList,
+            },
+            name: source,
+        };
+    }
+}   
+
 
 const visitor: babel.Visitor = {
     ImportDeclaration(astPath: NodePath<t.ImportDeclaration>, state: any) {
-        if (buildType !== 'wx') {
+        if (config.requireAsync) {
+            managePublicPkgCommonReferenceInAsync(astPath, state);
             return;
+        } else {
+            managePublicPkgCommonReferenceInSync(astPath, state);
         }
-
-        let node = astPath.node;
-        let source = node.source.value;
-
-        if (/\.(less|scss|sass|css)$/.test(path.extname(source))) {
-            return;
-        }
-
-        if (/\/components\//.test(source)) {
-            return;
-        }
-
-        const specifiers = node.specifiers;
-        const currentPath = state.file.opts.sourceFileName;
-        const dir = path.dirname(currentPath);
-        const sourceAbsolute = path.join(dir, source);
-
-        let currentPageInPackagesIndex = -1, importComponentInPackagesIndex = -1;
-        let currentExec, importExec;
-        for (let i = 0, len = global.subpackages.length; i < len; i++) {
-            const subpackage = global.subpackages[i];
-            if (currentPath.startsWith(`${subpackage.resource}`)) {
-                currentPageInPackagesIndex = i;
-                currentExec = true;
-            }
-
-            if (sourceAbsolute.startsWith(`${subpackage.resource}`)) {
-                importComponentInPackagesIndex = i;
-                importExec = true;
-            }
-
-            if (currentExec && importExec) {
-                break;
-            }
-        }
-
-        // 如果是分包则对进行转换
-        if (importComponentInPackagesIndex !== -1 && currentPageInPackagesIndex !== importComponentInPackagesIndex) {
-            const specifierNameList = specifiers.map(specifier => {
-                return specifier.local.name;
-            });
-
-            const list = specifierNameList.map(name => `${name} = v.${name};\n`);
-            const code = `
-                let ${specifierNameList.join(',')};
-                require.async("${source}").then(v => {
-                    ${list}
-                }).catch(({v, errMsg}) => {
-                    console.error("异步获取js出错",v, errMsg);
-                })
-            `;
-            const result = babel.transformSync(code, {
-                ast: true,
-                sourceType: 'unambiguous'
-            });
-
-            astPath.insertAfter(result.ast);
-            astPath.remove();
-        }
-
     },
 };
 
@@ -90,11 +155,11 @@ function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: 
         configFile: false,
         babelrc: false,
         sourceMaps: true,
-        comments:false,
+        comments: false,
         sourceFileName: relativePath,
         plugins: [
             [
-                require('babel-plugin-module-resolver'),       
+                require('babel-plugin-module-resolver'),
                 {
                     resolvePath(moduleName: string) {
                         //计算别名配置以及处理npm路径计算
@@ -102,7 +167,7 @@ function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: 
                     }
                 }
             ],
-            buildType === 'wx' ? checkRequireAsync: null,// 校验是否是异步js
+            config.publicPkg ? checkRequireAsync : {},// 校验是否是异步js
         ]
     };
     let result;
@@ -118,7 +183,7 @@ function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: 
  * 别名解析loader，将queue中代码的别名解析成相对路径
  */
 
-module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderStruct, map: any, meta: any) {
+module.exports = async function ({ queues = [], exportCode = '' }: NanachiLoaderStruct, map: any, meta: any) {
     const aliasMap = getAliasMap(this.nanachiOptions.platform);
     let ctx = this;
     const callback = this.async();
@@ -129,27 +194,25 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
 
         let res;
         if (type === 'js') {
-           
             res = resolveAlias(code, aliasMap, relativePath, ast, ctx);
             code = res.code;
             ast = res.ast;
         }
         if (type === 'ux') {
-           
-            code = code.toString().replace(/<script>([\s\S]*?)<\/script>/mg, function(match, jsCode) {
+            code = code.toString().replace(/<script>([\s\S]*?)<\/script>/mg, function (match, jsCode) {
                 jsCode = resolveAlias(jsCode, aliasMap, relativePath, ast, ctx).code;
                 return `<script>${jsCode}</script>`;
             });
         }
         return {
             ...item,
-            fileMap: res? res.map : fileMap,
+            fileMap: res ? res.map : fileMap,
             code,
             path: relativePath,
             type,
             ast
         };
     });
-    
+
     callback(null, { queues, exportCode }, map, meta);
 };

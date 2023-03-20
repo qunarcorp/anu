@@ -329,6 +329,15 @@ let utils = {
         const projectRootPath = this.getProjectRootPath();
         return path.join(projectRootPath, this.getDistRelativeDir());
     },
+    getRelativePath(file1, file2) {
+        const relativePath = path.relative(path.dirname(file1), file2);
+        if (relativePath.indexOf('..') !== 0) {
+            return `./${relativePath}`;
+        }
+        else {
+            return relativePath;
+        }
+    },
     getDisSourceMapDir() {
         const projectRootPath = this.getProjectRootPath();
         return path.join(projectRootPath, 'sourcemap', config.buildType);
