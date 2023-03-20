@@ -12,11 +12,11 @@ import { NanachiOptions } from '../index';
 import globalStore from '../packages/utils/globalStore';
 import webpack = require('webpack');
 import { ReferenceType, ASYNC_FILE_NAME, PublicPkgReference, publicPkgComponentReference, publicPkgCommonReference } from '../packages/utils/publicPkg';
+import { type } from 'ramda';
 
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
-
 // const pageConfig = require('../packages/h5Helpers/pageConfig');
 
 function getNanachiConfig() {
@@ -113,7 +113,7 @@ function setDepInMain(dependencies: string[]) {
     });
 }
 
-function filterPublicPkgComponentReference(publicPkgReference: PublicPkgReference) {
+function filterPublicPkgReference(publicPkgReference: PublicPkgReference) {
     const { putMainInMultiSubPkgUse = [], multiPkglimit = 3 } = config.syncPlatformConfig;
     let movePublicFile = Object.keys(publicPkgReference).filter(publicFile => {
         const { subpkgUse, dependencies, name, putMain } = publicPkgReference[publicFile];
@@ -169,11 +169,16 @@ let deleteAssete: string[] = [];
  * @param params 
  */
 function copyAsset(params: VisitDependencyParams) {
-    const { compilation, publicFile, subResource } = params;
+    const { compilation, publicFile, subResource, type } = params;
     Object.keys(compilation.assets).forEach(asset => {
         if (asset.startsWith(`${publicFile}.`)) {
             compilation.assets[subResource + '/' + asset] = compilation.assets[asset];
             deleteAssete.push(asset);
+
+            if (path.extname(asset) === '.js') {
+                // 更改自身引用其他文件的路径
+                changeReferPathAfterCopy(compilation, asset, subResource + '/' + asset, type);
+            }
         }
     });
 }
@@ -267,13 +272,50 @@ function visitDependency(params: VisitDependencyParams) {
 
 function migrate(params: VisitDependencyParams, isFirst: boolean) {
     copyAsset(params);
+
     if (params.type === ReferenceType.COMPONENTS) {
         changeReferComponentPath(params, isFirst);
     } else {
         changeReferCommonPath(params, isFirst);
-    }
+    };
 }
 
+/**
+ * 文件迁移后更改自身引用文件的路径
+ * @param oldPath 
+ * @param newPath 
+ */
+function changeReferPathAfterCopy(compilation: webpack.compilation.Compilation, oldPath: string, newPath: string) {
+    console.log(`------------------------------`);
+    console.log(`oldPath: ${oldPath};newPath: ${newPath}`);
+
+    const sourceDir = path.dirname(oldPath);
+    const targetDir = path.dirname(newPath);
+    
+    const data = compilation.assets[newPath]._value;
+    // 修改文件中引用的其他文件的路径
+    const modifiedData = data.replace(/(require\(['"])(\..*?)(['"]\))|(\bfrom\s+['"])(\..*?)(['"])/g, function (match, p1, p2, p3, p4, p5, p6) {
+        const referAbsolutePath = path.resolve(sourceDir, p2 || p5);
+        const referPath = path.relative(cwd, referAbsolutePath);
+        
+        let relativePath;
+        if (publicPkgCommonReference[referPath]) {
+            console.log('不更改:', referPath)
+            relativePath = p2 || p5;
+        } else {
+            relativePath = path.relative(targetDir, referPath);
+        }
+
+        if (p2) {
+            return p1 + relativePath + p3;
+        } else {
+            return p4 + relativePath + p6;
+        }
+    });
+
+    compilation.assets[newPath]._value = modifiedData;
+
+}
 function migrateStrategy(compilation: webpack.compilation.Compilation, movePublicFile: string[], publicPkgReference: any, type: ReferenceType) {
     movePublicFile.forEach((publicFile) => {
         const { subpkgUse, dependencies, name } = publicPkgReference[publicFile];
@@ -288,8 +330,6 @@ function migrateStrategy(compilation: webpack.compilation.Compilation, movePubli
                         filePath: path,
                         type
                     }, true);
-
-                    // 更改自身引用其他文件的路径
 
                 })
 
@@ -324,12 +364,12 @@ function migrateStrategy(compilation: webpack.compilation.Compilation, movePubli
  * @returns 
  */
 function managePublicPkgComponentReference(compilation: webpack.compilation.Compilation) {
-    const movePublicFile: string[] = filterPublicPkgComponentReference(publicPkgComponentReference);
+    const movePublicFile: string[] = filterPublicPkgReference(publicPkgComponentReference);
     migrateStrategy(compilation, movePublicFile, publicPkgComponentReference, ReferenceType.COMPONENTS);
 }
 
 function managePublicPkgCommonReference(compilation: webpack.compilation.Compilation) {
-    const movePublicFile: string[] = filterPublicPkgComponentReference(publicPkgCommonReference);
+    const movePublicFile: string[] = filterPublicPkgReference(publicPkgCommonReference);
     migrateStrategy(compilation, movePublicFile, publicPkgCommonReference, ReferenceType.COMMON);
 }
 

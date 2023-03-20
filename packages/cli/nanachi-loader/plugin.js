@@ -97,7 +97,7 @@ function setDepInMain(dependencies) {
         setDepInMain((_a = publicPkg_1.publicPkgComponentReference[dep]) === null || _a === void 0 ? void 0 : _a.dependencies);
     });
 }
-function filterPublicPkgComponentReference(publicPkgReference) {
+function filterPublicPkgReference(publicPkgReference) {
     const { putMainInMultiSubPkgUse = [], multiPkglimit = 3 } = config_1.default.syncPlatformConfig;
     let movePublicFile = Object.keys(publicPkgReference).filter(publicFile => {
         const { subpkgUse, dependencies, name, putMain } = publicPkgReference[publicFile];
@@ -127,11 +127,14 @@ function filterPublicPkgComponentReference(publicPkgReference) {
 }
 let deleteAssete = [];
 function copyAsset(params) {
-    const { compilation, publicFile, subResource } = params;
+    const { compilation, publicFile, subResource, type } = params;
     Object.keys(compilation.assets).forEach(asset => {
         if (asset.startsWith(`${publicFile}.`)) {
             compilation.assets[subResource + '/' + asset] = compilation.assets[asset];
             deleteAssete.push(asset);
+            if (path_1.default.extname(asset) === '.js') {
+                changeReferPathAfterCopy(compilation, asset, subResource + '/' + asset, type);
+            }
         }
     });
 }
@@ -212,6 +215,33 @@ function migrate(params, isFirst) {
     else {
         changeReferCommonPath(params, isFirst);
     }
+    ;
+}
+function changeReferPathAfterCopy(compilation, oldPath, newPath) {
+    console.log(`------------------------------`);
+    console.log(`oldPath: ${oldPath};newPath: ${newPath}`);
+    const sourceDir = path_1.default.dirname(oldPath);
+    const targetDir = path_1.default.dirname(newPath);
+    const data = compilation.assets[newPath]._value;
+    const modifiedData = data.replace(/(require\(['"])(\..*?)(['"]\))|(\bfrom\s+['"])(\..*?)(['"])/g, function (match, p1, p2, p3, p4, p5, p6) {
+        const referAbsolutePath = path_1.default.resolve(sourceDir, p2 || p5);
+        const referPath = path_1.default.relative(cwd, referAbsolutePath);
+        let relativePath;
+        if (publicPkg_1.publicPkgCommonReference[referPath]) {
+            console.log('不更改:', referPath);
+            relativePath = p2 || p5;
+        }
+        else {
+            relativePath = path_1.default.relative(targetDir, referPath);
+        }
+        if (p2) {
+            return p1 + relativePath + p3;
+        }
+        else {
+            return p4 + relativePath + p6;
+        }
+    });
+    compilation.assets[newPath]._value = modifiedData;
 }
 function migrateStrategy(compilation, movePublicFile, publicPkgReference, type) {
     movePublicFile.forEach((publicFile) => {
@@ -245,11 +275,11 @@ function migrateStrategy(compilation, movePublicFile, publicPkgReference, type) 
     });
 }
 function managePublicPkgComponentReference(compilation) {
-    const movePublicFile = filterPublicPkgComponentReference(publicPkg_1.publicPkgComponentReference);
+    const movePublicFile = filterPublicPkgReference(publicPkg_1.publicPkgComponentReference);
     migrateStrategy(compilation, movePublicFile, publicPkg_1.publicPkgComponentReference, publicPkg_1.ReferenceType.COMPONENTS);
 }
 function managePublicPkgCommonReference(compilation) {
-    const movePublicFile = filterPublicPkgComponentReference(publicPkg_1.publicPkgCommonReference);
+    const movePublicFile = filterPublicPkgReference(publicPkg_1.publicPkgCommonReference);
     migrateStrategy(compilation, movePublicFile, publicPkg_1.publicPkgCommonReference, publicPkg_1.ReferenceType.COMMON);
 }
 class NanachiWebpackPlugin {
