@@ -12,7 +12,6 @@ import { NanachiOptions } from '../index';
 import globalStore from '../packages/utils/globalStore';
 import webpack = require('webpack');
 import { ReferenceType, ASYNC_FILE_NAME, PublicPkgReference, publicPkgComponentReference, publicPkgCommonReference } from '../packages/utils/publicPkg';
-import { type } from 'ramda';
 
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
@@ -106,14 +105,15 @@ function writeInternalCommonRuntime() {
 
 }
 
-function setDepInMain(dependencies: string[]) {
+function setDepInMain(publicPkgReference: PublicPkgReference, dependencies: string[]) {
     dependencies?.forEach((dep: string) => {
-        publicPkgComponentReference[dep].putMain = true;
-        setDepInMain(publicPkgComponentReference[dep]?.dependencies);
+        publicPkgReference[dep].putMain = true;
+        setDepInMain(publicPkgReference, publicPkgReference[dep]?.dependencies);
     });
 }
 
 function filterPublicPkgReference(publicPkgReference: PublicPkgReference) {
+
     const { putMainInMultiSubPkgUse = [], multiPkglimit = 3 } = config.syncPlatformConfig;
     let movePublicFile = Object.keys(publicPkgReference).filter(publicFile => {
         const { subpkgUse, dependencies, name, putMain } = publicPkgReference[publicFile];
@@ -123,7 +123,7 @@ function filterPublicPkgReference(publicPkgReference: PublicPkgReference) {
 
         let exsitMain = Object.keys(subpkgUse).some(v => v === 'MAIN');
         if (exsitMain) {
-            setDepInMain(dependencies);
+            setDepInMain(publicPkgReference, dependencies);
             return false;
         }
 
@@ -132,7 +132,7 @@ function filterPublicPkgReference(publicPkgReference: PublicPkgReference) {
             return re.test(publicFile);
         });
         if (exsitMain) {
-            setDepInMain(dependencies);
+            setDepInMain(publicPkgReference, dependencies);
             return false;
         }
 
@@ -282,25 +282,23 @@ function migrate(params: VisitDependencyParams, isFirst: boolean) {
 
 /**
  * 文件迁移后更改自身引用文件的路径
+ * @param compilation 
  * @param oldPath 
  * @param newPath 
  */
 function changeReferPathAfterCopy(compilation: webpack.compilation.Compilation, oldPath: string, newPath: string) {
-    console.log(`------------------------------`);
-    console.log(`oldPath: ${oldPath};newPath: ${newPath}`);
-
     const sourceDir = path.dirname(oldPath);
     const targetDir = path.dirname(newPath);
-    
+
     const data = compilation.assets[newPath]._value;
     // 修改文件中引用的其他文件的路径
     const modifiedData = data.replace(/(require\(['"])(\..*?)(['"]\))|(\bfrom\s+['"])(\..*?)(['"])/g, function (match, p1, p2, p3, p4, p5, p6) {
         const referAbsolutePath = path.resolve(sourceDir, p2 || p5);
         const referPath = path.relative(cwd, referAbsolutePath);
-        
+
         let relativePath;
+        // 对于引用的要迁移到子包的文件，不做处理。因为还不确定这些文件迁移后的位置，需要等他们迁移后再更改。
         if (publicPkgCommonReference[referPath]) {
-            console.log('不更改:', referPath)
             relativePath = p2 || p5;
         } else {
             relativePath = path.relative(targetDir, referPath);

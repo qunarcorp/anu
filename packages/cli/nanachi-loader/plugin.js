@@ -90,11 +90,11 @@ function writeInternalCommonRuntime() {
     fs_extra_1.default.ensureFileSync(writeDistFilePath);
     fs_extra_1.default.writeFileSync(writeDistFilePath, code);
 }
-function setDepInMain(dependencies) {
+function setDepInMain(publicPkgReference, dependencies) {
     dependencies === null || dependencies === void 0 ? void 0 : dependencies.forEach((dep) => {
         var _a;
-        publicPkg_1.publicPkgComponentReference[dep].putMain = true;
-        setDepInMain((_a = publicPkg_1.publicPkgComponentReference[dep]) === null || _a === void 0 ? void 0 : _a.dependencies);
+        publicPkgReference[dep].putMain = true;
+        setDepInMain(publicPkgReference, (_a = publicPkgReference[dep]) === null || _a === void 0 ? void 0 : _a.dependencies);
     });
 }
 function filterPublicPkgReference(publicPkgReference) {
@@ -106,7 +106,7 @@ function filterPublicPkgReference(publicPkgReference) {
         }
         let exsitMain = Object.keys(subpkgUse).some(v => v === 'MAIN');
         if (exsitMain) {
-            setDepInMain(dependencies);
+            setDepInMain(publicPkgReference, dependencies);
             return false;
         }
         exsitMain = putMainInMultiSubPkgUse.some(v => {
@@ -114,7 +114,7 @@ function filterPublicPkgReference(publicPkgReference) {
             return re.test(publicFile);
         });
         if (exsitMain) {
-            setDepInMain(dependencies);
+            setDepInMain(publicPkgReference, dependencies);
             return false;
         }
         const newSubpkgUse = Object.assign({}, subpkgUse);
@@ -218,8 +218,6 @@ function migrate(params, isFirst) {
     ;
 }
 function changeReferPathAfterCopy(compilation, oldPath, newPath) {
-    console.log(`------------------------------`);
-    console.log(`oldPath: ${oldPath};newPath: ${newPath}`);
     const sourceDir = path_1.default.dirname(oldPath);
     const targetDir = path_1.default.dirname(newPath);
     const data = compilation.assets[newPath]._value;
@@ -228,7 +226,6 @@ function changeReferPathAfterCopy(compilation, oldPath, newPath) {
         const referPath = path_1.default.relative(cwd, referAbsolutePath);
         let relativePath;
         if (publicPkg_1.publicPkgCommonReference[referPath]) {
-            console.log('不更改:', referPath);
             relativePath = p2 || p5;
         }
         else {
