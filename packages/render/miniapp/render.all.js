@@ -60,7 +60,9 @@ export let Renderer = createRenderer({
                 }
             }
         }
-      if (!app.$$pageIsReady && instance.componentDidMount) {
+        // 这里必须判断app.$$pagePath和instance.$$pagePath是一致的。
+        // 因为会出现A跳转到B页，在B页里获取到instance.$$pagePath为A页，而app.$$pagePath是B页
+      if (app.$$pagePath == instance.$$pagePath && !app.$$pageIsReady && instance.componentDidMount) {
             delayMounts.push({
                 instance: instance,
                 fn: instance.componentDidMount
