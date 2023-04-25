@@ -46,6 +46,9 @@ const ANU_ENV = buildType
         : buildType
     : 'wx';
 
+// 环境
+const BUILD_ENV = process.env.BUILD_ENV || '';
+
 /**
  * 
  * @param {String} appJsSrcPath app.js绝对路径
@@ -159,8 +162,11 @@ function getFilesMap(queue: any = []) {
                     if ('[object Object]' === Object.prototype.toString.call(route)) {
                         // ' wx, ali,bu ,tt ' => ['wx', 'ali', 'bu', 'tt']
                         var supportPlat = route.platform.replace(/\s*/g, '').split(',');
+                        var supportEnv = route.env?.replace(/\s*/g, '').split(',');
                         if (supportPlat.includes(env)) {
-                            injectRoute = route.route;
+                            if (!supportEnv || supportEnv.includes(BUILD_ENV)){
+                                injectRoute = route.route;
+                            }
                         }
                     } else {
                         injectRoute = route;
