@@ -60,9 +60,14 @@ export let Renderer = createRenderer({
                 }
             }
         }
-        // 这里必须判断app.$$pagePath和instance.$$pagePath是一致的。
-        // 因为会出现A跳转到B页，在B页里获取到instance.$$pagePath为A页，而app.$$pagePath是B页
-      if (app.$$pagePath == instance.$$pagePath && !app.$$pageIsReady && instance.componentDidMount) {
+
+        /**
+         * 这里必须判断app.$$pagePath和instance所属的pagePath是一致的。
+         * 因为会出现A跳转到B页，在B页里获取到instance所属的pagePath为A页，而app.$$pagePath是B页
+         * 组件和页面的instance格式不一致，要对获取页面路径作区分，否则会出现didmount先于onshow执行的错误逻辑。
+         */
+        const pagePath = instance.instanceUid ? instance.$$pagePath : instance.props.path;
+        if (app.$$pagePath == pagePath && !app.$$pageIsReady && instance.componentDidMount) {
             delayMounts.push({
                 instance: instance,
                 fn: instance.componentDidMount
