@@ -38,6 +38,7 @@ const ANU_ENV = buildType
         ? 'web'
         : buildType
     : 'wx';
+const BUILD_ENV = process.env.BUILD_ENV || '';
 function getMergedAppJsConent(appJsSrcPath, pages = [], importSyntax = []) {
     function getAppImportSyntaxCode(importSyntax = []) {
         let importSyntaxList = importSyntax.map(function (curEl) {
@@ -128,11 +129,15 @@ function getFilesMap(queue = []) {
             }
             if (pages.length) {
                 let allInjectRoutes = pages.reduce(function (ret, route) {
+                    var _a;
                     let injectRoute = '';
                     if ('[object Object]' === Object.prototype.toString.call(route)) {
                         var supportPlat = route.platform.replace(/\s*/g, '').split(',');
+                        var supportEnv = (_a = route.env) === null || _a === void 0 ? void 0 : _a.replace(/\s*/g, '').split(',');
                         if (supportPlat.includes(env)) {
-                            injectRoute = route.route;
+                            if (!supportEnv || supportEnv.includes(BUILD_ENV)) {
+                                injectRoute = route.route;
+                            }
                         }
                     }
                     else {

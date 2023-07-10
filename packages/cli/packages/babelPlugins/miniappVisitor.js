@@ -308,6 +308,22 @@ const visitor = {
                     type: 'json'
                 });
             }
+            else {
+                if (buildType === 'qq') {
+                    let relPath = '';
+                    if (/\/node_modules\//.test(modules.sourcePath.replace(/\\/g, '/'))) {
+                        relPath = 'npm/' + path.relative(path.join(cwd, 'node_modules'), modules.sourcePath);
+                    }
+                    else {
+                        relPath = path.relative(path.resolve(cwd, 'source'), modules.sourcePath);
+                    }
+                    modules.queue.push({
+                        path: relPath,
+                        code: JSON.stringify({}, null, 4),
+                        type: 'json'
+                    });
+                }
+            }
         }
     },
     ExportDefaultDeclaration: {

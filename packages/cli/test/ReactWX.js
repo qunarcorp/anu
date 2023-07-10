@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2023-03-02T08
+ * 运行于微信小程序的React by 司徒正美 Copyright 2023-05-05T11
  * IE9+
  */
 
@@ -2478,7 +2478,8 @@ var Renderer$1 = createRenderer({
                 }
             }
         }
-        if (!app.$$pageIsReady && instance.componentDidMount) {
+        var pagePath = instance.instanceUid ? instance.$$pagePath : instance.props.path;
+        if (app.$$pagePath == pagePath && !app.$$pageIsReady && instance.componentDidMount) {
             delayMounts.push({
                 instance: instance,
                 fn: instance.componentDidMount
