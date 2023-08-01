@@ -136,12 +136,20 @@ const visitor = {
             let modules = utils_1.default.getAnu(state);
             let name = astPath.node.id.name;
             if (/^[A-Z]/.test(name) &&
-                modules.componentType === 'Component' &&
+                modules.componentType !== 'App' &&
                 !modules.parentName &&
                 !modules.registerStatement) {
                 modules.className = name;
                 helpers.render.exit(astPath, '无状态组件', name, modules);
-                modules.registerStatement = utils_1.default.createRegisterStatement(name, name);
+                if (modules.componentType === 'Page') {
+                    console.log('modules.current', modules.current);
+                    modules.registerStatement = utils_1.default.createRegisterStatement(name, modules.current
+                        .replace(/.+pages/, 'pages')
+                        .replace(/\.js$/, ''), true);
+                }
+                else {
+                    modules.registerStatement = utils_1.default.createRegisterStatement(name, name);
+                }
                 let funData = [];
                 let body = astPath.node.body.body;
                 for (let i = 0; i < body.length; i++) {

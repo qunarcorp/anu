@@ -196,7 +196,7 @@ const visitor: babel.Visitor = {
             let name = astPath.node.id.name;
             if (
                 /^[A-Z]/.test(name) && //组件肯定是大写开头
-                modules.componentType === 'Component' &&
+                modules.componentType !== 'App' &&
                 !modules.parentName &&
                 !modules.registerStatement //防止重复进入
             ) {
@@ -204,10 +204,22 @@ const visitor: babel.Visitor = {
                 modules.className = name;
 
                 helpers.render.exit(astPath, '无状态组件', name, modules);
-                modules.registerStatement = utils.createRegisterStatement(
-                    name,
-                    name
-                );
+                if (modules.componentType === 'Page') {
+                    console.log('modules.current',modules.current)
+                    modules.registerStatement = utils.createRegisterStatement(
+                        name,
+                        modules.current
+                            .replace(/.+pages/, 'pages')
+                            .replace(/\.js$/, ''),
+                        true
+                    );
+                }else{
+                    modules.registerStatement = utils.createRegisterStatement(
+                        name,
+                        name,
+                    );
+                }
+        
 
                 
                 // 给useState或自定义的变量增加输出
