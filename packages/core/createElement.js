@@ -49,6 +49,11 @@ function hasValidRef(config) {
 function hasValidKey(config) {
     return config.key !== undefined;
 }
+
+// function hasRenderAndSCU(config) {
+//     return config.render && config.shouldComponentUpdate;
+// }
+
 /**
  * 虚拟DOM工厂
  *
@@ -76,6 +81,12 @@ export function createElement(type, config, ...children) {
         if (hasValidKey(config)) {
             key = '' + config.key;
         }
+
+        // // 处理 React.memo 传入 render 和 shouldComponentUpdate
+        // if (hasRenderAndSCU(config)) {
+        //     type.prototype.render = config.render;
+        //     type.prototype.shouldComponentUpdate = config.shouldComponentUpdate;
+        // }
     }
     props = makeProps(type, config || {}, props, children, argsLen);
 
@@ -103,6 +114,11 @@ export function cloneElement(element, config, ...children) {
         if (hasValidKey(config)) {
             key = '' + config.key;
         }
+        // 处理 React.memo 传入 render 和 shouldComponentUpdate
+        if (hasRenderAndSCU(config)) {
+            type.prototype.render = config.render;
+            type.prototype.shouldComponentUpdate = config.shouldComponentUpdate;
+        }
     }
 
     props = makeProps(type, config || {}, props, children, argsLen);
@@ -117,13 +133,14 @@ export function createFactory(type) {
     return factory;
 }
 /*
-tag的值
+fiber.tag的值
 FunctionComponent = 1;
 ClassComponent = 2;
 HostPortal = 4; 
 HostComponent = 5;
 HostText = 6;
 Fragment = 7;
+MemoComponent = 8; // 新增，对应 React.memo 返回的组件
 */
 function ReactElement(type, tag, props, key, ref, owner) {
     var ret = {

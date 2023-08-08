@@ -222,7 +222,24 @@ export function updateClassComponent(fiber, info) {
         //无狀态组件中的传送门组件
         containerStack.unshift(fiber.parent);
         fiber.shiftContainer = true;
+    } else if (!isStateful && type.prototype.shouldComponentUpdate) {
+        // 处理无状态组件中的 memo 组件，目前只有 memo 包裹的函数组件才带有 shouldComponentUpdate
+        delete fiber.updateFail;
+
+        if (fiber.hasMounted) { // 只有组件不是 mount 阶段才有可能判断是否重复渲染
+            const prevProps = instance.props;
+            const newProps = props;
+            let args = [prevProps, newProps];
+
+            if (
+                type.prototype.shouldComponentUpdate.apply(instance, args)
+            ) {
+                fiber.updateFail = true;
+            }
+        }  
     }
+
+    // TODO: 函数组件更新直接走下边的逻辑，需要加入判断
     //存放它上面的所有context的并集
     //instance.unmaskedContext = contextStack[0];
     //设置新context, props, state
@@ -251,6 +268,15 @@ export function updateClassComponent(fiber, info) {
         fiber.effectTag *= HOOK;
     } else if (fiber.effectTag == 1){
         fiber.effectTag = WORKING;
+    } 
+    
+    // 无状态组件是否更新
+    if (!isStateful) {
+        if (fiber.updateFail) {
+            cloneChildren(fiber);
+            fiber._hydrating = false;
+            return;
+        }
     }
 
     if (fiber.catchError) {

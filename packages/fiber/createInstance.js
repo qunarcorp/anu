@@ -15,7 +15,7 @@ export function createInstance(fiber, context) {
         isMounted: isMounted
     };
     let { props, type, tag, ref, key } = fiber,
-        isStateless = tag === 1,
+        isStateless = tag === 1, // 所有函数组件都默认是无状态的
         lastOwn = Renderer.currentOwner,
         instance = {
             refs: {},

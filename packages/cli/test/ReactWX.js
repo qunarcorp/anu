@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2023-05-05T11
+ * 运行于微信小程序的React by 司徒正美 Copyright 2023-08-08T12
  * IE9+
  */
 
@@ -1681,6 +1681,16 @@ function updateClassComponent(fiber, info) {
     } else if (type === AnuPortal) {
         containerStack.unshift(fiber.parent);
         fiber.shiftContainer = true;
+    } else if (!isStateful && type.prototype.shouldComponentUpdate) {
+        delete fiber.updateFail;
+        if (fiber.hasMounted) {
+            var prevProps = instance.props;
+            var newProps = props;
+            var args = [prevProps, newProps];
+            if (type.prototype.shouldComponentUpdate.apply(instance, args)) {
+                fiber.updateFail = true;
+            }
+        }
     }
     instance.context = newContext;
     fiber.memoizedProps = instance.props = props;
@@ -1704,6 +1714,13 @@ function updateClassComponent(fiber, info) {
         fiber.effectTag *= HOOK;
     } else if (fiber.effectTag == 1) {
         fiber.effectTag = WORKING;
+    }
+    if (!isStateful) {
+        if (fiber.updateFail) {
+            cloneChildren(fiber);
+            fiber._hydrating = false;
+            return;
+        }
     }
     if (fiber.catchError) {
         return;
@@ -2786,13 +2803,14 @@ function useLayoutEffect(create, deps) {
 
 var MemoComponent = miniCreateClass(function MemoComponent(obj) {
     this.render = obj.render;
-    this.shouldComponentUpdate = obj.shouldComponentUpdate;
 }, Component, {});
 function memo(render, shouldComponentUpdate) {
+    render.prototype.shouldComponentUpdate = shouldComponentUpdate || function shouldComponentUpdate(prevProps, nextProps) {
+        return shallowEqual(prevProps, nextProps);
+    };
     return function (props) {
         return createElement(MemoComponent, Object.assign(props, {
-            render: render.bind(this, props),
-            shouldComponentUpdate: shouldComponentUpdate
+            render: render.bind(this, props)
         }));
     };
 }
