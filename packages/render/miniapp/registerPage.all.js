@@ -10,6 +10,7 @@ import {
 import { render } from "react-fiber/scheduleWork";
 import { createElement } from "react-core/createElement";
 import { _getGlobalApp } from "./registerApp.all";
+import { callLifecycle } from "./registerPageHook";
 
 export function onLoad(PageClass, path, query, isLoad) {
     var app = _getApp();
@@ -59,6 +60,12 @@ export function onLoad(PageClass, path, query, isLoad) {
             container
         );
     }
+
+    // 支持小程序生命周期onLoad的hooks执行
+    if (pageInstance.__isStateless){
+        callLifecycle(pageInstance, 'onLoad', query);
+    }
+
     if (isLoad) {
         callGlobalHook("onGlobalLoad"); //调用全局onLoad方法
     }
@@ -77,6 +84,12 @@ export function onReady() {
         el.fn.call(el.instance);
         el.instance.componentDidMount = el.fn;
     }
+
+    // 支持小程序生命周期onReady的hooks执行
+    if (this.reactInstance.__isStateless){
+        callLifecycle(this.reactInstance,'onReady',arguments);
+    }
+
     callGlobalHook("onGlobalReady");
 }
 

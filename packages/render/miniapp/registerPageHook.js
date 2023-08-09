@@ -13,5 +13,20 @@ export function registerPageHook(appHooks, pageHook, app, instance, args  ){
                 return ret;
            }
         }
+
+        if (i === 0 && host && host.__isStateless){
+            return callLifecycle(host, method, args);
+        }
+    }
+}
+
+export function callLifecycle(instance, lifecycle, args) {
+    const callbacks = (instance.lifecycleCallback && instance.lifecycleCallback[lifecycle]) || [];
+    let result;
+    callbacks.forEach((callback) => {
+        result = callback(args);
+    });
+    if (result) {
+        return result;
     }
 }

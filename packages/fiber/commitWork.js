@@ -19,6 +19,7 @@ import { guardCallback, removeFormBoundaries } from './ErrorBoundary';
 import { fakeObject } from 'react-core/Component';
 import { Renderer } from 'react-core/createRenderer';
 import { Refs } from './Refs';
+import { callLifecycle } from '../render/miniapp/registerPageHook';
 
 /**
  * COMMIT阶段也做成深度调先遍历
@@ -248,6 +249,8 @@ function disposeFiber(fiber, force) {
             Renderer.onDispose(fiber);
             if (fiber.hasMounted) {
                 if (isStateless) {
+                    // 支持小程序生命周期onUnload的hooks执行
+                    callLifecycle(stateNode,'onUnload', null);
                     safeInvokeHooks(fiber.updateQueue, 'layout', 'unlayout');
                     safeInvokeHooks(fiber.updateQueue, 'passive', 'unpassive');
                 }

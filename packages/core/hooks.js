@@ -5,7 +5,8 @@ import {
     useMemo,
     useCallback,
     useContext,
-    useImperativeHandle
+    useImperativeHandle,
+    useQueryImpl
 } from "react-fiber/dispatcher";
 import { PASSIVE, HOOK } from "react-fiber/effectTag";
 
@@ -22,6 +23,10 @@ function useLayoutEffect(create, deps) {
     return useEffectImpl(create, deps, HOOK, "layout", "unlayout");
 }
 
+function useQuery() {
+    return useQueryImpl();
+}
+
 export {
     useState,
     useReducer,
@@ -31,5 +36,6 @@ export {
     useCallback,
     useRef,
     useContext, //这个不对
-    useImperativeHandle
+    useImperativeHandle,
+    useQuery,
 };

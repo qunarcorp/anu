@@ -10,6 +10,18 @@ var appHooks = {
     onHide: 'onGlobalHide'
 };
 
+// 抽离出生命周期
+export const lifeCycleList = [
+    'onShareAppMessage',
+    'onPageScroll',
+    'onReachBottom',
+    'onPullDownRefresh',
+    'onTabItemTap',
+    'onResize',
+    'onShow',
+    'onHide'
+];
+
 export function registerPage(PageClass, path, testObject) {
    
     PageClass.reactInstances = [];
@@ -22,16 +34,7 @@ export function registerPage(PageClass, path, testObject) {
         onReady: onReady,
         onUnload: onUnload
     };
-    Array(
-        'onShareAppMessage',
-        'onPageScroll',
-        'onReachBottom',
-        'onPullDownRefresh',
-        'onTabItemTap',
-        'onResize',
-        'onShow',
-        'onHide'
-    ).forEach(function(hook) {
+    lifeCycleList.forEach(function(hook) {
         config[hook] = function(e) {
             let instance = this.reactInstance,
              pageHook = hook,
