@@ -142,7 +142,6 @@ const visitor = {
                 modules.className = name;
                 helpers.render.exit(astPath, '无状态组件', name, modules);
                 if (modules.componentType === 'Page') {
-                    console.log('modules.current', modules.current);
                     modules.registerStatement = utils_1.default.createRegisterStatement(name, modules.current
                         .replace(/.+pages/, 'pages')
                         .replace(/\.js$/, ''), true);
@@ -160,8 +159,13 @@ const visitor = {
                                 funData.push(declaration.id.elements[0].name);
                             }
                             else if (declaration.id.type == 'ObjectPattern') {
-                                declaration.id.properties.forEach(property => {
-                                    funData.push(property.value.name);
+                                declaration.id.properties.forEach((property) => {
+                                    if (property.value.type === 'AssignmentPattern') {
+                                        funData.push(property.key.name);
+                                    }
+                                    else {
+                                        funData.push(property.value.name);
+                                    }
                                 });
                             }
                             else {

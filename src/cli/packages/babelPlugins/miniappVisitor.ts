@@ -205,7 +205,6 @@ const visitor: babel.Visitor = {
 
                 helpers.render.exit(astPath, '无状态组件', name, modules);
                 if (modules.componentType === 'Page') {
-                    console.log('modules.current',modules.current)
                     modules.registerStatement = utils.createRegisterStatement(
                         name,
                         modules.current
@@ -232,8 +231,12 @@ const visitor: babel.Visitor = {
                             if (declaration.id.type == 'ArrayPattern') {
                                 funData.push(declaration.id.elements[0].name);
                             } else if (declaration.id.type == 'ObjectPattern') {
-                                declaration.id.properties.forEach(property => {
-                                    funData.push(property.value.name)
+                                declaration.id.properties.forEach((property:t.ObjectProperty) => {
+                                    if(property.value.type === 'AssignmentPattern'){
+                                        funData.push(property.key.name)
+                                    }else{
+                                        funData.push(property.value.name)
+                                    }
                                 });
                             } else {
                                 funData.push(declaration.id.name);
