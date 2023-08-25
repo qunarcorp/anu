@@ -98,10 +98,6 @@ function bindEvent(astPath, attrName, expr) {
         replaceWithExpr(astPath, 'dispatchEvent', true);
     }
     else {
-        let eventHandle = generator_1.default(expr).code;
-        if (!/^\s*\w+\./.test(eventHandle)) {
-            throwEventValue(attrName, eventHandle);
-        }
         if (buildType == 'quick') {
             let n = attrName.charAt(0) === 'o' ? 2 : 5;
             astPath.parent.name.name = 'on' + attrName.slice(n).toLowerCase();
