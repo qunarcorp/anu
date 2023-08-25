@@ -74,6 +74,72 @@ function registerPageOrComponent(name: string, path: NodePath<t.ExportDefaultDec
     }
 }
 
+/**
+ * 检查是否是jsx包裹的
+ * @param astPath 
+ * @returns 
+ */
+function checkIsJSXExpressionContainer(astPath: NodePath) {
+    const parentPath = astPath.parentPath;
+    if (!parentPath) {
+        return false;
+    }
+
+    const parent = astPath.parent;
+    if (t.isJSXExpressionContainer(parent)) {
+        return true
+    } else {
+        return checkIsJSXExpressionContainer(parentPath);
+    };
+}
+
+function geMemExp(x: string) {            
+    var list = x.split('.');
+    if(list.length === 1){
+        return t.identifier(list[0]);
+    }
+    var memEpr = t.memberExpression(
+        list[0] === 'this' ? t.thisExpression() : t.identifier(list[0]),
+        t.identifier(list[1])
+    );
+    var ret = list.slice(2);
+    while (ret.length) {
+        memEpr = t.memberExpression(
+            memEpr,
+            t.identifier(ret.shift())
+        )
+    }
+    return memEpr;
+}
+
+function getLogic(opSepList: any) {
+    var left = opSepList[0];
+    var right = opSepList[1];
+    var logicExp = t.logicalExpression('&&', left, right);
+    var ret = opSepList.slice(2);
+    while (ret.length) {
+        logicExp = t.logicalExpression('&&', logicExp, ret.shift())
+    }
+    return logicExp;
+}
+
+function transOptionalChain(node: t.Node){
+    var opSepList: any = generate(node).code.split('?.');
+    // [ 'this.state.a',
+    //   'this.state.a.b',
+    //   'this.state.a.b.c',
+    //   'this.state.a.b.c.d.map' ]
+    opSepList = opSepList.map(function (el: string, idx: number) {
+        return opSepList.slice(0, idx + 1).join('.');
+    });
+
+    opSepList = opSepList.map(function (el: any) {
+        return geMemExp(el);
+    })
+
+    return opSepList;
+}
+
 const visitor: babel.Visitor = {
     ClassDeclaration: helpers.classDeclaration,
     //babel 6 没有ClassDeclaration，只有ClassExpression
@@ -590,51 +656,13 @@ const visitor: babel.Visitor = {
     OptionalCallExpression: {
         enter(astPath, state) {
             // 反解析可选链， 解析成 && 逻辑表达式
-            if (!t.isJSXExpressionContainer(astPath.parentPath)) return;
+            if(!checkIsJSXExpressionContainer(astPath)) return;
             let modules = utils.getAnu(state);
             var { node } = astPath;
             var callee = node.callee;
             var args = node.arguments;
 
-            var opSepList: any = generate(callee).code.split('?.');
-            // [ 'this.state.a',
-            //   'this.state.a.b',
-            //   'this.state.a.b.c',
-            //   'this.state.a.b.c.d.map' ]
-            opSepList = opSepList.map(function (el: string, idx: number) {
-                return opSepList.slice(0, idx + 1).join('.');
-            });
-
-            function geMemExp(x: string) {
-                var list = x.split('.');
-                var memEpr = t.memberExpression(
-                    list[0] === 'this' ? t.thisExpression() : t.identifier(list[0]),
-                    t.identifier(list[1])
-                );
-                var ret = list.slice(2);
-                while (ret.length) {
-                    memEpr = t.memberExpression(
-                        memEpr,
-                        t.identifier(ret.shift())
-                    )
-                }
-                return memEpr;
-            }
-
-            function getLogic(opSepList: any) {
-                var left = opSepList[0];
-                var right = opSepList[1];
-                var logicExp = t.logicalExpression('&&', left, right);
-                var ret = opSepList.slice(2);
-                while (ret.length) {
-                    logicExp = t.logicalExpression('&&', logicExp, ret.shift())
-                }
-                return logicExp;
-            }
-
-            opSepList = opSepList.map(function (el: any) {
-                return geMemExp(el);
-            })
+            var opSepList: any = transOptionalChain(callee);
 
             //添加上第二参数
             if (!args[1] && args[0].type === 'FunctionExpression') {
@@ -661,6 +689,15 @@ const visitor: babel.Visitor = {
             astPath.replaceWith(m);
 
 
+        }
+    },
+    OptionalMemberExpression:{
+        enter(astPath: NodePath<t.OptionalMemberExpression>, state: any) {
+            // 反解析可选链， 解析成 && 逻辑表达式
+            if(!checkIsJSXExpressionContainer(astPath)) return;
+            var opSepList: any = transOptionalChain(astPath.node);
+            var m = getLogic(opSepList);
+            astPath.replaceWith(m);
         }
     },
     CallExpression: {
@@ -989,17 +1026,24 @@ const visitor: babel.Visitor = {
     JSXFragment:{
         // 兼容空标签
         enter(astPath: NodePath<t.JSXFragment>){
-            if(astPath.parentPath.node.type == 'ReturnStatement'){
-                astPath.replaceWith(
-                    t.jSXElement(
-                        t.jsxOpeningElement(t.jsxIdentifier('view'), []),
-                        t.jSXClosingElement(t.jsxIdentifier('view')),
-                        astPath.node.children,
-                    ),
-                )
-            }else{
-                astPath.replaceWithMultiple(astPath.node.children);
-            }
+            astPath.replaceWith(
+                t.jSXElement(
+                    t.jsxOpeningElement(t.jsxIdentifier('view'), []),
+                    t.jSXClosingElement(t.jsxIdentifier('view')),
+                    astPath.node.children,
+                ),
+            )
+            // if(astPath.parentPath.node.type == 'ReturnStatement'){
+            //     astPath.replaceWith(
+            //         t.jSXElement(
+            //             t.jsxOpeningElement(t.jsxIdentifier('view'), []),
+            //             t.jSXClosingElement(t.jsxIdentifier('view')),
+            //             astPath.node.children,
+            //         ),
+            //     )
+            // }else{
+            //     astPath.replaceWithMultiple(astPath.node.children);
+            // }
         }
     },
     JSXText(astPath: NodePath<t.JSXText>) {
