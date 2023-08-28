@@ -153,7 +153,7 @@ let utils = {
             t.isConditionalExpression(astPath.parentPath) ||
             t.isLogicalExpression(astPath.parentPath)) {
             var callee = astPath.node.callee;
-            return callee.type == 'MemberExpression' && callee.property.name === 'map';
+            return (callee.type == 'MemberExpression' || callee.type == 'OptionalMemberExpression') && callee.property.name === 'map';
         }
     },
     createMethod(path, methodName) {

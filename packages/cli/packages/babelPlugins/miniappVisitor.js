@@ -65,6 +65,12 @@ function checkIsJSXExpressionContainer(astPath) {
     if (t.isJSXExpressionContainer(parent)) {
         return true;
     }
+    else if (t.isCallExpression(parent)) {
+        const code = generator_1.default(parent.callee).code;
+        if (code === 'React.toStyle') {
+            return true;
+        }
+    }
     else {
         return checkIsJSXExpressionContainer(parentPath);
     }
@@ -458,33 +464,15 @@ const visitor = {
         enter(astPath, state) {
             if (!checkIsJSXExpressionContainer(astPath))
                 return;
-            let modules = utils_1.default.getAnu(state);
             var { node } = astPath;
             var callee = node.callee;
             var args = node.arguments;
             var opSepList = transOptionalChain(callee);
-            if (!args[1] && args[0].type === 'FunctionExpression') {
-                args[1] = t.identifier('this');
-            }
-            let params = args[0].params;
-            if (!params[0]) {
-                params[0] = t.identifier('j' + astPath.node.start);
-            }
-            if (!params[1]) {
-                params[1] = t.identifier('i' + astPath.node.start);
-            }
-            var indexName = args[0].params[1].name;
-            if (modules.indexArr) {
-                modules.indexArr.push(indexName);
-            }
-            else {
-                modules.indexArr = [indexName];
-            }
-            modules.indexName = indexName;
             var m = getLogic(opSepList);
             m.right = t.callExpression(m.right, args);
+            m.right.start = node.start;
             astPath.replaceWith(m);
-        }
+        },
     },
     OptionalMemberExpression: {
         enter(astPath, state) {

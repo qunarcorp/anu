@@ -87,7 +87,12 @@ function checkIsJSXExpressionContainer(astPath: NodePath) {
 
     const parent = astPath.parent;
     if (t.isJSXExpressionContainer(parent)) {
-        return true
+        return true;
+    } else if(t.isCallExpression(parent)){//考虑到有属性可能是动态的写法，比如style={{}}
+        const code = generate(parent.callee).code;
+        if(code === 'React.toStyle'){
+            return true;
+        }
     } else {
         return checkIsJSXExpressionContainer(parentPath);
     };
@@ -657,39 +662,17 @@ const visitor: babel.Visitor = {
         enter(astPath, state) {
             // 反解析可选链， 解析成 && 逻辑表达式
             if(!checkIsJSXExpressionContainer(astPath)) return;
-            let modules = utils.getAnu(state);
             var { node } = astPath;
             var callee = node.callee;
             var args = node.arguments;
 
             var opSepList: any = transOptionalChain(callee);
-
-            //添加上第二参数
-            if (!args[1] && args[0].type === 'FunctionExpression') {
-                args[1] = t.identifier('this');
-            }
-            //为callback添加参数
-            let params = (args[0] as any).params; // tsc todo
-            if (!params[0]) {
-                params[0] = t.identifier('j' + astPath.node.start);
-            }
-            if (!params[1]) {
-                params[1] = t.identifier('i' + astPath.node.start);
-            }
-            var indexName = (args[0] as any).params[1].name;
-            if (modules.indexArr) {
-                modules.indexArr.push(indexName);
-            } else {
-                modules.indexArr = [indexName];
-            }
-            modules.indexName = indexName;
-
+            
             var m = getLogic(opSepList);
             m.right = t.callExpression(m.right, args);
+            m.right.start = node.start;
             astPath.replaceWith(m);
-
-
-        }
+        },
     },
     OptionalMemberExpression:{
         enter(astPath: NodePath<t.OptionalMemberExpression>, state: any) {
