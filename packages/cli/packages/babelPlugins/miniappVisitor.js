@@ -202,23 +202,48 @@ const visitor = {
                     modules.registerStatement = utils_1.default.createRegisterStatement(name, name);
                 }
                 let funData = [];
+                function getNameFromArrayPattern(elements) {
+                    elements.forEach(ele => {
+                        if (t.isIdentifier(ele)) {
+                            funData.push(ele.name);
+                        }
+                        else if (t.isArrayPattern(ele)) {
+                            getNameFromArrayPattern(ele.elements);
+                        }
+                        else if (t.isAssignmentPattern(ele)) {
+                            funData.push(ele.left.name);
+                        }
+                    });
+                }
+                ;
+                function getNameFromObjectPattern(id) {
+                    id.properties.forEach((property) => {
+                        if (t.isAssignmentPattern(property.value)) {
+                            funData.push(property.key.name);
+                        }
+                        else if (t.isObjectPattern(property.value)) {
+                            getNameFromObjectPattern(property.value);
+                        }
+                        else if (t.isIdentifier(property.value)) {
+                            funData.push(property.value.name);
+                        }
+                    });
+                }
                 let body = astPath.node.body.body;
                 for (let i = 0; i < body.length; i++) {
                     const element = body[i];
-                    if (element.type == 'VariableDeclaration') {
+                    if (t.isVariableDeclaration(element)) {
                         element.declarations.forEach(declaration => {
-                            if (declaration.id.type == 'ArrayPattern') {
-                                funData.push(declaration.id.elements[0].name);
+                            if (t.isArrayPattern(declaration.id)) {
+                                if (t.isCallExpression(declaration.init) && ['useState', 'useReducer'].includes(declaration.init.callee.name)) {
+                                    funData.push(declaration.id.elements[0].name);
+                                }
+                                else {
+                                    getNameFromArrayPattern(declaration.id.elements);
+                                }
                             }
-                            else if (declaration.id.type == 'ObjectPattern') {
-                                declaration.id.properties.forEach((property) => {
-                                    if (property.value.type === 'AssignmentPattern') {
-                                        funData.push(property.key.name);
-                                    }
-                                    else {
-                                        funData.push(property.value.name);
-                                    }
-                                });
+                            else if (t.isObjectPattern(declaration.id)) {
+                                getNameFromObjectPattern(declaration.id);
                             }
                             else {
                                 funData.push(declaration.id.name);

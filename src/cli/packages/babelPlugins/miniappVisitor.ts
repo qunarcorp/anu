@@ -294,21 +294,43 @@ const visitor: babel.Visitor = {
                 
                 // 给useState或自定义的变量增加输出
                 let funData: any = [];
+
+                function getNameFromArrayPattern(elements: t.PatternLike[]){
+                    elements.forEach(ele=>{
+                        if(t.isIdentifier(ele)){
+                            funData.push(ele.name);
+                        }else if(t.isArrayPattern(ele)){
+                            getNameFromArrayPattern(ele.elements);
+                        }else if(t.isAssignmentPattern(ele)){
+                            funData.push(ele.left.name);
+                        }
+                    })
+                };
+                function getNameFromObjectPattern(id: t.ObjectPattern){
+                    id.properties.forEach((property:t.ObjectProperty) => {
+                        if(t.isAssignmentPattern(property.value)){
+                            funData.push(property.key.name)
+                        }else if(t.isObjectPattern(property.value)){
+                            getNameFromObjectPattern(property.value);
+                        }else if(t.isIdentifier(property.value)){
+                            funData.push(property.value.name)
+                        }
+                    });
+                }
+                    
                 let body = astPath.node.body.body;
                 for (let i = 0; i < body.length; i++) {
                     const element = body[i];
-                    if (element.type == 'VariableDeclaration') {
+                    if (t.isVariableDeclaration(element)) {
                         element.declarations.forEach(declaration => {
-                            if (declaration.id.type == 'ArrayPattern') {
-                                funData.push(declaration.id.elements[0].name);
-                            } else if (declaration.id.type == 'ObjectPattern') {
-                                declaration.id.properties.forEach((property:t.ObjectProperty) => {
-                                    if(property.value.type === 'AssignmentPattern'){
-                                        funData.push(property.key.name)
-                                    }else{
-                                        funData.push(property.value.name)
-                                    }
-                                });
+                            if (t.isArrayPattern(declaration.id)) {
+                                if(t.isCallExpression(declaration.init) && ['useState','useReducer'].includes(declaration.init.callee.name)){
+                                    funData.push(declaration.id.elements[0].name);
+                                }else{
+                                    getNameFromArrayPattern(declaration.id.elements);
+                                }
+                            } else if (t.isObjectPattern(declaration.id)) {
+                                getNameFromObjectPattern(declaration.id);
                             } else {
                                 funData.push(declaration.id.name);
                             }
