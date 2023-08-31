@@ -294,7 +294,7 @@ function getMergedXConfigContent(config: any) {
                     tmpPlg[plgKey] = ret[key][plgKey];
                 }
             }
-            ret[key] = tmpPlg; // 更新 plugins 对象
+            ret[key] = tmpPlg;
         }
     }
 
