@@ -277,6 +277,27 @@ function getMergedXConfigContent(config: any) {
             ret[i] = getUniqueSubPkgConfig(ret[i]);
         }
     }
+
+    for (let key in ret) {
+        if (key === 'plugins') {
+            let tmpPlg = {};
+            for (let plgKey in ret[key]) {
+                if (ret[key][plgKey].skip 
+                    && ret[key][plgKey].skip === process.env.SKIP) {
+                    // 存在 skip ，且相同，直接跳过，不进行任何操作
+                } else if (ret[key][plgKey].skip) {
+                    // 存在 skip，但不相同
+                    const { skip, ...rest } = ret[key][plgKey];
+                    tmpPlg[plgKey] = rest;
+                } else {
+                    // 不存在 skip，直接保留
+                    tmpPlg[plgKey] = ret[key][plgKey];
+                }
+            }
+            ret[key] = tmpPlg; // 更新 plugins 对象
+        }
+    }
+
     return Promise.resolve({
         dist: xConfigJsonDist,
         content: JSON.stringify(ret, null, 4)
