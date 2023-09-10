@@ -278,25 +278,65 @@ function getMergedXConfigContent(config: any) {
         }
     }
 
-    for (let key in ret) {
-        if (key === 'plugins') {
-            let tmpPlg = {};
-            for (let plgKey in ret[key]) {
-                if (ret[key][plgKey].skip 
-                    && ret[key][plgKey].skip === process.env.SKIP) {
-                    // 存在 skip ，且相同，直接跳过，不进行任何操作
-                } else if (ret[key][plgKey].skip) {
-                    // 存在 skip，但不相同
-                    const { skip, ...rest } = ret[key][plgKey];
-                    tmpPlg[plgKey] = rest;
-                } else {
-                    // 不存在 skip，直接保留
-                    tmpPlg[plgKey] = ret[key][plgKey];
+    const skipConfigPath = path.join(getMergeDir(), `${env}SkipConfig.json`);
+    if (fs.existsSync(skipConfigPath)) {
+        const skipEnv = process.env.SKIP;
+
+        const skipConfig = require(skipConfigPath);
+        for (let key in skipConfig) {
+            if (key === skipEnv) {
+                const skipConfigObj = skipConfig[key];
+                for (let skipItemKey in skipConfigObj) {
+                    // 目前支持的 配置字段只有 plugin 合 requiredPrivateInfos
+                    if (skipItemKey === 'plugin') {
+                        const retPlugin = ret.plugin;
+                        if (retPlugin) {
+                            for (let retPluginKey in retPlugin) {
+                                if (skipConfigObj[skipItemKey].includes(retPluginKey)) {
+                                    delete ret.plugin[retPluginKey];
+                                }
+                            }
+                        }
+                    }
+
+                    if (skipItemKey === 'requiredPrivateInfos') {
+                        const retRequiredPrivateInfos = ret.requiredPrivateInfos;
+                        if (retRequiredPrivateInfos) {
+                            for (let i = 0; i < retRequiredPrivateInfos.length; i++) {
+                                if (skipConfigObj[skipItemKey].includes(retRequiredPrivateInfos[i])) {
+                                    ret.requiredPrivateInfos.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+
+                    // 新的 skip 字段可以这里加
                 }
             }
-            ret[key] = tmpPlg;
         }
     }
+
+    console.log(ret);
+
+    // for (let key in ret) {
+    //     if (key === 'plugins') {
+    //         let tmpPlg = {};
+    //         for (let plgKey in ret[key]) {
+    //             if (ret[key][plgKey].skip 
+    //                 && ret[key][plgKey].skip === process.env.SKIP) {
+    //                 // 存在 skip ，且相同，直接跳过，不进行任何操作
+    //             } else if (ret[key][plgKey].skip) {
+    //                 // 存在 skip，但不相同
+    //                 const { skip, ...rest } = ret[key][plgKey];
+    //                 tmpPlg[plgKey] = rest;
+    //             } else {
+    //                 // 不存在 skip，直接保留
+    //                 tmpPlg[plgKey] = ret[key][plgKey];
+    //             }
+    //         }
+    //         ret[key] = tmpPlg;
+    //     }
+    // }
 
     return Promise.resolve({
         dist: xConfigJsonDist,
