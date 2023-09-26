@@ -259,6 +259,9 @@ function getMergedXConfigContent(config) {
                     }
                 }
             }
+            else {
+                console.log(`skipEnv=${skipEnv}，在 ${env}SkipConfig.json 文件中没有找到对应的配置，跳过过滤任务`);
+            }
         }
     }
     return Promise.resolve({

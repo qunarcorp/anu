@@ -290,7 +290,7 @@ function getMergedXConfigContent(config: any) {
 
         const skipConfig = require(skipConfigPath);
         for (let key in skipConfig) {
-            if (key === skipEnv) {
+            if (key === skipEnv) { // skipEnv 为 undefined 时不进行过滤
                 const skipConfigObj = skipConfig[key];
                 for (let skipItemKey in skipConfigObj) {
                     // 目前支持的 配置字段只有 plugin 和 requiredPrivateInfos
@@ -323,6 +323,8 @@ function getMergedXConfigContent(config: any) {
 
                     // 新的 skip 字段可以这里加
                 }
+            } else {
+                console.log(`skipEnv=${skipEnv}，在 ${env}SkipConfig.json 文件中没有找到对应的配置，跳过过滤任务`);
             }
         }
     }
