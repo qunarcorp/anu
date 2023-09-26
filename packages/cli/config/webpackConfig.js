@@ -87,6 +87,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         options: {
             mode: 'hash',
             cacheDirectory: cacheDirectory,
+            cacheIdentifier: `cache-loader:${BUILD_ENV}-${process.env.NODE_ENV}-${process.env.SKIP}`,
         }
     };
     const jsLorder = () => {

@@ -1,15 +1,4 @@
 "use strict";
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -28,6 +17,9 @@ const buildType = process.argv.length > 2 ? process.argv[2].split(':')[1] : 'wx'
 const ignoreExt = ['.tgz'];
 function getMergeDir() {
     return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
+}
+function getDownLoadHomeDir() {
+    return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'nnc_home_qunar');
 }
 const projectConfigJsonMap = {
     'wx': {
@@ -232,22 +224,41 @@ function getMergedXConfigContent(config) {
             ret[i] = getUniqueSubPkgConfig(ret[i]);
         }
     }
-    for (let key in ret) {
-        if (key === 'plugins') {
-            let tmpPlg = {};
-            for (let plgKey in ret[key]) {
-                if (ret[key][plgKey].skip
-                    && ret[key][plgKey].skip === process.env.SKIP) {
-                }
-                else if (ret[key][plgKey].skip) {
-                    const _a = ret[key][plgKey], { skip } = _a, rest = __rest(_a, ["skip"]);
-                    tmpPlg[plgKey] = rest;
-                }
-                else {
-                    tmpPlg[plgKey] = ret[key][plgKey];
+    const skipConfigPath = path.join(getDownLoadHomeDir(), `${env}SkipConfig.json`);
+    if (fs.existsSync(skipConfigPath)) {
+        const skipEnv = process.env.SKIP;
+        console.log(`识别到 nnc_home_qunar 中包含 ${env}SkipConfig.json 文件，skipEnv=${skipEnv}，准备执行配置过滤任务`);
+        const skipConfig = require(skipConfigPath);
+        for (let key in skipConfig) {
+            if (key === skipEnv) {
+                const skipConfigObj = skipConfig[key];
+                for (let skipItemKey in skipConfigObj) {
+                    if (skipItemKey === 'plugins') {
+                        let retPlugin = ret.plugins;
+                        if (retPlugin) {
+                            let filteredObject = {};
+                            for (let retPluginKey in retPlugin) {
+                                if (skipConfigObj[skipItemKey].includes(retPluginKey)) {
+                                }
+                                else {
+                                    filteredObject[retPluginKey] = retPlugin[retPluginKey];
+                                }
+                            }
+                            ret.plugins = filteredObject;
+                        }
+                    }
+                    if (skipItemKey === 'requiredPrivateInfos') {
+                        const retRequiredPrivateInfos = ret.requiredPrivateInfos;
+                        if (retRequiredPrivateInfos) {
+                            for (let i = 0; i < retRequiredPrivateInfos.length; i++) {
+                                if (skipConfigObj[skipItemKey].includes(retRequiredPrivateInfos[i])) {
+                                    ret.requiredPrivateInfos.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            ret[key] = tmpPlg;
         }
     }
     return Promise.resolve({

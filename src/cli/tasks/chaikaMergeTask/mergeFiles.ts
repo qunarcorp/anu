@@ -24,6 +24,10 @@ function getMergeDir() {
     return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
 }
 
+function getDownLoadHomeDir() {
+    return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar');
+}
+
 const projectConfigJsonMap: any = {
     'wx': {
         reg: /\/project\.config\.json$/,
@@ -278,24 +282,31 @@ function getMergedXConfigContent(config: any) {
         }
     }
 
-    const skipConfigPath = path.join(getMergeDir(), `${env}SkipConfig.json`);
+    // 通过 skipConfig.json 和环境变量过滤最终 app.json 中的一些内容
+    const skipConfigPath = path.join(getDownLoadHomeDir(), `${env}SkipConfig.json`);
     if (fs.existsSync(skipConfigPath)) {
         const skipEnv = process.env.SKIP;
+        console.log(`识别到 nnc_home_qunar 中包含 ${env}SkipConfig.json 文件，skipEnv=${skipEnv}，准备执行配置过滤任务`)
 
         const skipConfig = require(skipConfigPath);
         for (let key in skipConfig) {
             if (key === skipEnv) {
                 const skipConfigObj = skipConfig[key];
                 for (let skipItemKey in skipConfigObj) {
-                    // 目前支持的 配置字段只有 plugin 合 requiredPrivateInfos
-                    if (skipItemKey === 'plugin') {
-                        const retPlugin = ret.plugin;
+                    // 目前支持的 配置字段只有 plugin 和 requiredPrivateInfos
+                    if (skipItemKey === 'plugins') {
+                        let retPlugin = ret.plugins;
                         if (retPlugin) {
+                            let filteredObject = {}
+                            // 没用 delete，怕严格模式影响
                             for (let retPluginKey in retPlugin) {
                                 if (skipConfigObj[skipItemKey].includes(retPluginKey)) {
-                                    delete ret.plugin[retPluginKey];
+                                    // do noting
+                                } else {
+                                    filteredObject[retPluginKey] = retPlugin[retPluginKey];
                                 }
                             }
+                            ret.plugins = filteredObject;
                         }
                     }
 
@@ -315,28 +326,6 @@ function getMergedXConfigContent(config: any) {
             }
         }
     }
-
-    console.log(ret);
-
-    // for (let key in ret) {
-    //     if (key === 'plugins') {
-    //         let tmpPlg = {};
-    //         for (let plgKey in ret[key]) {
-    //             if (ret[key][plgKey].skip 
-    //                 && ret[key][plgKey].skip === process.env.SKIP) {
-    //                 // 存在 skip ，且相同，直接跳过，不进行任何操作
-    //             } else if (ret[key][plgKey].skip) {
-    //                 // 存在 skip，但不相同
-    //                 const { skip, ...rest } = ret[key][plgKey];
-    //                 tmpPlg[plgKey] = rest;
-    //             } else {
-    //                 // 不存在 skip，直接保留
-    //                 tmpPlg[plgKey] = ret[key][plgKey];
-    //             }
-    //         }
-    //         ret[key] = tmpPlg;
-    //     }
-    // }
 
     return Promise.resolve({
         dist: xConfigJsonDist,
