@@ -18,8 +18,16 @@ const ignoreExt = ['.tgz'];
 function getMergeDir() {
     return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
 }
-function getDownLoadHomeDir() {
-    return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'nnc_home_qunar');
+function getDownLoadHomeDir(env) {
+    if (fs.existsSync(path.join(utils_1.default.getProjectRootPath(), `${env}SkipConfig.json`))) {
+        return path.join(utils_1.default.getProjectRootPath(), `${env}SkipConfig.json`);
+    }
+    else if (fs.existsSync(path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`))) {
+        return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`);
+    }
+    else {
+        return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'qunar_miniprogram.nnc_home_qunar', `${env}SkipConfig.json`);
+    }
 }
 const projectConfigJsonMap = {
     'wx': {
@@ -224,9 +232,10 @@ function getMergedXConfigContent(config) {
             ret[i] = getUniqueSubPkgConfig(ret[i]);
         }
     }
-    const skipConfigPath = path.join(getDownLoadHomeDir(), `${env}SkipConfig.json`);
+    const skipConfigPath = getDownLoadHomeDir(env);
+    console.log('skipConfigPath:', skipConfigPath);
+    const skipEnv = process.env.SKIP;
     if (fs.existsSync(skipConfigPath)) {
-        const skipEnv = process.env.SKIP;
         console.log(`识别到 nnc_home_qunar 中包含 ${env}SkipConfig.json 文件，skipEnv=${skipEnv}，准备执行配置过滤任务`);
         const skipConfig = require(skipConfigPath);
         for (let key in skipConfig) {
@@ -263,6 +272,9 @@ function getMergedXConfigContent(config) {
                 console.log(`skipEnv=${skipEnv}，在 ${env}SkipConfig.json 文件中没有找到对应的配置，跳过过滤任务`);
             }
         }
+    }
+    else {
+        console.log(`skipEnv=${skipEnv}，在路径 ${skipConfigPath} 下没有找到过滤配置文件，跳过过滤任务`);
     }
     return Promise.resolve({
         dist: xConfigJsonDist,

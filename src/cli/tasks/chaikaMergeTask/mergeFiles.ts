@@ -24,8 +24,16 @@ function getMergeDir() {
     return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
 }
 
-function getDownLoadHomeDir() {
-    return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar');
+// 获取 skip 配置文件在不同的环境下有三种可能，取存在的那种即可
+function getDownLoadHomeDir(env) {
+    // 壳子是 home 包 或者 .Cache 中的 download
+   if (fs.existsSync(path.join(utils.getProjectRootPath(), `${env}SkipConfig.json`))) {
+       return path.join(utils.getProjectRootPath(), `${env}SkipConfig.json`)
+   } else if (fs.existsSync(path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`))) {
+       return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`);
+   } else {
+       return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'qunar_miniprogram.nnc_home_qunar', `${env}SkipConfig.json`);
+   }
 }
 
 const projectConfigJsonMap: any = {
@@ -283,9 +291,10 @@ function getMergedXConfigContent(config: any) {
     }
 
     // 通过 skipConfig.json 和环境变量过滤最终 app.json 中的一些内容
-    const skipConfigPath = path.join(getDownLoadHomeDir(), `${env}SkipConfig.json`);
+    const skipConfigPath = getDownLoadHomeDir(env);
+    console.log('skipConfigPath:', skipConfigPath);
+    const skipEnv = process.env.SKIP;
     if (fs.existsSync(skipConfigPath)) {
-        const skipEnv = process.env.SKIP;
         console.log(`识别到 nnc_home_qunar 中包含 ${env}SkipConfig.json 文件，skipEnv=${skipEnv}，准备执行配置过滤任务`)
 
         const skipConfig = require(skipConfigPath);
@@ -327,6 +336,8 @@ function getMergedXConfigContent(config: any) {
                 console.log(`skipEnv=${skipEnv}，在 ${env}SkipConfig.json 文件中没有找到对应的配置，跳过过滤任务`);
             }
         }
+    } else {
+        console.log(`skipEnv=${skipEnv}，在路径 ${skipConfigPath} 下没有找到过滤配置文件，跳过过滤任务`);
     }
 
     return Promise.resolve({
