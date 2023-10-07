@@ -36,6 +36,7 @@ export interface GlobalConfigMap {
     WebViewRules?: any;
     nanachiVersion: string;
     sourcemap: boolean;
+    multiProject: Array<string>;
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;

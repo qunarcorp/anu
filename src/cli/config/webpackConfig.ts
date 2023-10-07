@@ -359,7 +359,7 @@ export default function({
                 name: 'Webpack: '+ barNameMap[platform],
                 reporter: {
                     change(ctx, changedFileInfo) {
-                        console.log(this, changedFileInfo);
+                        console.log('changedFileInfo:', changedFileInfo);
                         // Called when compile finished
                          ctx.options.reporters = [];
                         return '';

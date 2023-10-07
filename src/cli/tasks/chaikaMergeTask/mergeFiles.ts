@@ -477,7 +477,6 @@ function validateMiniAppProjectConfigJson(queue: any) {
 
 //校验config.json路径是否正确
 function validateConfigFileCount(queue: any) {
-    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el: any) {
         return /Config\.json$/.test(el);
     });

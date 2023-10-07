@@ -120,7 +120,8 @@ const config = {
     patchComponents: {},
     pluginTags: {},
     sourcemap,
-    plugins: {}
+    plugins: {},
+    multiProject: [],
 };
 module.exports = config;
 exports.default = config;

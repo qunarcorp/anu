@@ -15,6 +15,10 @@ const BUILD_OPTIONS = {
     'dir': {
         alias: 'd',
         desc: '自定义打包输出目录'
+    },
+    'multiProject': {
+        alias: 'm',
+        desc: '多工程的其他工程目录'
     }
 };
 exports.default = BUILD_OPTIONS;

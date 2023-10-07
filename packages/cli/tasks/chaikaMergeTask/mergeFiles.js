@@ -399,7 +399,6 @@ function validateMiniAppProjectConfigJson(queue) {
     }
 }
 function validateConfigFileCount(queue) {
-    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el) {
         return /Config\.json$/.test(el);
     });

@@ -105,6 +105,18 @@ platforms_1.default.forEach(function (el) {
                 checkChaikaPatchInstalled();
                 fs_extra_1.default.emptyDirSync(getMergeDir());
                 fs_extra_1.default.emptyDirSync(getMultipleBuildTargetDir());
+                if (options.multiProject) {
+                    const multiProject = options.multiProject.split(',').map((v) => {
+                        const isAbsolutePath = path.isAbsolute(v);
+                        if (isAbsolutePath) {
+                            return v;
+                        }
+                        else {
+                            return path.resolve(cwd, v);
+                        }
+                    });
+                    config_1.default.multiProject = multiProject;
+                }
             }
             copyReactLibFile(buildType);
             if (isChaika) {
