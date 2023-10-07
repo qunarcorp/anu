@@ -148,6 +148,8 @@ export default function({
         options: {
             mode:'hash',
             cacheDirectory: cacheDirectory,
+            // cache校验需要目前加入自己定义的一些会改变变异产物的变量
+            cacheIdentifier: `cache-loader:${BUILD_ENV}-${process.env.NODE_ENV}-${process.env.SKIP}`, // 重新设置缓存，防止 skip 改变还走缓存
         }
     }
 

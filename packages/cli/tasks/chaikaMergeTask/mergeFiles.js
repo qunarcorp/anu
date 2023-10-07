@@ -18,6 +18,17 @@ const ignoreExt = ['.tgz'];
 function getMergeDir() {
     return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
 }
+function getDownLoadHomeDir(env) {
+    if (fs.existsSync(path.join(utils_1.default.getProjectRootPath(), `${env}SkipConfig.json`))) {
+        return path.join(utils_1.default.getProjectRootPath(), `${env}SkipConfig.json`);
+    }
+    else if (fs.existsSync(path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`))) {
+        return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`);
+    }
+    else {
+        return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), 'qunar_miniprogram.nnc_home_qunar', `${env}SkipConfig.json`);
+    }
+}
 const projectConfigJsonMap = {
     'wx': {
         reg: /\/project\.config\.json$/,
@@ -220,6 +231,50 @@ function getMergedXConfigContent(config) {
         if (i.toLocaleLowerCase() === 'subpackages') {
             ret[i] = getUniqueSubPkgConfig(ret[i]);
         }
+    }
+    const skipConfigPath = getDownLoadHomeDir(env);
+    console.log('skipConfigPath:', skipConfigPath);
+    const skipEnv = process.env.SKIP;
+    if (fs.existsSync(skipConfigPath)) {
+        console.log(`识别到 nnc_home_qunar 中包含 ${env}SkipConfig.json 文件，skipEnv=${skipEnv}，准备执行配置过滤任务`);
+        const skipConfig = require(skipConfigPath);
+        for (let key in skipConfig) {
+            if (key === skipEnv) {
+                const skipConfigObj = skipConfig[key];
+                for (let skipItemKey in skipConfigObj) {
+                    if (skipItemKey === 'plugins') {
+                        let retPlugin = ret.plugins;
+                        if (retPlugin) {
+                            let filteredObject = {};
+                            for (let retPluginKey in retPlugin) {
+                                if (skipConfigObj[skipItemKey].includes(retPluginKey)) {
+                                }
+                                else {
+                                    filteredObject[retPluginKey] = retPlugin[retPluginKey];
+                                }
+                            }
+                            ret.plugins = filteredObject;
+                        }
+                    }
+                    if (skipItemKey === 'requiredPrivateInfos') {
+                        const retRequiredPrivateInfos = ret.requiredPrivateInfos;
+                        if (retRequiredPrivateInfos) {
+                            for (let i = 0; i < retRequiredPrivateInfos.length; i++) {
+                                if (skipConfigObj[skipItemKey].includes(retRequiredPrivateInfos[i])) {
+                                    ret.requiredPrivateInfos.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                console.log(`skipEnv=${skipEnv}，在 ${env}SkipConfig.json 文件中没有找到对应的配置，跳过过滤任务`);
+            }
+        }
+    }
+    else {
+        console.log(`skipEnv=${skipEnv}，在路径 ${skipConfigPath} 下没有找到过滤配置文件，跳过过滤任务`);
     }
     return Promise.resolve({
         dist: xConfigJsonDist,
