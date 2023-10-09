@@ -71,7 +71,7 @@ function isLockFile(fileName: string) {
 function copyCurrentProjectToDownLoad(): Promise<any> {
 
     let projectList = [cwd];
-    if (config.multiProject.length > 1) {
+    if (config.multiProject.length > 0) {
         projectList = projectList.concat(config.multiProject);
     }
 

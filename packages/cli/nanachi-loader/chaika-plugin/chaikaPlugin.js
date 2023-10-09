@@ -12,7 +12,7 @@ class ChaikaPlugin {
     apply(compiler) {
         compiler.hooks.afterCompile.tap(id, (compilation) => {
             let projectList = [utils_1.default.getProjectRootPath()];
-            if (config_1.default.multiProject.length > 1) {
+            if (config_1.default.multiProject.length > 0) {
                 projectList = projectList.concat(config_1.default.multiProject);
             }
             for (let i = 0; i < projectList.length; i++) {

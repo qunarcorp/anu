@@ -61,7 +61,7 @@ function isLockFile(fileName) {
 }
 function copyCurrentProjectToDownLoad() {
     let projectList = [cwd];
-    if (config_1.default.multiProject.length > 1) {
+    if (config_1.default.multiProject.length > 0) {
         projectList = projectList.concat(config_1.default.multiProject);
     }
     for (let i = 0; i < projectList.length; i++) {

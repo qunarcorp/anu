@@ -14,7 +14,7 @@ class ChaikaPlugin {
         // 监听当前项目source目录：因为是未引入的文件，需要特殊处理
         compiler.hooks.afterCompile.tap(id, (compilation) => {
             let projectList = [utils.getProjectRootPath()];
-            if (config.multiProject.length > 1) {
+            if (config.multiProject.length > 0) {
                 projectList = projectList.concat(config.multiProject);
             }
 
