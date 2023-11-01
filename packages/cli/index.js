@@ -72,6 +72,7 @@ function nanachi(options = {}) {
                         fs.copySync(path.resolve(__dirname, './packages/360helpers/template'), path.resolve(cwd, 'src'));
                     }
                 }
+                console.log('webpackH5Config', webpackH5Config);
                 const compilerH5 = webpack_1.default(webpackH5Config);
                 if (watch) {
                     createH5Server_1.default(compilerH5);
@@ -138,6 +139,7 @@ function nanachi(options = {}) {
             if (compress) {
                 postLoaders.unshift('nanachi-compress-loader');
             }
+            debugger;
             const webpackConfig = webpackConfig_1.default({
                 watch,
                 platform,
@@ -157,6 +159,8 @@ function nanachi(options = {}) {
                 rules,
                 huawei
             });
+            debugger;
+            console.log('webpackH5Config-1', JSON.stringify(webpackConfig));
             const compiler = webpack_1.default(webpackConfig);
             if (watch) {
                 compiler.watch({}, callback);

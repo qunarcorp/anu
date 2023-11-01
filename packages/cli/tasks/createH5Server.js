@@ -25,7 +25,7 @@ function default_1(compiler) {
             });
             app = new webpack_dev_server_1.default(compiler, {
                 publicPath: webpack_config_1.default.output.publicPath,
-                host: '0.0.0.0',
+                host: '127.0.0.1',
                 port,
                 historyApiFallback: {
                     rewrites: [{

@@ -13,12 +13,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs-extra"));
 const ramda_1 = __importDefault(require("ramda"));
+const index_1 = __importDefault(require("../../packages/utils/index"));
+const projectRootPath = index_1.default.getProjectRootPath();
 exports.intermediateDirectoryName = '__intermediate__directory__do__not__modify__';
 exports.sourceDirectoryName = 'source';
 exports.assetsDirectoryName = 'assets';
 exports.outputDirectory = 'dist';
 exports.production = process.env.NODE_ENV === 'production';
-exports.rootDirectory = path.resolve(process.cwd(), 'dist');
+exports.rootDirectory = path.resolve(projectRootPath, 'dist');
 const resolveFromContext = ramda_1.default.curryN(2, path.resolve)(exports.rootDirectory);
 function resolveNanachiAlias(alias) {
     const resolved = {

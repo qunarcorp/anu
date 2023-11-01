@@ -2,6 +2,8 @@ import developmentConfig from './webpack.config.base';
 import * as path from 'path';
 import merge from 'webpack-merge';
 import webpack = require('webpack');
+const utils = require('../../packages/utils/index');
+const projectRootPath = utils.getProjectRootPath();
 
 const pageWrapper: string = path.resolve(process.cwd(), "node_modules/schnee-ui/h5/components/pageWrapper");
 
@@ -13,7 +15,6 @@ const config: webpack.Configuration = merge(developmentConfig, {
                 test: /\.[jt]sx?$/,
                 loader: require.resolve('babel-loader'),
                 options: {
-                    // exclude: [/node_modules/],
                     cacheDirectory: true,
                     root: pageWrapper,
                     plugins: [
@@ -23,6 +24,15 @@ const config: webpack.Configuration = merge(developmentConfig, {
                         [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
                         [require.resolve('@babel/plugin-proposal-class-properties'), { loose: true }]
                     ],
+                    presets: [require.resolve('@babel/preset-react')]
+                }
+            },
+            {
+                test: /\.[jt]sx?$/,
+                loader: require.resolve('babel-loader'),
+                exclude: [/node_modules/],
+                options: {
+                    exclude: [/node_modules/],
                     presets: [require.resolve('@babel/preset-react')]
                 }
             }

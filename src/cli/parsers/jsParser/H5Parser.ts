@@ -29,7 +29,8 @@ class H5Parser extends JavascriptParser{
                 require('@babel/plugin-syntax-jsx'),
                 require('../../packages/babelPlugins/transformIfImport'),
                 require('../../packages/babelPlugins/transformIfFun'),
-                require('../../packages/babelPlugins/h5/transformH5')
+                require('../../packages/babelPlugins/h5/transformH5'),
+                require('@babel/plugin-proposal-optional-chaining'),
             ]
         };
         if (this.componentType === 'App') {
