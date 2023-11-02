@@ -13,8 +13,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const glob_1 = __importDefault(require("glob"));
 const path = __importStar(require("path"));
+const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../../packages/utils"));
 const isMutilePack_1 = require("./isMutilePack");
+const chalk_1 = __importDefault(require("chalk"));
 const cwd = process.cwd();
 const downLoadDir = path.join(cwd, '.CACHE/download');
 const mergeFilesQueue = require('./mergeFilesQueue');
@@ -58,25 +60,40 @@ function isLockFile(fileName) {
     return lockFiles.includes(fileName);
 }
 function copyCurrentProjectToDownLoad() {
-    if (!fs_extra_1.default.existsSync(path.join(cwd, 'source'))
-        && !fs_extra_1.default.existsSync(path.join(cwd, 'app.js'))) {
-        return Promise.resolve(1);
+    let projectList = [cwd];
+    if (config_1.default.multiProject.length > 0) {
+        projectList = projectList.concat(config_1.default.multiProject);
     }
-    let projectDirName = cwd.replace(/\\/g, '/').split('/').pop();
-    let files = glob_1.default.sync('./!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {});
-    let allPromiseCopy = files
-        .map(function (el) {
-        let src = path.join(cwd, el);
-        let dist = path.join(getDownLoadDir(), projectDirName, el);
-        if (/\.\w+$/.test(el)) {
-            fs_extra_1.default.ensureFileSync(dist);
-            return fs_extra_1.default.copyFile(src, dist);
+    for (let i = 0; i < projectList.length; i++) {
+        const projectPath = projectList[i];
+        if (!fs_extra_1.default.existsSync(path.join(projectPath, 'source'))
+            && !fs_extra_1.default.existsSync(path.join(projectPath, 'app.js'))) {
+            return Promise.resolve(1);
         }
-        else {
-            fs_extra_1.default.ensureDirSync(dist);
-            return fs_extra_1.default.copy(src, dist);
-        }
-    });
+    }
+    let allPromiseCopy = [];
+    for (let i = 0; i < projectList.length; i++) {
+        const projectPath = projectList[i];
+        console.log(chalk_1.default.green(`正在拷贝项目：${projectPath}`));
+        let projectDirName = projectPath.replace(/\\/g, '/').split('/').pop();
+        let files = glob_1.default.sync('./!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
+            cwd: projectPath,
+        });
+        const promiseCopy = files
+            .map(function (el) {
+            let src = path.join(projectPath, el);
+            let dist = path.join(getDownLoadDir(), projectDirName, el);
+            if (/\.\w+$/.test(el)) {
+                fs_extra_1.default.ensureFileSync(dist);
+                return fs_extra_1.default.copyFile(src, dist);
+            }
+            else {
+                fs_extra_1.default.ensureDirSync(dist);
+                return fs_extra_1.default.copy(src, dist);
+            }
+        });
+        allPromiseCopy = allPromiseCopy.concat(promiseCopy);
+    }
     return Promise.all(allPromiseCopy);
 }
 function copyDownLoadToNnc() {

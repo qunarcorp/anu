@@ -24,6 +24,18 @@ function getMergeDir() {
     return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
 }
 
+// 获取 skip 配置文件在不同的环境下有三种可能，取存在的那种即可
+function getDownLoadHomeDir(env) {
+    // 壳子是 home 包 或者 .Cache 中的 download
+   if (fs.existsSync(path.join(utils.getProjectRootPath(), `${env}SkipConfig.json`))) {
+       return path.join(utils.getProjectRootPath(), `${env}SkipConfig.json`)
+   } else if (fs.existsSync(path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`))) {
+       return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`);
+   } else {
+       return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'qunar_miniprogram.nnc_home_qunar', `${env}SkipConfig.json`);
+   }
+}
+
 const projectConfigJsonMap: any = {
     'wx': {
         reg: /\/project\.config\.json$/,
@@ -277,6 +289,57 @@ function getMergedXConfigContent(config: any) {
             ret[i] = getUniqueSubPkgConfig(ret[i]);
         }
     }
+
+    // 通过 skipConfig.json 和环境变量过滤最终 app.json 中的一些内容
+    const skipConfigPath = getDownLoadHomeDir(env);
+    console.log('skipConfigPath:', skipConfigPath);
+    const skipEnv = process.env.SKIP;
+    if (fs.existsSync(skipConfigPath)) {
+        console.log(`识别到 nnc_home_qunar 中包含 ${env}SkipConfig.json 文件，skipEnv=${skipEnv}，准备执行配置过滤任务`)
+
+        const skipConfig = require(skipConfigPath);
+        for (let key in skipConfig) {
+            if (key === skipEnv) { // skipEnv 为 undefined 时不进行过滤
+                const skipConfigObj = skipConfig[key];
+                for (let skipItemKey in skipConfigObj) {
+                    // 目前支持的 配置字段只有 plugin 和 requiredPrivateInfos
+                    if (skipItemKey === 'plugins') {
+                        let retPlugin = ret.plugins;
+                        if (retPlugin) {
+                            let filteredObject = {}
+                            // 没用 delete，怕严格模式影响
+                            for (let retPluginKey in retPlugin) {
+                                if (skipConfigObj[skipItemKey].includes(retPluginKey)) {
+                                    // do noting
+                                } else {
+                                    filteredObject[retPluginKey] = retPlugin[retPluginKey];
+                                }
+                            }
+                            ret.plugins = filteredObject;
+                        }
+                    }
+
+                    if (skipItemKey === 'requiredPrivateInfos') {
+                        const retRequiredPrivateInfos = ret.requiredPrivateInfos;
+                        if (retRequiredPrivateInfos) {
+                            for (let i = 0; i < retRequiredPrivateInfos.length; i++) {
+                                if (skipConfigObj[skipItemKey].includes(retRequiredPrivateInfos[i])) {
+                                    ret.requiredPrivateInfos.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+
+                    // 新的 skip 字段可以这里加
+                }
+            } else {
+                console.log(`skipEnv=${skipEnv}，在 ${env}SkipConfig.json 文件中没有找到对应的配置，跳过过滤任务`);
+            }
+        }
+    } else {
+        console.log(`skipEnv=${skipEnv}，在路径 ${skipConfigPath} 下没有找到过滤配置文件，跳过过滤任务`);
+    }
+
     return Promise.resolve({
         dist: xConfigJsonDist,
         content: JSON.stringify(ret, null, 4)
@@ -477,7 +540,6 @@ function validateMiniAppProjectConfigJson(queue: any) {
 
 //校验config.json路径是否正确
 function validateConfigFileCount(queue: any) {
-    console.log('[start validateConfigFileCount]');
     let configFiles = queue.filter(function (el: any) {
         return /Config\.json$/.test(el);
     });

@@ -4,6 +4,7 @@ import * as path from 'path';
 import config from '../../config/config';
 import utils from '../../packages/utils';
 import {getMultiplePackDirPrefix} from './isMutilePack';
+import chalk from 'chalk';
 const cwd = process.cwd();
 const downLoadDir = path.join(cwd, '.CACHE/download');
 const mergeFilesQueue = require('./mergeFilesQueue');
@@ -68,39 +69,57 @@ function isLockFile(fileName: string) {
 
 
 function copyCurrentProjectToDownLoad(): Promise<any> {
-    // 如果当前目录不存在source目录，并且不存不存在app.js, 那可能是个非nanachi工程目录
-    if (
-        !fs.existsSync(path.join(cwd, 'source'))
-        && !fs.existsSync(path.join(cwd, 'app.js'))
-    ) {
-        return Promise.resolve(1);
+
+    let projectList = [cwd];
+    if (config.multiProject.length > 0) {
+        projectList = projectList.concat(config.multiProject);
+    }
+
+    for (let i = 0; i < projectList.length; i++) {
+        const projectPath = projectList[i];
+        // 如果当前目录不存在source目录，并且不存不存在app.js, 那可能是个非nanachi工程目录
+        if (
+            !fs.existsSync(path.join(projectPath, 'source'))
+            && !fs.existsSync(path.join(projectPath, 'app.js'))
+        ) {
+            return Promise.resolve(1);
+        }
+    }
+
+    let allPromiseCopy: Array<Promise<void>> = [];
+    for (let i = 0; i < projectList.length; i++) {
+        const projectPath = projectList[i];
+
+        console.log(chalk.green(`正在拷贝项目：${projectPath}`));
+
+        let projectDirName = projectPath.replace(/\\/g, '/').split('/').pop();
+        let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
+            cwd: projectPath,
+        });
+
+        const promiseCopy = files
+            .map(function(el){
+                let src = path.join(projectPath, el);
+                let dist = path.join(
+                    getDownLoadDir(), 
+                    projectDirName, 
+                    el
+                );
+                if (/\.\w+$/.test(el)) {
+                    fs.ensureFileSync(dist);
+                    return fs.copyFile(src, dist);
+                } else {
+                    fs.ensureDirSync(dist);
+                    return fs.copy(src, dist);
+                }
+            });
+
+        allPromiseCopy = allPromiseCopy.concat(promiseCopy);
     }
     
-    let projectDirName = cwd.replace(/\\/g, '/').split('/').pop();
-    let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
-        //nodir: true
-    });
 
    
-    let allPromiseCopy = files
-    // .filter((file) => {
-    //     return isIgnoreFile(path.basename(file)) ? false : true;
-    // })
-    .map(function(el){
-        let src = path.join(cwd, el);
-        let dist = path.join(
-            getDownLoadDir(), 
-            projectDirName, 
-            el
-        );
-        if (/\.\w+$/.test(el)) {
-            fs.ensureFileSync(dist);
-            return fs.copyFile(src, dist);
-        } else {
-            fs.ensureDirSync(dist);
-            return fs.copy(src, dist);
-        }
-    });
+    
     return Promise.all(allPromiseCopy);
 }
 

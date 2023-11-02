@@ -87,6 +87,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         options: {
             mode: 'hash',
             cacheDirectory: cacheDirectory,
+            cacheIdentifier: `cache-loader:${BUILD_ENV}-${process.env.NODE_ENV}-${process.env.SKIP}`,
         }
     };
     const jsLorder = () => {
@@ -222,7 +223,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
                 name: 'Webpack: ' + barNameMap[platform],
                 reporter: {
                     change(ctx, changedFileInfo) {
-                        console.log(this, changedFileInfo);
+                        console.log('changedFileInfo:', changedFileInfo);
                         ctx.options.reporters = [];
                         return '';
                     },

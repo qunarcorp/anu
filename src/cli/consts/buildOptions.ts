@@ -36,6 +36,10 @@ const BUILD_OPTIONS: CmdMap = {
     'dir': {
         alias: 'd',
         desc: '自定义打包输出目录'
+    },
+    'multiProject': {
+        alias: 'm',
+        desc: '多工程的其他工程目录'
     }
 };
 

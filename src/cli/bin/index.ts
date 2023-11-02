@@ -122,6 +122,19 @@ platforms.forEach(function (el) {
                     checkChaikaPatchInstalled();
                     fs.emptyDirSync(getMergeDir());
                     fs.emptyDirSync(getMultipleBuildTargetDir());
+
+                    // 多工程项目
+                    if (options.multiProject) {
+                        const multiProject = options.multiProject.split(',').map((v:string)=>{
+                            const isAbsolutePath = path.isAbsolute(v);
+                            if (isAbsolutePath) {
+                                return v;
+                            } else {
+                                return path.resolve(cwd, v);
+                            }   
+                        });
+                        config.multiProject = multiProject;
+                    }
                 }
 
                 copyReactLibFile(buildType);

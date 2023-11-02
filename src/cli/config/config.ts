@@ -58,6 +58,7 @@ export interface GlobalConfigMap {
     WebViewRules?: any; // TODO
     nanachiVersion: string;
     sourcemap: boolean,
+    multiProject: Array<string>,//多工程开发时，除了当前工程，其他的工程
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;
@@ -157,7 +158,8 @@ const config: GlobalConfigMap =  {
     patchComponents: {}, // 项目中使用的补丁组件
     pluginTags: {},
     sourcemap,
-    plugins: {}
+    plugins: {},
+    multiProject: [],
 };
 
 
