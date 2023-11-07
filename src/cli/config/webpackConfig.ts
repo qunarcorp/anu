@@ -4,6 +4,7 @@ import SizePlugin from '../nanachi-loader/sizePlugin';
 import QuickPlugin from '../nanachi-loader/quickPlugin';
 import ChaikaPlugin from '../nanachi-loader/chaika-plugin/chaikaPlugin';
 import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
+import IgnoreDependencyErrorsPlugin from '../nanachi-loader/ignoreDependencyErrorsPlugin';
 
 
 import { NanachiOptions } from '../index';
@@ -116,6 +117,7 @@ export default function({
             compress
         }),
         new CopyWebpackPlugin(copyAssetsRules),
+        new IgnoreDependencyErrorsPlugin(),
         plugins);
 
 

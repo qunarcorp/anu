@@ -72,7 +72,7 @@ async function nanachi(options: NanachiOptions = {}) {
         complete = () => { }
     } = options;
 
-
+    console.log('test 1.9');
    
 
     function callback(err: Error, stats?: webpack.Stats) {

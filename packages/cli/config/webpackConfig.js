@@ -15,6 +15,7 @@ const sizePlugin_1 = __importDefault(require("../nanachi-loader/sizePlugin"));
 const quickPlugin_1 = __importDefault(require("../nanachi-loader/quickPlugin"));
 const chaikaPlugin_1 = __importDefault(require("../nanachi-loader/chaika-plugin/chaikaPlugin"));
 const copy_webpack_plugin_1 = __importDefault(require("copy-webpack-plugin"));
+const ignoreDependencyErrorsPlugin_1 = __importDefault(require("../nanachi-loader/ignoreDependencyErrorsPlugin"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const { exec } = require('child_process');
@@ -67,7 +68,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     const mergePlugins = [].concat(isChaikaMode() ? [new chaikaPlugin_1.default()] : [], analysis ? new sizePlugin_1.default() : [], new plugin_1.default({
         platform,
         compress
-    }), new copy_webpack_plugin_1.default(copyAssetsRules), plugins);
+    }), new copy_webpack_plugin_1.default(copyAssetsRules), new ignoreDependencyErrorsPlugin_1.default(), plugins);
     const { skipNanachiCache = false, JENKINS_URL = '' } = process.env;
     const BUILD_ENV = process.env.BUILD_ENV || '';
     const jenkinsPath = '/usr/local/q/npm';

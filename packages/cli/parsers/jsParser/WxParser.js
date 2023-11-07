@@ -16,6 +16,7 @@ const JavascriptParser_1 = __importDefault(require("./JavascriptParser"));
 const config_1 = __importDefault(require("../../config/config"));
 const thePathHasCommon = /\bcommon\b/;
 const buildType = config_1.default.buildType;
+const collectIgnoreDependencyBabelPlugin_1 = __importDefault(require("../../nanachi-loader/collectIgnoreDependencyBabelPlugin"));
 class WxParser extends JavascriptParser_1.default {
     constructor(props) {
         super(props);
@@ -26,6 +27,7 @@ class WxParser extends JavascriptParser_1.default {
             comments: false,
             ast: true,
             plugins: [
+                [collectIgnoreDependencyBabelPlugin_1.default, {}],
                 [require('@babel/plugin-proposal-decorators'), { legacy: true }],
                 [
                     require('@babel/plugin-proposal-class-properties'),

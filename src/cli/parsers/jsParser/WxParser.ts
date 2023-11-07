@@ -3,6 +3,7 @@ import { parserOptions } from './JavascriptParserFactory';
 import config from '../../config/config';
 const thePathHasCommon = /\bcommon\b/;
 const buildType = config.buildType;
+import CollectIgnoreModuleImportPlugin from '../../nanachi-loader/collectIgnoreDependencyBabelPlugin';
 
 
 class WxParser extends JavascriptParser{
@@ -15,7 +16,7 @@ class WxParser extends JavascriptParser{
             comments: false,
             ast: true,
             plugins: [
-               
+                [CollectIgnoreModuleImportPlugin, {}],
                 [require('@babel/plugin-proposal-decorators'), { legacy: true }],
                 /**
                  * [babel 6 to 7] 

@@ -39,6 +39,7 @@ const rd = __importStar(require("rd"));
 function nanachi(options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
         const { watch = false, platform = 'wx', beta = false, betaUi = false, compress = false, compressOption = {}, huawei = false, typescript = false, rules = [], prevLoaders = [], postLoaders = [], prevJsLoaders = [], postJsLoaders = [], prevCssLoaders = [], postCssLoaders = [], plugins = [], analysis = false, silent = false, complete = () => { } } = options;
+        console.log('test 1.9');
         function callback(err, stats) {
             if (err) {
                 console.log(chalk_1.default.red(err.toString()));
