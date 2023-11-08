@@ -40,6 +40,10 @@ const BUILD_OPTIONS: CmdMap = {
     'multiProject': {
         alias: 'm',
         desc: '多工程的其他工程目录'
+    },
+    'component': { 
+        alias: 'c', 
+        desc: '单包打包'
     }
 };
 

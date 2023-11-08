@@ -93,13 +93,78 @@ function checkChaikaPatchInstalled() {
         process.exit(1);
     }
 }
+function isSingleBundleProcess(compileType, component) {
+    return (compileType === 'build' && component) || (compileType === 'watch' && component);
+}
+function checkAndAddGitIgnore() {
+    const projectRootPath = utils_1.default.getProjectRootPath();
+    const gitIgnorePath = path.join(projectRootPath, '.gitignore');
+    const gitIgnoreContent = fs_extra_1.default.readFileSync(gitIgnorePath, 'utf-8');
+    const shadowAppJsRelativePath = path.join('shadowApp.js');
+    if (gitIgnoreContent.indexOf(shadowAppJsRelativePath) === -1) {
+        fs_extra_1.default.appendFileSync(gitIgnorePath, `\n${shadowAppJsRelativePath}\n`);
+    }
+}
+function generateShadowAppJsForSingleBundle(buildType) {
+    const projectRootPath = utils_1.default.getProjectRootPath();
+    const appJsPath = path.join(projectRootPath, 'source', 'app.js');
+    const shadowAppJsPath = path.join(projectRootPath, 'shadowApp.js');
+    const appJsonPath = path.join(projectRootPath, 'source', 'app.json');
+    if (fs_extra_1.default.existsSync(appJsPath)) {
+        console.log(chalk_1.default.red(`请注意，您现在使用的是单包模式，但是 source 目录下存在 app.js 文件，请联系 nanachi 开发者`));
+        process.exit(1);
+    }
+    if (fs_extra_1.default.existsSync(appJsonPath)) {
+        const appJson = require(appJsonPath);
+        const pages = appJson.pages;
+        const shadowAppJsContent = pages.map((v) => {
+            if (typeof v === 'string') {
+                return `import './source/${v}';\n`;
+            }
+            else {
+                if (v.platform === buildType) {
+                    return `import './source/${v.route}';\n`;
+                }
+                else {
+                    return '';
+                }
+            }
+        }).join('');
+        if (fs_extra_1.default.existsSync(shadowAppJsPath)) {
+            fs_extra_1.default.writeFileSync(shadowAppJsPath, '');
+        }
+        checkAndAddGitIgnore();
+        fs_extra_1.default.writeFileSync(shadowAppJsPath, shadowAppJsContent);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 platforms_1.default.forEach(function (el) {
     const { buildType, des, isDefault } = el;
     ['build', 'watch'].forEach(function (compileType) {
         cli.addCommand(`${compileType}:${buildType}`, isDefault ? compileType : null, des, buildOptions_1.default, (options) => __awaiter(this, void 0, void 0, function* () {
-            const isChaika = isChaikaMode();
+            let isChaika = isChaikaMode();
+            const isSingleBundleProcessFlag = isSingleBundleProcess(compileType, options.component);
+            let singleBundleSourcemap = config_1.default.sourcemap;
+            if (isSingleBundleProcessFlag) {
+                const pkgPath = path.join(process.cwd(), 'package.json');
+                const pkg = require(pkgPath);
+                if (pkg.name === 'nnc_home_qunar') {
+                    console.log(chalk_1.default.red(`请注意，您现在使用的是小程序的主包，主包是不允许使用单包命令进行开发或者编译的`));
+                    process.exit(1);
+                }
+                isChaika = false;
+                singleBundleSourcemap = true;
+                process.env.NANACHI_CHAIK_MODE === 'NOT_CHAIK_MODE';
+                console.log(chalk_1.default.green(`提示：请注意您在使用 nanachi 的单包模式，部分参数会强制对齐到单包模式的要求\n`));
+                console.log(chalk_1.default.green(`提示：另外单包模式可能会出现读取不到当前包配置的 alias，如果编译出现问题请检查 package.json 的 nanachi 字段上是否包含 alias 且当前包代码的路径别名都已经配置完成\n`));
+            }
             Object.assign(config_1.default, {
-                buildType
+                buildType,
+                sourcemap: singleBundleSourcemap,
+                isSingleBundle: isSingleBundleProcessFlag
             });
             if (isChaika) {
                 checkChaikaPatchInstalled();
@@ -119,6 +184,9 @@ platforms_1.default.forEach(function (el) {
                 }
             }
             copyReactLibFile(buildType);
+            Object.assign(config_1.default, {
+                hasNewAppjs: isSingleBundleProcessFlag && generateShadowAppJsForSingleBundle(buildType)
+            });
             if (isChaika) {
                 try {
                     if (!process.env.JENKINS_URL) {

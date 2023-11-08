@@ -5,6 +5,7 @@ import QuickPlugin from '../nanachi-loader/quickPlugin';
 import ChaikaPlugin from '../nanachi-loader/chaika-plugin/chaikaPlugin';
 import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
 import IgnoreDependencyErrorsPlugin from '../nanachi-loader/ignoreDependencyErrorsPlugin';
+import CleanShadowAppJsPlugin from '../nanachi-loader/cleanShadowAppJsPlugin';
 
 
 import { NanachiOptions } from '../index';
@@ -37,6 +38,11 @@ const H5AliasList = ['react','@react','react-dom', 'react-loadable', '@qunar-def
 
 const isChaikaMode = function() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
+}
+
+const isEntryFromShadowAppJs = function() {
+    // 进入了单包模式，且成功的注入引入模块语句到了 shadowApp.js
+    return config.isSingleBundle && config.hasNewAppjs;
 }
 
 
@@ -118,6 +124,7 @@ export default function({
         }),
         new CopyWebpackPlugin(copyAssetsRules),
         new IgnoreDependencyErrorsPlugin(),
+        // new CleanShadowAppJsPlugin({pathsToDelete: ['./source/app.js']}),
         plugins);
 
 
@@ -159,7 +166,7 @@ export default function({
         const __jsLorder = [].concat(
             fileLoader, 
             platform !== 'h5' ? aliasLoader: [], 
-            useCache ? cacheLorder : [],
+            // useCache ? cacheLorder : [],
             postLoaders, 
             postJsLoaders,
             nanachiLoader,
@@ -248,7 +255,7 @@ export default function({
             test: /React\w+/,
             use: [].concat(
                 fileLoader, 
-                useCache ? cacheLorder : [],
+                // useCache ? cacheLorder : [],
                 postLoaders,
                 nodeLoader, 
                 reactLoader
@@ -259,7 +266,7 @@ export default function({
             use: [].concat(
                 fileLoader, 
                 platform !== 'h5' ? aliasLoader : [], 
-                useCache ? cacheLorder : [],
+                // useCache ? cacheLorder : [],
                 postLoaders, 
                 postCssLoaders,
                 nanachiStyleLoader,
@@ -337,7 +344,11 @@ export default function({
             })
         )
     }
-    let entry = path.join(cwd, 'source/app');
+
+    // 由于单包模式下打包，source 中没有 app.js，所以使用根目录下的 shadowApp.js
+    // 这样单包产物中也不存多余的 app.js，也不需要管理 source 目录下多余的临时 app.js 的生命周期
+    let entry = isEntryFromShadowAppJs() ? path.join(cwd, 'shadowApp.js') : path.join(cwd, 'source/app');
+
     if (typescript) { entry += '.tsx' };
     const barNameMap = {
         quick: '快应用',

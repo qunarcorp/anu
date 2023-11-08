@@ -37,6 +37,8 @@ export interface GlobalConfigMap {
     nanachiVersion: string;
     sourcemap: boolean;
     multiProject: Array<string>;
+    isSingleBundle?: boolean;
+    hasNewAppjs?: boolean;
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;

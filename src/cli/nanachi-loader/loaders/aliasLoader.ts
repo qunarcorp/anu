@@ -4,7 +4,7 @@ import { NanachiLoaderStruct } from './nanachiLoader';
 import getAliasMap, { Alias } from '../../consts/alias';
 import calculateAlias from '../../packages/utils/calculateAlias';
 
-//提取package.json中的别名配置
+//提取 package.json 中的别名配置
 function resolveAlias(code: string, aliasMap: Alias, relativePath: string, ast: any, ctx: any) {
     const babelConfig: babel.TransformOptions = {
         configFile: false,

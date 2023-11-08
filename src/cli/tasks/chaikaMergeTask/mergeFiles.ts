@@ -533,7 +533,7 @@ function validateMiniAppProjectConfigJson(queue: any) {
             })
     if (projectConfigJsonList.length > 1) {
         // eslint-disable-next-line
-        console.log(chalk.bold.red('校验到多个拆库仓库中存在project.config.json. 在业务线的拆库工程中，最多只能有一个拆库需要包含project.config.jon:'), chalk.bold.red('\n' + JSON.stringify(projectConfigJsonList, null, 4)));
+        console.log(chalk.bold.red('校验到多个拆库仓库中存在project.config.json. 在业务线的拆库工程中，最多只能有一个拆库需要包含project.config.json:'), chalk.bold.red('\n' + JSON.stringify(projectConfigJsonList, null, 4)));
         process.exit(1);
     }
 }

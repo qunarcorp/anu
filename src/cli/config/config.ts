@@ -59,6 +59,8 @@ export interface GlobalConfigMap {
     nanachiVersion: string;
     sourcemap: boolean,
     multiProject: Array<string>,//多工程开发时，除了当前工程，其他的工程
+    isSingleBundle?: boolean, 
+    hasNewAppjs?: boolean,
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;

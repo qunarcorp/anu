@@ -66,6 +66,9 @@ cli.addCommand(
 });
 
 
+/**
+ * 从 cli 工具中拷贝 React 文件到 source 目录 
+*/
 function copyReactLibFile(buildType: string) {
     const ReactLibName = REACT_LIB_MAP[buildType];
     const projectRootPath = utils.getProjectRootPath();
@@ -105,6 +108,65 @@ function checkChaikaPatchInstalled() {
 
 }
 
+function isSingleBundleProcess(compileType: string, component: string | undefined) {
+    // 目前满足单包模式的条件
+    // 1. nanachi build --component
+    // 2. nanachi watch --component
+    return (compileType === 'build' && component) || (compileType === 'watch' && component);
+}
+
+// 检查 .gitignore 中是否有排除 shadowApp.js 的规则，没有则加入
+function checkAndAddGitIgnore() {
+    const projectRootPath = utils.getProjectRootPath();
+    const gitIgnorePath = path.join(projectRootPath, '.gitignore');
+    const gitIgnoreContent = fs.readFileSync(gitIgnorePath, 'utf-8');
+    const shadowAppJsRelativePath = path.join('shadowApp.js');
+    if (gitIgnoreContent.indexOf(shadowAppJsRelativePath) === -1) {
+        fs.appendFileSync(gitIgnorePath, `\n${shadowAppJsRelativePath}\n`);
+    }
+}
+
+function generateShadowAppJsForSingleBundle(buildType: string) {
+    const projectRootPath = utils.getProjectRootPath();
+    const appJsPath = path.join(projectRootPath, 'source', 'app.js');
+    const shadowAppJsPath = path.join(projectRootPath, 'shadowApp.js');
+    const appJsonPath = path.join(projectRootPath, 'source', 'app.json');
+   
+    if (fs.existsSync(appJsPath)) { // 额外的校验
+        console.log(chalk.red(`请注意，您现在使用的是单包模式，但是 source 目录下存在 app.js 文件，请联系 nanachi 开发者`));
+        process.exit(1);
+    }
+
+    if (fs.existsSync(appJsonPath)) {
+        const appJson = require(appJsonPath);
+        const pages = appJson.pages;
+
+        // 将 app.json 中的路径以 import 语句的方式写入 app.js 中
+        const shadowAppJsContent = pages.map((v:string|{ route: string, platform: string })=>{
+            if (typeof v === 'string') {
+                return `import './source/${v}';\n`;
+            } else {
+                if (v.platform === buildType) {
+                    return `import './source/${v.route}';\n`;
+                } else {
+                    return '';
+                }
+            }
+        }).join('');
+
+        // 每次注入前先清空内容
+        if (fs.existsSync(shadowAppJsPath)) {
+            fs.writeFileSync(shadowAppJsPath, '');
+        }
+        checkAndAddGitIgnore(); // 加入 shadowApp.js 到 .gitignore
+        fs.writeFileSync(shadowAppJsPath, shadowAppJsContent);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
 platforms.forEach(function (el) {
     const { buildType, des, isDefault } = el;
     ['build', 'watch'].forEach(function (compileType) {
@@ -114,10 +176,33 @@ platforms.forEach(function (el) {
             des,
             BUILD_OPTIONS,
             async (options) => {
-                const isChaika = isChaikaMode();
+                let isChaika = isChaikaMode();
+
+                // 针对单包打包，对一些输入参数做强制处理
+                const isSingleBundleProcessFlag = isSingleBundleProcess(compileType, options.component)
+                let singleBundleSourcemap = config.sourcemap;
+                if (isSingleBundleProcessFlag) {
+                    // 增加对 home 包的处理，home 包不允许也不需要单包处理
+                    const pkgPath = path.join(process.cwd(), 'package.json');
+                    const pkg = require(pkgPath);
+                    if (pkg.name === 'nnc_home_qunar') {
+                        console.log(chalk.red(`请注意，您现在使用的是小程序的主包，主包是不允许使用单包命令进行开发或者编译的`));
+                        process.exit(1);
+                    }
+
+                    isChaika = false; // isChaika 强制为 false 避免触发合包的操作
+                    singleBundleSourcemap = true; // 单包模式中需要 sourcemap，相当于补丁，因为基本所有子包都不会设置 sourcemap = true
+                    process.env.NANACHI_CHAIK_MODE === 'NOT_CHAIK_MODE'; // 防止其他代码调用 isChaikaMode() 时出现问题
+                    console.log(chalk.green(`提示：请注意您在使用 nanachi 的单包模式，部分参数会强制对齐到单包模式的要求\n`));
+                    console.log(chalk.green(`提示：另外单包模式可能会出现读取不到当前包配置的 alias，如果编译出现问题请检查 package.json 的 nanachi 字段上是否包含 alias 且当前包代码的路径别名都已经配置完成\n`))
+                }
+
                 Object.assign(config, {
-                    buildType
+                    buildType,
+                    sourcemap: singleBundleSourcemap,
+                    isSingleBundle: isSingleBundleProcessFlag // 给后续流程使用
                 });
+
                 if (isChaika) {
                     checkChaikaPatchInstalled();
                     fs.emptyDirSync(getMergeDir());
@@ -138,6 +223,13 @@ platforms.forEach(function (el) {
                 }
 
                 copyReactLibFile(buildType);
+
+                // 如果是单包模式，还需要给子包注入 import 语句到 app.js
+                // 如果注入了 app.js，通过这个标识可以在后续流程中对这个 app.js 再进行删除
+                Object.assign(config, {
+                    hasNewAppjs: isSingleBundleProcessFlag && generateShadowAppJsForSingleBundle(buildType)
+                });
+
 
                 if (isChaika) {
                     try {
@@ -161,5 +253,6 @@ platforms.forEach(function (el) {
         );
     });
 });
+
 
 cli.run();

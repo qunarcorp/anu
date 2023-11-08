@@ -19,6 +19,10 @@ const BUILD_OPTIONS = {
     'multiProject': {
         alias: 'm',
         desc: '多工程的其他工程目录'
+    },
+    'component': {
+        alias: 'c',
+        desc: '单包打包'
     }
 };
 exports.default = BUILD_OPTIONS;

@@ -68,6 +68,7 @@ const getImportSpecifierFilePath = (function () {
 })();
 function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierName) {
     const aliasMap = require('./calculateAliasConfig')();
+    const remoteNpmPackagesMap = require('./calculateRemoteNpmPackages')();
     if (ignoredPaths && ignoredPaths.find((p) => importerSource === p)) {
         return '';
     }
@@ -93,6 +94,12 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
         return fixPath(path.relative(from, to));
     }
     try {
+        if (remoteNpmPackagesMap[importerSource]) {
+            let from = path.dirname(srcPath);
+            from = getDistPath(from);
+            let to = path.join(_1.default.getProjectRootPath(), 'dist', 'npm', remoteNpmPackagesMap[importerSource]);
+            return fixPath(path.relative(from, to));
+        }
         let from = path.dirname(srcPath);
         let to = nodeResolve.sync(importerSource, {
             basedir: _1.default.getProjectRootPath(),

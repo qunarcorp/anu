@@ -20,6 +20,10 @@ class IgnoreDependencyErrorsPlugin {
                 return;
             }
 
+            /*
+            ModuleNotFoundError: can't resolve ... in ... 跟
+            Error: Cannot find module xxx from xxx 不是一类错误
+            */
             const errors = compilation.errors.filter((err: any) => {
                 try {
                     if (err.name === 'ModuleNotFoundError') {

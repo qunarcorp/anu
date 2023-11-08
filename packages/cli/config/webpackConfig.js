@@ -35,6 +35,9 @@ const H5AliasList = ['react', '@react', 'react-dom', 'react-loadable', '@qunar-d
 const isChaikaMode = function () {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 };
+const isEntryFromShadowAppJs = function () {
+    return config_1.default.isSingleBundle && config_1.default.hasNewAppjs;
+};
 const WebpackBar = require('webpackbar');
 const quickConfigFileName = config_1.default.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
     ? "quickConfig.huawei.json"
@@ -92,7 +95,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         }
     };
     const jsLorder = () => {
-        const __jsLorder = [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], useCache ? cacheLorder : [], postLoaders, postJsLoaders, nanachiLoader, typescript ? {
+        const __jsLorder = [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], postLoaders, postJsLoaders, nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
@@ -149,10 +152,10 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         use: jsLorder(),
     }, platform !== 'h5' ? nodeRules : [], {
         test: /React\w+/,
-        use: [].concat(fileLoader, useCache ? cacheLorder : [], postLoaders, nodeLoader, reactLoader)
+        use: [].concat(fileLoader, postLoaders, nodeLoader, reactLoader)
     }, {
         test: /\.(s[ca]ss|less|css)$/,
-        use: [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], useCache ? cacheLorder : [], postLoaders, postCssLoaders, nanachiStyleLoader, prevCssLoaders, prevLoaders)
+        use: [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], postLoaders, postCssLoaders, nanachiStyleLoader, prevCssLoaders, prevLoaders)
     }, {
         test: /\.(jpg|png|gif)$/,
         loader: require.resolve('file-loader'),
@@ -195,7 +198,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
             resourceRegExp: /\.(\w?ux|pem)$/,
         }));
     }
-    let entry = path.join(cwd, 'source/app');
+    let entry = isEntryFromShadowAppJs() ? path.join(cwd, 'shadowApp.js') : path.join(cwd, 'source/app');
     if (typescript) {
         entry += '.tsx';
     }
