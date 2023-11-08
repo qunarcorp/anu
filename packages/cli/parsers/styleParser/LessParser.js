@@ -20,7 +20,7 @@ class LessParser extends StyleParser_1.default {
         this._postcssPlugins = this._postcssPlugins.concat([
             require('postcss-import')({
                 resolve: function (importer, baseDir) {
-                    if (!/\.less$/.test(importer)) {
+                    if (!/\.less$|\.css$/.test(importer)) {
                         importer = importer + '.less';
                     }
                     var filePathAbPath = path.join(baseDir, calculateAlias(props.filepath, importer));
