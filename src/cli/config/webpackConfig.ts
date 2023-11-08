@@ -5,7 +5,6 @@ import QuickPlugin from '../nanachi-loader/quickPlugin';
 import ChaikaPlugin from '../nanachi-loader/chaika-plugin/chaikaPlugin';
 import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
 import IgnoreDependencyErrorsPlugin from '../nanachi-loader/ignoreDependencyErrorsPlugin';
-import CleanShadowAppJsPlugin from '../nanachi-loader/cleanShadowAppJsPlugin';
 
 
 import { NanachiOptions } from '../index';
@@ -124,7 +123,6 @@ export default function({
         }),
         new CopyWebpackPlugin(copyAssetsRules),
         new IgnoreDependencyErrorsPlugin(),
-        // new CleanShadowAppJsPlugin({pathsToDelete: ['./source/app.js']}),
         plugins);
 
 
