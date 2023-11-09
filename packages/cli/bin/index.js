@@ -151,8 +151,8 @@ platforms_1.default.forEach(function (el) {
             if (isSingleBundleProcessFlag) {
                 const pkgPath = path.join(process.cwd(), 'package.json');
                 const pkg = require(pkgPath);
-                if (pkg.name === 'nnc_home_qunar') {
-                    console.log(chalk_1.default.red(`请注意，您现在使用的是小程序的主包，主包是不允许使用单包命令进行开发或者编译的`));
+                if (pkg.name === 'nnc_home_qunar' || pkg.name === 'nnc_module_qunar_platform') {
+                    console.log(chalk_1.default.red(`请注意，您现在使用的是小程序的 home 包或者 platform 包，它们是不允许使用单包命令进行开发或者编译的`));
                     process.exit(1);
                 }
                 isChaika = false;

@@ -3,11 +3,16 @@ import utils from '.';
 const cwd = process.cwd();
 const babel = require('@babel/core');
 const nodeResolve = require('resolve');
+import config from '../../config/config';
 
 const getDistPath = require('./getDistPath');
 function fixPath(p: string) {
     p = p.replace(/\\/g, '/');
     return /^\w/.test(p) ? './' + p : p;
+}
+
+function isSingleBunle() {
+    return config.hasNewAppjs && config.isSingleBundle;
 }
 
 // 获取 import {a, b, c} from '@xxx/yyy', a, b, c 对应的模块真实路径，只适用于nanachi ui 组件库
@@ -141,8 +146,8 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
     // 1. import cookie from 'cookie';
     // 2. import QMark from '@qnpm/qmark'; // 此为公共包的一个依赖 -> import QMark from "../../npm/@qnpm/qmark/dist/qmark.mini.umd.js";
     try {
-        // 如果 remoteNpmPackagesMap 中存在对应的记录，则直接返回
-        if (remoteNpmPackagesMap[importerSource]) {
+        // 如果 remoteNpmPackagesMap 中存在对应的记录，则直接返回，该分支只在单包模式下生效
+        if (isSingleBunle() && remoteNpmPackagesMap[importerSource]) {
             let from = path.dirname(srcPath);
             from = getDistPath(from);
 

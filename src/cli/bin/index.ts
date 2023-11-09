@@ -129,7 +129,7 @@ function checkAndAddGitIgnore() {
 function generateShadowAppJsForSingleBundle(buildType: string) {
     const projectRootPath = utils.getProjectRootPath();
     const appJsPath = path.join(projectRootPath, 'source', 'app.js');
-    const shadowAppJsPath = path.join(projectRootPath, 'shadowApp.js');
+    const shadowAppJsPath = path.join(projectRootPath, 'shadowApp.js'); // shadowApp.js 不在 source 下，因为那样的话生命周期不好维护
     const appJsonPath = path.join(projectRootPath, 'source', 'app.json');
    
     if (fs.existsSync(appJsPath)) { // 额外的校验
@@ -182,11 +182,12 @@ platforms.forEach(function (el) {
                 const isSingleBundleProcessFlag = isSingleBundleProcess(compileType, options.component)
                 let singleBundleSourcemap = config.sourcemap;
                 if (isSingleBundleProcessFlag) {
-                    // 增加对 home 包的处理，home 包不允许也不需要单包处理
+                    // 增加对 home 和 platform 的处理，不允许也不需要单包处理
+                    // platform 包也不能单包处理的原因是，里边有公共函数，且没有被 platform 的 pages 调用过，因此打包产物中不会包含这些公共函数
                     const pkgPath = path.join(process.cwd(), 'package.json');
                     const pkg = require(pkgPath);
-                    if (pkg.name === 'nnc_home_qunar') {
-                        console.log(chalk.red(`请注意，您现在使用的是小程序的主包，主包是不允许使用单包命令进行开发或者编译的`));
+                    if (pkg.name === 'nnc_home_qunar' || pkg.name === 'nnc_module_qunar_platform') {
+                        console.log(chalk.red(`请注意，您现在使用的是小程序的 home 包或者 platform 包，它们是不允许使用单包命令进行开发或者编译的`));
                         process.exit(1);
                     }
 
