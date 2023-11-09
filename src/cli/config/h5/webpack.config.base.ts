@@ -11,13 +11,14 @@ import {
 } from './configurations';
 
 import * as fs from 'fs-extra';
-
-const context = path.resolve(process.cwd(), 'dist');
-const h5helperPath = path.resolve(process.cwd(), `node_modules/schnee-ui/h5`);
+import utils  from '../../packages/utils/index';
+const projectRootPath = utils.getProjectRootPath();
+const context = path.resolve(projectRootPath, 'dist');
+const h5helperPath = path.resolve(projectRootPath, `node_modules/schnee-ui/h5`);
 const resolveFromContext = R.curryN(2, path.resolve)(context);
-const resolveFromDirCwd = R.curryN(2, path.resolve)(process.cwd());
+const resolveFromDirCwd = R.curryN(2, path.resolve)(projectRootPath);
 const resolveFromH5Helper = R.curryN(2, path.resolve)(h5helperPath);
-const REACT_H5 = resolveFromDirCwd('./source/ReactH5.js');
+const REACT_H5 = resolveFromContext(`${intermediateDirectoryName}/ReactH5.js`);
 
 let templatePath = path.resolve(__dirname, '../../packages/h5Helpers/index.html');
 try {
@@ -47,7 +48,7 @@ const webpackConfig: webpack.Configuration = {
     output: {
         path: resolveFromDirCwd(outputDirectory),
         filename: 'bundle.[hash:10].js',
-        publicPath: '/web/'
+        publicPath: '/dist/'
     },
     resolve: {
         alias: {
@@ -64,7 +65,7 @@ const webpackConfig: webpack.Configuration = {
             // '@pageConfig': resolveFromContext(`${intermediateDirectoryName}/pageConfig.js`),
             '@qunar-default-loading': resolveFromH5Helper('components/Loading'),
         },
-        modules: ['node_modules', path.resolve(__dirname, '../../node_modules'), resolveFromDirCwd('node_modules')],
+        modules: [resolveFromDirCwd('node_modules'), 'node_modules', path.resolve(__dirname, '../../node_modules') ],
         extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
     },
     module: {

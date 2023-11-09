@@ -122,6 +122,8 @@ async function nanachi(options: NanachiOptions = {}) {
                     )
                 }
             }
+
+            console.log('webpackH5Config',webpackH5Config)
             const compilerH5 = webpack(webpackH5Config);
             if (watch) {
                 createH5Server(compilerH5);
@@ -205,6 +207,7 @@ async function nanachi(options: NanachiOptions = {}) {
             postLoaders.unshift('nanachi-compress-loader');
         }
 
+        debugger;
         const webpackConfig: webpack.Configuration = getWebPackConfig({
             watch,
             platform,
@@ -226,7 +229,8 @@ async function nanachi(options: NanachiOptions = {}) {
             // maxAssetSize
         });
 
-       
+        debugger
+        console.log('webpackH5Config-1',JSON.stringify(webpackConfig))
         const compiler = webpack(webpackConfig);
 
         if (watch) {
