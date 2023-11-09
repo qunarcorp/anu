@@ -219,7 +219,13 @@ const visitor = {
                 function getNameFromObjectPattern(id) {
                     id.properties.forEach((property) => {
                         if (t.isAssignmentPattern(property.value)) {
-                            funData.push(property.key.name);
+                            const left = property.value.left;
+                            if (t.isObjectProperty(left)) {
+                                getNameFromObjectPattern(left);
+                            }
+                            else if (t.isIdentifier(left)) {
+                                funData.push(left.name);
+                            }
                         }
                         else if (t.isObjectPattern(property.value)) {
                             getNameFromObjectPattern(property.value);

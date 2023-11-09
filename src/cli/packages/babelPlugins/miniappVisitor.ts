@@ -309,7 +309,12 @@ const visitor: babel.Visitor = {
                 function getNameFromObjectPattern(id: t.ObjectPattern){
                     id.properties.forEach((property:t.ObjectProperty) => {
                         if(t.isAssignmentPattern(property.value)){
-                            funData.push(property.key.name)
+                            const left = property.value.left;
+                            if(t.isObjectProperty(left)){
+                                getNameFromObjectPattern(left);
+                            }else if(t.isIdentifier(left)){
+                                funData.push(left.name);
+                            }
                         }else if(t.isObjectPattern(property.value)){
                             getNameFromObjectPattern(property.value);
                         }else if(t.isIdentifier(property.value)){
