@@ -9,9 +9,9 @@ export const intermediateDirectoryName =
   '__intermediate__directory__do__not__modify__';
 export const sourceDirectoryName = 'source';
 export const assetsDirectoryName = 'assets';
-export const outputDirectory = 'dist';
+export const outputDirectory = utils.getDistRelativeDir();
 export const production = process.env.NODE_ENV === 'production';
-export const rootDirectory = path.resolve(projectRootPath, 'dist');
+export const rootDirectory = path.resolve(projectRootPath, outputDirectory);
 
 const resolveFromContext = R.curryN(2, path.resolve)(rootDirectory);
 

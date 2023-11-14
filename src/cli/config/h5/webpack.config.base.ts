@@ -13,7 +13,8 @@ import {
 import * as fs from 'fs-extra';
 import utils  from '../../packages/utils/index';
 const projectRootPath = utils.getProjectRootPath();
-const context = path.resolve(projectRootPath, 'dist');
+const distRelativeDir = utils.getDistRelativeDir();
+const context = path.resolve(projectRootPath, distRelativeDir);
 const h5helperPath = path.resolve(projectRootPath, `node_modules/schnee-ui/h5`);
 const resolveFromContext = R.curryN(2, path.resolve)(context);
 const resolveFromDirCwd = R.curryN(2, path.resolve)(projectRootPath);
@@ -46,9 +47,10 @@ const webpackConfig: webpack.Configuration = {
     target: 'web',
     entry: resolveFromContext(`${intermediateDirectoryName}/app`),
     output: {
-        path: resolveFromDirCwd(outputDirectory),
+        // path: resolveFromDirCwd(distRelativeDir),
+        path: path.resolve(projectRootPath,'web'),
         filename: 'bundle.[hash:10].js',
-        publicPath: '/dist/'
+        publicPath: '/web/'
     },
     resolve: {
         alias: {

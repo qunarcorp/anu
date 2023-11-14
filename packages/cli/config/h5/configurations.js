@@ -18,9 +18,9 @@ const projectRootPath = index_1.default.getProjectRootPath();
 exports.intermediateDirectoryName = '__intermediate__directory__do__not__modify__';
 exports.sourceDirectoryName = 'source';
 exports.assetsDirectoryName = 'assets';
-exports.outputDirectory = 'dist';
+exports.outputDirectory = index_1.default.getDistRelativeDir();
 exports.production = process.env.NODE_ENV === 'production';
-exports.rootDirectory = path.resolve(projectRootPath, 'dist');
+exports.rootDirectory = path.resolve(projectRootPath, exports.outputDirectory);
 const resolveFromContext = ramda_1.default.curryN(2, path.resolve)(exports.rootDirectory);
 function resolveNanachiAlias(alias) {
     const resolved = {
