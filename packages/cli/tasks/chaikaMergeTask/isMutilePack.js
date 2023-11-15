@@ -16,3 +16,6 @@ exports.default = isMultiple;
 exports.getMultiplePackDirPrefix = function () {
     return isMultiple ? config_1.default.buildType : '';
 };
+exports.getMultiplePackDirPrefixNew = function () {
+    return isMultiple() ? config_1.default.buildType : '';
+};

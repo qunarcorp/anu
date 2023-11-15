@@ -4,6 +4,7 @@ const cwd = process.cwd();
 const babel = require('@babel/core');
 const nodeResolve = require('resolve');
 import config from '../../config/config';
+import isMultiple, { getMultiplePackDirPrefix, getMultiplePackDirPrefixNew } from '../../tasks/chaikaMergeTask/isMutilePack';
 
 const getDistPath = require('./getDistPath');
 function fixPath(p: string) {
@@ -152,7 +153,7 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
             from = getDistPath(from);
 
             // to 不再通过 nodeResovle 获得（也找不到），而是直接拼接出来产物目录下的 'npm' + 列表给出的映射路径
-            let to = path.join(utils.getProjectRootPath(), 'dist', 'npm', remoteNpmPackagesMap[importerSource]);
+            let to = path.join(utils.getProjectRootPath(), isMultiple() ? 'target' : 'dist', getMultiplePackDirPrefixNew(), 'npm', remoteNpmPackagesMap[importerSource]);
             return fixPath(path.relative(from, to));
         }
 
