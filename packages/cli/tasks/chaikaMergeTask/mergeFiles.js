@@ -94,6 +94,7 @@ function getAppJsSourcePath(queue = []) {
 function getFilesMap(queue = []) {
     let map = {};
     let env = ANU_ENV;
+    console.log('queue', queue);
     queue.forEach(function (file) {
         file = file.replace(/\\/g, '/');
         if (/\/package\.json$/.test(file)) {
@@ -468,7 +469,7 @@ function validateConfigFileCount(queue) {
         }
     });
     if (errorFiles.length) {
-        console.log(chalk.bold.red('⚠️   校验到拆库仓库中配置文件路径错误，请将该配置文件放到  source 目录中:'));
+        console.log(chalk.bold.red('⚠️   校验到拆库仓库中配置文件路径错误，请将该配置文件放到 source 目录中:'));
         console.log(chalk.bold.red(errorFiles.join('\n')) + '\n');
         process.exit(1);
     }
@@ -517,6 +518,7 @@ function default_1() {
             return !ignoreInstallReg.test(el);
         });
     }
+    console.log('installList', installList);
     var installPkgList = installList.reduce(function (needInstall, pkg) {
         var pkgMeta = pkg.split('@');
         var pkgName = pkgMeta[0] === '' ? '@' + pkgMeta[1] : pkgMeta[0];
@@ -527,6 +529,7 @@ function default_1() {
         }
         return needInstall;
     }, []);
+    console.log('installPkgList', installPkgList);
     installPkgList = installPkgList.filter(function (dep) {
         return !ignoreExt.includes('.' + dep.split('.').pop());
     });

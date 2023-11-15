@@ -22,6 +22,12 @@ declare enum Platforms {
     QIHOO = "360"
 }
 export declare type validatePlatforms = 'wx' | 'qq' | 'ali' | 'bu' | 'tt' | 'quick' | 'h5' | '360';
+export declare type sourceTypeString = 'input' | 'output';
+export interface projectSourceType {
+    name: string;
+    path: string;
+    sourceType: sourceTypeString;
+}
 export interface GlobalConfigMap {
     buildType: validatePlatforms;
     buildDir: string;
@@ -39,6 +45,7 @@ export interface GlobalConfigMap {
     multiProject: Array<string>;
     isSingleBundle?: boolean;
     hasNewAppjs?: boolean;
+    projectSourceTypeList: Array<projectSourceType>;
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;

@@ -16,7 +16,6 @@ const path = __importStar(require("path"));
 const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../../packages/utils"));
 const isMutilePack_1 = require("./isMutilePack");
-const chalk_1 = __importDefault(require("chalk"));
 const cwd = process.cwd();
 const downLoadDir = path.join(cwd, '.CACHE/download');
 const mergeFilesQueue = require('./mergeFilesQueue');
@@ -74,7 +73,6 @@ function copyCurrentProjectToDownLoad() {
     let allPromiseCopy = [];
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
-        console.log(chalk_1.default.green(`正在拷贝项目：${projectPath}`));
         let projectDirName = projectPath.replace(/\\/g, '/').split('/').pop();
         let files = glob_1.default.sync('./!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
             cwd: projectPath,
@@ -137,4 +135,3 @@ function default_1() {
     });
 }
 exports.default = default_1;
-;

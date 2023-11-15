@@ -20,7 +20,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const copySource_1 = __importDefault(require("./copySource"));
-const mergeFiles_1 = __importDefault(require("./mergeFiles"));
+const mergeSourceFiles_1 = __importDefault(require("./mergeSourceFiles"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs-extra"));
 const isMutilePack_1 = require("./isMutilePack");
@@ -36,18 +36,15 @@ function makeSymLink() {
         return;
     }
 }
-function default_1() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield copySource_1.default();
-            yield mergeFiles_1.default();
-            makeSymLink();
-            changeWorkingDir();
-        }
-        catch (err) {
-            console.log('chaikaMerge error:', err);
-        }
-    });
-}
-exports.default = default_1;
-;
+const runChaikaMergeTask = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield copySource_1.default();
+        yield mergeSourceFiles_1.default();
+        makeSymLink();
+        changeWorkingDir();
+    }
+    catch (err) {
+        console.log('chaikaMerge error:', err);
+    }
+});
+exports.runChaikaMergeTask = runChaikaMergeTask;

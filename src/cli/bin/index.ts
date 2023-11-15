@@ -15,9 +15,10 @@ import config from '../config/config';
 import installDefaltChaikaModule from '../tasks/chaikaMergeTask/installDefaultModule';
 import '../tasks/chaikaMergeTask/injectChaikaEnv';
 const { version } = require('../package.json');
-import runChaikaMergeTask from '../tasks/chaikaMergeTask/index';
+import { runChaikaMergeTask } from '../tasks/chaikaMergeTask/index';
 import { getMultiplePackDirPrefix } from '../tasks/chaikaMergeTask/isMutilePack';
 import utils from '../packages/utils';
+import runBeforeBuildOrWatch from "../tasks/runBeforeBuildOrWatch";
 let cwd = process.cwd();
 
 
@@ -67,7 +68,7 @@ cli.addCommand(
 
 
 /**
- * 从 cli 工具中拷贝 React 文件到 source 目录 
+ * 从 cli 工具中拷贝 React 文件到 source 目录
 */
 function copyReactLibFile(buildType: string) {
     const ReactLibName = REACT_LIB_MAP[buildType];
@@ -131,7 +132,7 @@ function generateShadowAppJsForSingleBundle(buildType: string) {
     const appJsPath = path.join(projectRootPath, 'source', 'app.js');
     const shadowAppJsPath = path.join(projectRootPath, 'shadowApp.js'); // shadowApp.js 不在 source 下，因为那样的话生命周期不好维护
     const appJsonPath = path.join(projectRootPath, 'source', 'app.json');
-   
+
     if (fs.existsSync(appJsPath)) { // 额外的校验
         console.log(chalk.red(`请注意，您现在使用的是单包模式，但是 source 目录下存在 app.js 文件，请联系 nanachi 开发者`));
         process.exit(1);
@@ -141,7 +142,7 @@ function generateShadowAppJsForSingleBundle(buildType: string) {
         const appJson = require(appJsonPath);
         const pages = appJson.pages;
 
-        // 将 app.json 中的路径以 import 语句的方式写入 app.js 中
+        // 将 app.json 中的路径以 import 语句的方式写入 shadowApp.js 中
         const shadowAppJsContent = pages.map((v:string|{ route: string, platform: string })=>{
             if (typeof v === 'string') {
                 return `import './source/${v}';\n`;
@@ -184,8 +185,10 @@ platforms.forEach(function (el) {
                 if (isSingleBundleProcessFlag) {
                     // 增加对 home 和 platform 的处理，不允许也不需要单包处理
                     // platform 包也不能单包处理的原因是，里边有公共函数，且没有被 platform 的 pages 调用过，因此打包产物中不会包含这些公共函数
-                    const pkgPath = path.join(process.cwd(), 'package.json');
+                    const pkgPath = path.join(cwd, 'package.json');
                     const pkg = require(pkgPath);
+
+                    // TODO: 这里为了测试可以这么做，但是需要改了，不能写死包名
                     if (pkg.name === 'nnc_home_qunar' || pkg.name === 'nnc_module_qunar_platform') {
                         console.log(chalk.red(`请注意，您现在使用的是小程序的 home 包或者 platform 包，它们是不允许使用单包命令进行开发或者编译的`));
                         process.exit(1);
@@ -217,7 +220,7 @@ platforms.forEach(function (el) {
                                 return v;
                             } else {
                                 return path.resolve(cwd, v);
-                            }   
+                            }
                         });
                         config.multiProject = multiProject;
                     }
@@ -225,26 +228,27 @@ platforms.forEach(function (el) {
 
                 copyReactLibFile(buildType);
 
-                // 如果是单包模式，还需要给子包注入 import 语句到 app.js
-                // 如果注入了 app.js，通过这个标识可以在后续流程中对这个 app.js 再进行删除
+                // 如果是单包模式，还需要给子包注入 import 语句到 shadowApp.js
+                // 通过这个标识确定 shadowApp.js 注入的是符合的内容
                 Object.assign(config, {
                     hasNewAppjs: isSingleBundleProcessFlag && generateShadowAppJsForSingleBundle(buildType)
                 });
 
 
-                if (isChaika) {
+                if (isChaika) { // 如果是拆库模式，在主进程中执行合并打包等动作
                     try {
                         // 集成环境不安装默认，因为已经安装过了
                         if (!process.env.JENKINS_URL) {
                             await installDefaltChaikaModule(buildType);
                         }
-                        
+
                         await runChaikaMergeTask();
                     } catch (err) {
-                        console.error('[build error]',err);
+                        console.error('[chaika merge error]',err);
                         process.exit(1);
                     }
                 }
+
                 require('./commands/build')({
                     ...options,
                     watch: compileType === 'watch',

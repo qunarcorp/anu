@@ -141,17 +141,18 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
 
 
     // 上面都没匹配到的，那就是 node_modules 模块了
-    // 这里有两种情况，一种是旧的逻辑，也就是匹配存在的一个 npm 模块
-    // 一种是新的逻辑，就是单包打包时，存在引用了非自己包的 npm 依赖，这里通过 userConfig.remoteNpmPackages 来直接匹配（第二种路径通过js是找不到的，只能以文本的形式进行修改）
+    // 这里有两种情况，一种是旧的逻辑，也就是匹配当前包（或者说代码合并后）存在的一个 npm 模块
+    // 一种是新的逻辑，就是单包打包时，存在引用了非自己包的 npm 依赖，这里通过 userConfig.remoteNpmPackages 来直接匹配（第二种路径通过js是找不到的，只能以文本字面量的形式计算相对路径）
     // 1. import cookie from 'cookie';
-    // 2. import QMark from '@qnpm/qmark'; // 此为公共包的一个依赖 -> import QMark from "../../npm/@qnpm/qmark/dist/qmark.mini.umd.js";
+    // 2. import QMark from '@qnpm/qmark'; // 此为公共包的一个依赖，nodeResolver 肯定是找不到报错的 -> import QMark from "../../npm/@qnpm/qmark/dist/qmark.mini.umd.js";
     try {
-        // 如果 remoteNpmPackagesMap 中存在对应的记录，则直接返回，该分支只在单包模式下生效
+        // 如果 remoteNpmPackagesMap 中存在对应的记录，则直接返回，该逻辑分支只在单包模式下生效
         if (isSingleBunle() && remoteNpmPackagesMap[importerSource]) {
             let from = path.dirname(srcPath);
             from = getDistPath(from);
 
-            // to 不再通过 nodeResovle 获得（也找不到），而是直接拼接出来产物目录下的 'npm' + 列表给出的映射路径
+            // to 不再通过 nodeResovle 获得，而是直接拼接出来产物目录下的 'npm' + 列表给出的映射路径
+            // TODO: 写死 dist 路径不可取，比如使用 nanachi.multiple 的时候是不对的
             let to = path.join(utils.getProjectRootPath(), 'dist', 'npm', remoteNpmPackagesMap[importerSource]);
             return fixPath(path.relative(from, to));
         }

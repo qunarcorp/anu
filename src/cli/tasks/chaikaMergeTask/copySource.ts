@@ -8,6 +8,7 @@ import chalk from 'chalk';
 const cwd = process.cwd();
 const downLoadDir = path.join(cwd, '.CACHE/download');
 const mergeFilesQueue = require('./mergeFilesQueue');
+
 //这些文件对项目编译时来说，没啥用
 const ignoreFiles: any = [
     'package-lock.json'
@@ -43,12 +44,8 @@ function getMergeDir() {
     return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
 }
 
-// let getDownLoadDir() = path.join(cwd, '.CACHE/download', getMultiplePackDirPrefix());
-// let getMergeDir() = path.join(cwd, '.CACHE/nanachi', getMultiplePackDirPrefix());
-
-
 function isIgnoreFile(fileName: string){
-    return ignoreFiles.includes(fileName) 
+    return ignoreFiles.includes(fileName)
         || mergeFiles.includes(fileName)
         || lockFiles.includes(fileName)
         || ignoreExt.includes(path.parse(fileName).ext)
@@ -67,7 +64,9 @@ function isLockFile(fileName: string) {
 }
 
 
-
+/**
+ * 拷贝工作区项目到下载缓存区
+ */
 function copyCurrentProjectToDownLoad(): Promise<any> {
 
     let projectList = [cwd];
@@ -77,7 +76,7 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
 
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
-        // 如果当前目录不存在source目录，并且不存不存在app.js, 那可能是个非nanachi工程目录
+        // 如果当前目录不存在source目录，并且不存在app.js, 那可能是个非nanachi工程目录
         if (
             !fs.existsSync(path.join(projectPath, 'source'))
             && !fs.existsSync(path.join(projectPath, 'app.js'))
@@ -86,11 +85,12 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
         }
     }
 
+    // 获取待复制文件路径，创建复制任务
     let allPromiseCopy: Array<Promise<void>> = [];
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
 
-        console.log(chalk.green(`正在拷贝项目：${projectPath}`));
+        // console.log(chalk.green(`正在拷贝项目：${projectPath}`));
 
         let projectDirName = projectPath.replace(/\\/g, '/').split('/').pop();
         let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
@@ -98,11 +98,11 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
         });
 
         const promiseCopy = files
-            .map(function(el){
+            .map(function(el) {
                 let src = path.join(projectPath, el);
                 let dist = path.join(
-                    getDownLoadDir(), 
-                    projectDirName, 
+                    getDownLoadDir(),
+                    projectDirName,
                     el
                 );
                 if (/\.\w+$/.test(el)) {
@@ -116,46 +116,45 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
 
         allPromiseCopy = allPromiseCopy.concat(promiseCopy);
     }
-    
 
-   
-    
     return Promise.all(allPromiseCopy);
 }
 
 
 
 function copyDownLoadToNnc() {
-    let files = glob.sync( 
-        getDownLoadDir()  + '/**', 
+    let files = glob.sync(
+        getDownLoadDir()  + '/**',
         {nodir: true}
     );
-  
+
+
     files = files.filter((file)=>{
         let fileName = path.parse(file).base;
         if (isIgnoreFile(fileName)) {
             if (isMergeFile(fileName) || isLockFile(fileName) ) {
-                mergeFilesQueue.add(file);
+                mergeFilesQueue.add(file); // 是忽略文件，但是属于需要特殊处理那一拨
             }
-            return false;
+            return false; // 是忽略文件
         } else {
-            return true;
+            return true; // 不是忽略的文件，且不需要特殊处理，直接拷贝
         }
     });
 
     let allPromiseCopy = files.map(function(file){
         let dist = '';
         file = file.replace(/\\/g, '/');
-        if (/\/source\//.test(file)) {
+
+        if (/\/source\//.test(file)) { // 合并后进入 source 的文件
             dist = path.join(getMergeDir(), 'source', file.split('/source/').pop());
         } else {
             dist = path.join(getMergeDir(), file.split('/').pop());
         }
-       
+
         fs.ensureFileSync(dist);
         return fs.copyFile(file, dist);
     });
-   
+
     return Promise.all(allPromiseCopy);
 }
 
@@ -171,4 +170,4 @@ export default function(){
         .catch(function(err){
             return Promise.reject(err);
         });
-};
+}

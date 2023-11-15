@@ -122,6 +122,7 @@ const config = {
     sourcemap,
     plugins: {},
     multiProject: [],
+    projectSourceTypeList: [],
 };
 module.exports = config;
 exports.default = config;

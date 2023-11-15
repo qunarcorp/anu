@@ -35,7 +35,7 @@ module.exports = async function(code: string, map: any, meta: any) {
 
             await parser.parse();
         } catch (err) {
-            //生产环境中构建时候如果构建错误，立马退出，抛错。
+            //生产环境中构建时候如果构建错误，立马退出，抛错。
             if ( utils.isMportalEnv() ) {
                 console.log(err);
                 process.exit(1);
@@ -43,9 +43,9 @@ module.exports = async function(code: string, map: any, meta: any) {
             error.push({
                 id: this.resourcePath,
                 msg: err
-            });   
+            });
         }
-       
+
         let result = {
             queues: parser.getExtraFiles(),
             exportCode: parser.getExportCode()

@@ -5,11 +5,117 @@ import * as fs from 'fs-extra';
 import axios from 'axios';
 import glob from 'glob';
 import { getMultiplePackDirPrefix } from '../../tasks/chaikaMergeTask/isMutilePack';
-import config from '../../config/config';
+import config, {projectSourceType, sourceTypeString} from '../../config/config';
 import utils from '../../packages/utils';
 import platforms, { Platform } from '../../consts/platforms';
 const cwd = process.cwd();
 
+
+// 将本地 ProjectSourceTypeList 文件内容读取到 userConfig 中供后续流程使用（比如 copySource）
+function setProjectSourceTypeList() {
+    const jsonPath = path.join(cwd, `.CACHE/type${getMultiplePackDirPrefix()}.json`);
+
+    // 判断存在内容，存在则写入 json.projectSourceTypeList 到 config 中
+    // 此处插入非工作区的那些项目的元数据
+    if (fs.existsSync(jsonPath)) {
+        try {
+            const json = require(jsonPath);
+            config.projectSourceTypeList = json.projectSourceTypeList;
+        } catch (err) {
+            console.log(chalk.red(`[setProjectSourceTypeList] 读取 ${jsonPath} 文件失败，请联系开发者`));
+            process.exit(1);
+        }
+    }
+
+    // 此处插入工作区项目的元数据，需要根据当前执行的命令判断
+    const workspacePath = path.join(utils.getProjectRootPath());
+    const pkgPath = path.join(workspacePath, 'package.json');
+    const projectName = require(pkgPath).name;
+
+    if (config.isSingleBundle) { // 以产物类型进行 push
+        config.projectSourceTypeList = [...config.projectSourceTypeList, {
+            name: projectName,
+            path: (isMultipl), // 这里的 path 传入的是单包打包产物的路径
+            sourceType: 'output'
+        }];
+    } else { // 以源码类型进行 push
+        config.projectSourceTypeList = [...config.projectSourceTypeList, {
+            name: projectName,
+            path: '', // 这里的 path 可以随便传，copySource 中会再次覆写
+            sourceType: 'input'
+        }];
+    }
+}
+
+
+// 根据传入的目录路径，判断一个包是否是 projectSourceType.sourceType 的 input 源码类型
+function isInputPackage(dirPath: string): sourceTypeString | undefined {
+    if (!fs.existsSync(dirPath)) {
+        throw new Error(`[isInputPackage] 输入路径不存在 ${dirPath}`);
+    }
+
+    // 判断路径下是否存在 package.json，存在则返回 'input'， 否则返回 undefined
+    const packageJsonPath = path.join(dirPath, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+        return 'input';
+    } else {
+        return undefined;
+    }
+}
+
+// 根据传入的目录路径，判断一个包是否是 projectSourceType.sourceType 的 output 产物类型
+function isOutputPackage(dirPath: string): sourceTypeString | undefined {
+    if (!fs.existsSync(dirPath)) {
+        throw new Error(`[isOutputPackage] 输入路径不存在 ${dirPath}`);
+    }
+
+    // 判断目录下是否存在 package.json，不存在则返回 'output' ， 否则返回 undefined
+    const packageJsonPath = path.join(dirPath, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+        return 'output';
+    } else {
+        return undefined;
+    }
+}
+
+// 用于写入新版 nanachi 下载包的类型，保存在本地文件（因为需要跨进程访问）
+// 在 nanachi install 之后 （如果有），以及 nanachi build 和 watch 拷贝工作区代码之前执行
+// 因此只记录 install 的包的类型，工作区拷贝过去的包的类型不在文件中记录，而是根据运行时的命令动态设置
+function writeProjectSourceTypeList() {
+    let downloadCacheDir = path.join(cwd, '.CACHE/download', getMultiplePackDirPrefix());
+    let defaultJson: { [key: string]: any } = {};
+    const listResult: projectSourceType[] = [];
+    const writePath = path.join(cwd, `.CACHE/type${getMultiplePackDirPrefix()}.json`);
+    fs.ensureFileSync(writePath);
+
+    try {
+        defaultJson = require(writePath) || {
+            projectSourceTypeList: []
+        };
+    } catch ( err ) {}
+
+    // 开始遍历 downloadCacheDir 下所有目录，判断是否是 input 或者 output 类型
+    const dirs = fs.readdirSync(downloadCacheDir);
+    // 此处不包含工作区那个项目
+    dirs.forEach((dirName: string) => {
+        const dirPath: string = path.join(downloadCacheDir, dirName);
+        const type: sourceTypeString | undefined = isInputPackage(dirPath) || isOutputPackage(dirPath);
+        if (type) {
+            listResult.push({
+                name: dirName,
+                path: dirPath,
+                sourceType: type
+            });
+        } else {
+            console.log(chalk.red(`[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者`));
+            process.exit(1);
+        }
+    });
+
+    defaultJson.projectSourceTypeList = listResult;
+    fs.writeFileSync(writePath, JSON.stringify(defaultJson, null, 4));
+    return listResult;
+}
 
 
 function writeVersions(moduleName: string, version: string) {
@@ -18,9 +124,7 @@ function writeVersions(moduleName: string, version: string) {
     fs.ensureFileSync(vPath);
     try {
         defaultVJson = require(vPath) || {};
-    } catch (err) {
-        
-    }
+    } catch (err) {}
 
     defaultVJson[moduleName] = version;
     fs.writeFileSync(vPath, JSON.stringify(defaultVJson, null, 4));
@@ -245,7 +349,7 @@ export default function (name: string, opts: any) {
     // nanachi install moduleName@tagName
     if (isOldChaikaConfig(name)) {
         // 兼容老的chaika
-        // const nodeModulePath = 
+        // const nodeModulePath =
         const ret = require(path.join(utils.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall'))(name);
         if (ret.type === 'git') {
             downLoadGitRepo(ret.gitRepo, ret.branchName);
@@ -272,6 +376,9 @@ export default function (name: string, opts: any) {
     }
     let { type, lib, version } = downloadInfo;
 
+    console.log(type);
+
+
     switch (type) {
         case 'git':
             downLoadGitRepo(lib, version);
@@ -283,6 +390,8 @@ export default function (name: string, opts: any) {
         default:
             break;
     }
+
+    // writePackagesType
 };
 
 

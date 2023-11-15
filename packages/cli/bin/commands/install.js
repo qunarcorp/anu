@@ -30,6 +30,92 @@ const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../../packages/utils"));
 const platforms_1 = __importDefault(require("../../consts/platforms"));
 const cwd = process.cwd();
+function setProjectSourceTypeList() {
+    const jsonPath = path.join(cwd, `.CACHE/type${isMutilePack_1.getMultiplePackDirPrefix()}.json`);
+    if (fs.existsSync(jsonPath)) {
+        try {
+            const json = require(jsonPath);
+            config_1.default.projectSourceTypeList = json.projectSourceTypeList;
+        }
+        catch (err) {
+            console.log(chalk_1.default.red(`[setProjectSourceTypeList] 读取 ${jsonPath} 文件失败，请联系开发者`));
+            process.exit(1);
+        }
+    }
+    const workspacePath = path.join(utils_1.default.getProjectRootPath());
+    const pkgPath = path.join(workspacePath, 'package.json');
+    const projectName = require(pkgPath).name;
+    if (config_1.default.isSingleBundle) {
+        config_1.default.projectSourceTypeList = [...config_1.default.projectSourceTypeList, {
+                name: projectName,
+                path: (isMultipl),
+                sourceType: 'output'
+            }];
+    }
+    else {
+        config_1.default.projectSourceTypeList = [...config_1.default.projectSourceTypeList, {
+                name: projectName,
+                path: '',
+                sourceType: 'input'
+            }];
+    }
+}
+function isInputPackage(dirPath) {
+    if (!fs.existsSync(dirPath)) {
+        throw new Error(`[isInputPackage] 输入路径不存在 ${dirPath}`);
+    }
+    const packageJsonPath = path.join(dirPath, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+        return 'input';
+    }
+    else {
+        return undefined;
+    }
+}
+function isOutputPackage(dirPath) {
+    if (!fs.existsSync(dirPath)) {
+        throw new Error(`[isOutputPackage] 输入路径不存在 ${dirPath}`);
+    }
+    const packageJsonPath = path.join(dirPath, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+        return 'output';
+    }
+    else {
+        return undefined;
+    }
+}
+function writeProjectSourceTypeList() {
+    let downloadCacheDir = path.join(cwd, '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix());
+    let defaultJson = {};
+    const listResult = [];
+    const writePath = path.join(cwd, `.CACHE/type${isMutilePack_1.getMultiplePackDirPrefix()}.json`);
+    fs.ensureFileSync(writePath);
+    try {
+        defaultJson = require(writePath) || {
+            projectSourceTypeList: []
+        };
+    }
+    catch (err) { }
+    const dirs = fs.readdirSync(downloadCacheDir);
+    dirs.forEach((dirName) => {
+        const dirPath = path.join(downloadCacheDir, dirName);
+        const type = isInputPackage(dirPath) || isOutputPackage(dirPath);
+        if (type) {
+            listResult.push({
+                name: dirName,
+                path: dirPath,
+                sourceType: type
+            });
+        }
+        else {
+            console.log(chalk_1.default.red(`[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者`));
+            process.exit(1);
+        }
+    });
+    defaultJson.projectSourceTypeList = listResult;
+    fs.writeFileSync(writePath, JSON.stringify(defaultJson, null, 4));
+    return listResult;
+}
 function writeVersions(moduleName, version) {
     let defaultVJson = {};
     let vPath = path.join(cwd, `.CACHE/verson${isMutilePack_1.getMultiplePackDirPrefix()}.json`);
@@ -37,8 +123,7 @@ function writeVersions(moduleName, version) {
     try {
         defaultVJson = require(vPath) || {};
     }
-    catch (err) {
-    }
+    catch (err) { }
     defaultVJson[moduleName] = version;
     fs.writeFileSync(vPath, JSON.stringify(defaultVJson, null, 4));
 }
@@ -194,6 +279,7 @@ function default_1(name, opts) {
         };
     }
     let { type, lib, version } = downloadInfo;
+    console.log(type);
     switch (type) {
         case 'git':
             downLoadGitRepo(lib, version);

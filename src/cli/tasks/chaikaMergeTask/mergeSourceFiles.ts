@@ -2,39 +2,32 @@
 //app.json中alias需要校验冲突，并且注入到package.json中
 //package.json中需要校验运行依赖，开发依赖的冲突
 //*Config.json需要校验冲突，并合并
+import {
+    get_ANU_ENV,
+    get_BUILD_ENV,
+    get_buildType,
+    getDownLoadHomeDir,
+    getMergedData,
+    getMergeDir,
+    orderRouteByOrder,
+    validateAppJsFileCount,
+    validateConfigFileCount,
+    validateMiniAppProjectConfigJson,
+    xDiff
+} from './mergeUtils';
 
-import { getMultiplePackDirPrefix } from './isMutilePack';
-import utils from '../../packages/utils';
+import {execSyncInstallTasks} from './installTasks';
+
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const cwd = process.cwd();
-const merge = require('lodash.mergewith');
-const shelljs = require('shelljs');
-
-//const semver = require('semver');
 
 let mergeFilesQueue = require('./mergeFilesQueue');
-let diff = require('deep-diff');
 
-const buildType = process.argv.length > 2 ? process.argv[2].split(':')[1] : 'wx';
-const ignoreExt = ['.tgz'];
-
-function getMergeDir() {
-    return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
-}
-
-// 获取 skip 配置文件在不同的环境下有三种可能，取存在的那种即可
-function getDownLoadHomeDir(env) {
-    // 壳子是 home 包 或者 .Cache 中的 download
-   if (fs.existsSync(path.join(utils.getProjectRootPath(), `${env}SkipConfig.json`))) {
-       return path.join(utils.getProjectRootPath(), `${env}SkipConfig.json`)
-   } else if (fs.existsSync(path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`))) {
-       return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'nnc_home_qunar', `${env}SkipConfig.json`);
-   } else {
-       return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix(), 'qunar_miniprogram.nnc_home_qunar', `${env}SkipConfig.json`);
-   }
-}
+const buildType = get_buildType();
+const ANU_ENV = get_ANU_ENV();
+const BUILD_ENV = get_BUILD_ENV();
 
 const projectConfigJsonMap: any = {
     'wx': {
@@ -51,21 +44,11 @@ const projectConfigJsonMap: any = {
     },
 };
 
-// 默认微信，如果是h5，则为web
-const ANU_ENV = buildType
-    ? buildType === 'h5'
-        ? 'web'
-        : buildType
-    : 'wx';
-
-// 环境
-const BUILD_ENV = process.env.BUILD_ENV || '';
-
 /**
- * 
+ * 将指定内容插入到 app.js 中
  * @param {String} appJsSrcPath app.js绝对路径
  * @param {Array} pages 所有的页面路径
- * @return {Object} 
+ * @return {Object}
  */
 function getMergedAppJsConent(appJsSrcPath: string, pages: Array<string> = [], importSyntax: Array<string> = []) {
     function getAppImportSyntaxCode(importSyntax: Array<string> = []) {
@@ -85,6 +68,7 @@ function getMergedAppJsConent(appJsSrcPath: string, pages: Array<string> = [], i
         return importSyntaxList.length ? importSyntaxList.join("\n") + '\n' : '';
     }
 
+    // 1. pages 中的全部入口需要插入
     let allRoutesStr = pages.map(function (pageRoute: any) {
         if (!(/^\.\//.test(pageRoute))) {
             pageRoute = './' + pageRoute;
@@ -93,9 +77,10 @@ function getMergedAppJsConent(appJsSrcPath: string, pages: Array<string> = [], i
         return pageRoute;
     }).join('');
 
-    // 在app.js里插入 app.json 中 imports 语句
+    // 2. app.json 中 importSyntax 需要插入（不过我看一般为空）
     allRoutesStr += getAppImportSyntaxCode(importSyntax);
 
+    // 执行插入
     return new Promise(function (rel, rej) {
         let appJsSrcContent = '';
         let appJsDist = path.join(getMergeDir(), 'source', 'app.js');
@@ -111,8 +96,9 @@ function getMergedAppJsConent(appJsSrcPath: string, pages: Array<string> = [], i
         });
     });
 }
+
 /**
- * 
+ *
  * @param {Array} queue 所有需要经过 merged 处理的文件
  * @return {String} 找到app.js的路径
  */
@@ -124,11 +110,15 @@ function getAppJsSourcePath(queue: any = []) {
     return appJsSourcePath;
 }
 
-function getFilesMap(queue: any = []) {
+// 根据需要特殊处理再合并的文件列表，构建合并操作的元数据
+function generateMetaFilesMap(queue: any = []) {
     let map: any = {};
     let env = ANU_ENV;
+
     queue.forEach(function (file: any) {
         file = file.replace(/\\/g, '/');
+
+        // 1. package.json
         if (/\/package\.json$/.test(file)) {
             let { dependencies = {}, devDependencies = {}, nanachi = {} } = require(file);
             if (Object.keys(dependencies).length) {
@@ -157,8 +147,10 @@ function getFilesMap(queue: any = []) {
 
             return;
         }
+
+        // app.json
         if (/\/app\.json$/.test(file)) {
-            var { alias = {}, pages = [], rules = [], imports = [], order = 0 } = require(file);
+            const { alias = {}, pages = [], rules = [], imports = [], order = 0 } = require(file);
             if (alias) {
                 map['alias'] = map['alias'] || [];
                 map['alias'].push({
@@ -173,8 +165,8 @@ function getFilesMap(queue: any = []) {
                     let injectRoute = '';
                     if ('[object Object]' === Object.prototype.toString.call(route)) {
                         // ' wx, ali,bu ,tt ' => ['wx', 'ali', 'bu', 'tt']
-                        var supportPlat = route.platform.replace(/\s*/g, '').split(',');
-                        var supportEnv = route.env?.replace(/\s*/g, '').split(',');
+                        const supportPlat = route.platform.replace(/\s*/g, '').split(',');
+                        const supportEnv = route.env?.replace(/\s*/g, '').split(',');
                         if (supportPlat.includes(env)) {
                             if (!supportEnv || supportEnv.includes(BUILD_ENV)){
                                 injectRoute = route.route;
@@ -207,8 +199,6 @@ function getFilesMap(queue: any = []) {
                     }
                     map['quickRules'].set(selector, 1);
                 })
-
-
             }
 
             map['importSyntax'] = map['importSyntax'] || [];
@@ -216,17 +206,19 @@ function getFilesMap(queue: any = []) {
             return;
         }
 
+        // project.config.json
         const projectConfigReg = (projectConfigJsonMap[buildType] || projectConfigJsonMap.wx).reg;
         if (projectConfigReg.test(file)) {
             map['projectConfigJson'] = map['projectConfigJson'] || [];
             map['projectConfigJson'].push(file);
         }
 
-        var reg = new RegExp(env + 'Config.json$');
+        // xxConfig.json
+        const reg = new RegExp(env + 'Config.json$');
         map['xconfig'] = map['xconfig'] || [];
         if (reg.test(file)) {
             try {
-                var config = require(file);
+                const config = require(file);
                 if (config) {
                     map['xconfig'].push({
                         id: file,
@@ -242,26 +234,6 @@ function getFilesMap(queue: any = []) {
     });
     map = orderRouteByOrder(map);
     return map;
-}
-
-function orderRouteByOrder(map: any) {
-    //根据order排序
-    map['pages'] = map['pages'].sort(function (a: any, b: any) {
-        return b.order - a.order;
-    });
-    map['pages'] = map['pages'].map(function (pageEl: any) {
-        return pageEl.routes;
-    });
-
-    //二数组变一纬
-    map['pages'] = [].concat(...map['pages']);
-    return map;
-}
-
-function customizer(objValue: any, srcValue: any) {
-    if (Array.isArray(objValue)) {
-        return Array.from(new Set(objValue.concat(srcValue)));
-    }
 }
 
 // 去重分包配置
@@ -280,17 +252,23 @@ function getUniqueSubPkgConfig(list: object[] = []) {
     }, []);
 }
 
+
+/**
+ * 获取多个包的 xxConfig.json，然后合并
+ */
 function getMergedXConfigContent(config: any) {
     let env = ANU_ENV;
     let xConfigJsonDist = path.join(getMergeDir(), 'source', `${env}Config.json`);
     let ret = xDiff(config);
+
+    // subpackages 字段去重
     for (let i in ret) {
         if (i.toLocaleLowerCase() === 'subpackages') {
             ret[i] = getUniqueSubPkgConfig(ret[i]);
         }
     }
 
-    // 通过 skipConfig.json 和环境变量过滤最终 app.json 中的一些内容
+    // 通过 XXskipConfig.json 和环境变量过滤最终 app.json 中的一些内容
     const skipConfigPath = getDownLoadHomeDir(env);
     console.log('skipConfigPath:', skipConfigPath);
     const skipEnv = process.env.SKIP;
@@ -363,106 +341,9 @@ function getSitemapContent(quickRules: any) {
     });
 }
 
-function getMergedData(configList: any) {
-    return xDiff(configList);
-}
-
-function getValueByPath(path: any, data: any) {
-    path = path.slice(0);
-    var ret;
-    while (path.length) {
-        var key = path.shift();
-        if (!ret) {
-            ret = data[key] || '';
-        } else {
-            ret = ret[key] || '';
-        }
-    }
-    return ret;
-}
-
-function xDiff(list: any) {
-    if (!list.length) return {};
-    let first = list[0];
-    let confictQueue: any[] = [];
-    let other = list.slice(1);
-    let isConfict = false;
-    for (let i = 0; i < other.length; i++) {
-        let x = diff(first.content, other[i].content) || [];
-        x = x.filter(function (el: any) {
-            // 只比较key/value, 不比较数组, 数组认为是增量合并, diff模块中，如何有数组比较， DiffEdit中path字段必定有index(数字)
-            // [ DiffEdit { kind: 'E', path: [ 'list', 0, 'name' ], lhs: 1, rhs: 2 },
-            return el.kind === 'E'
-                && el.path.every(function (el: string | number) {
-                    return typeof el === 'string'
-                });
-        });
-        if (x.length) {
-            isConfict = true;
-            confictQueue = [...x];
-            break;
-        }
-    }
-
-    if (isConfict) {
-        var errList: any = [];
-        confictQueue.forEach(function (confictEl) {
-            //let keyName = confictEl.path[confictEl.path.length - 1];
-            let kind: any = [];
-            list.forEach(function (el: any) {
-                let confictValue = getValueByPath(confictEl.path, el.content);
-                if (confictValue) {
-                    let errorItem: any = {};
-                    errorItem.confictFile = el.id.replace(/\\/g, '/').split(/\/download\//).pop();
-                    errorItem.confictValue = confictValue || '';
-                    if (el.type === 'dependencies') {
-                        errorItem.confictKeyPath = ['dependencies', ...confictEl.path];
-                    } else if (el.type === 'devDependencies') {
-                        errorItem.confictKeyPath = ['devDependencies', ...confictEl.path];
-                    } else if (el.type === 'alias') {
-                        errorItem.confictKeyPath = ['nanachi', 'alias', ...confictEl.path];
-                    } else {
-                        errorItem.confictKeyPath = confictEl.path;
-                    }
-
-                    errorItem.confictKeyPath = JSON.stringify(errorItem.confictKeyPath);
-                    kind.push(errorItem);
-                }
-            });
-            errList.push(kind);
-        });
-
-        var msg = '';
-
-        errList.forEach(function (errEl: any) {
-            let kindErr = '';
-            errEl.forEach(function (errItem: any) {
-                var tpl = `
-冲突文件: ${(errItem.confictFile)}
-冲突路径 ${errItem.confictKeyPath}
-冲突详情：${JSON.stringify({ [JSON.parse(errItem.confictKeyPath).pop()]: errItem.confictValue }, null, 4)}
-`;
-                kindErr += tpl;
-            });
-            msg = msg + kindErr + '\n--------------------------------------------------\n';
-        });
-
-        // eslint-disable-next-line
-        console.log(chalk.bold.red('⚠️  发现冲突! 请先解决冲突。\n\n' + msg));
-        process.exit(1);
-    }
-
-    isConfict = false;
-
-    if (!isConfict) {
-        return list.reduce(function (ret: any, el: any) {
-            return merge(ret, el.content, customizer);
-        }, {});
-    } else {
-        return {};
-    }
-}
-
+/**
+ * 将合并好的 alias 对象，跟目前的 package.json 进行合并
+ */
 function getMergedPkgJsonContent(alias: any) {
     let currentPkg = require(path.join(cwd, 'package.json'));
     let distContent = Object.assign({}, currentPkg, {
@@ -477,10 +358,12 @@ function getMergedPkgJsonContent(alias: any) {
     };
 }
 
+// 读取官方 ide 配置文件，因为 project.config.json 只存在于 home，所以也没做啥特殊的操作
 function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
     const projectConfigFileName = (projectConfigJsonMap[buildType] || projectConfigJsonMap.wx).fileName;
     let dist = path.join(getMergeDir(), projectConfigFileName);
     let distContent = '';
+
     if (projectConfigQueue.length) {
         const configJson = require(projectConfigQueue[0]);
         // 兼容马甲小程序
@@ -495,95 +378,156 @@ function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
     };
 }
 
-// 校验app.js是否正确
-function validateAppJsFileCount(queue: any) {
-    let appJsFileCount = queue
-        .filter(function (el: string) {
-            return /\/app\.js$/.test(el);
-        })
-        .filter(function (el: string) {
-            // 非target构建目录
-            return !/\/target\//.test(el)
-        })
-        .map(function (el: any) {
-            return el.replace(/\\/g, '/').split('/download/').pop();
-        });
 
-    if (!appJsFileCount.length || appJsFileCount.length > 1) {
-        let msg = '';
-        if (!appJsFileCount.length) {
-            msg = '校验到无 app.js 文件的拆库工程，请检查是否安装了该包含 app.js 文件的拆库工程.';
-        } else if (appJsFileCount.length > 1) {
-            msg = '校验到多个拆库仓库中存在app.js. 在业务线的拆库工程中，有且只能有一个拆库需要包含app.js' + '\n' + JSON.stringify(appJsFileCount, null, 4);
-        }
-        // eslint-disable-next-line
-        console.log(chalk.bold.red(msg));
-        process.exit(1);
-    }
-}
-
-function validateMiniAppProjectConfigJson(queue: any) {
-    let projectConfigJsonList =
-        queue
-            .filter(function (el: string) {
-                return /\/project\.config\.json$/.test(el);
-            })
-            .filter(function (el: string) {
-                return !/\/target\//.test(el);
-            })
-    if (projectConfigJsonList.length > 1) {
-        // eslint-disable-next-line
-        console.log(chalk.bold.red('校验到多个拆库仓库中存在project.config.json. 在业务线的拆库工程中，最多只能有一个拆库需要包含project.config.json:'), chalk.bold.red('\n' + JSON.stringify(projectConfigJsonList, null, 4)));
-        process.exit(1);
-    }
-}
-
-//校验config.json路径是否正确
-function validateConfigFileCount(queue: any) {
-    let configFiles = queue.filter(function (el: any) {
-        return /Config\.json$/.test(el);
-    });
-    let errorFiles: any = [];
-    configFiles.forEach(function (el: any) {
-        el = el.replace(/\\/g, '/');
-        //'User/nnc_module_qunar_platform/.CACHE/download/nnc_home_qunar/app.json' => nnc_home_qunar
-        let projectName = el.replace(/\\/g, '/').split('/download/')[1].split('/')[0];
-        let reg = new RegExp(projectName + '/' + ANU_ENV + 'Config.json$');
-        let dir = path.dirname(el);
-        if (reg.test(el) && !fs.existsSync(path.join(dir, 'app.js'))) {
-            errorFiles.push(el);
-        }
-    });
-
-
-    if (errorFiles.length) {
-        // eslint-disable-next-line
-        console.log(chalk.bold.red('⚠️   校验到拆库仓库中配置文件路径错误，请将该配置文件放到  source 目录中:'));
-        console.log(chalk.bold.red(errorFiles.join('\n')) + '\n');
-        process.exit(1);
-    }
-}
-
-
-
+/**
+ * mergeSourceFile 仅用于合并属于源码类型的包（包中都是未打包前的代码）
+ * 需要特殊处理的文件类型：lockFile、app.js、app.json、pkg.json
+ */
 export default function () {
 
     let queue = Array.from(mergeFilesQueue);
-    validateAppJsFileCount(queue);
-    validateConfigFileCount(queue);
-    validateMiniAppProjectConfigJson(queue);
+    validateAppJsFileCount(queue); // 校验 app.js 是否只存在一个
+    validateConfigFileCount(queue); // 校验存在 xxConfig 文件的目录下是否存在 app.js
+    validateMiniAppProjectConfigJson(queue); // 校验 projectConfig.json 是否只存在一个
 
-    let map: any = getFilesMap(queue);
+    // 校验完开始合并，此处准备后续合并需要的元数据对象
+    let map: any = generateMetaFilesMap(queue);
+    /*
+    {
+        xconfig: [ // xxConfig.json
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_home_qunar/wxConfig.json',
+                content: [Object]
+            },
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_module_qunar_platform/source/wxConfig.json',
+                content: [Object]
+            }
+        ],
+        alias: [ // app.json 中的 alias
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_home_qunar/app.json',
+                content: [Object],
+                type: 'alias'
+            },
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_module_debugger/source/app.json',
+                content: {},
+                type: 'alias'
+            },
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_module_qunar_platform/source/app.json',
+                content: [Object],
+                type: 'alias'
+            }
+        ],
+        importSyntax: [],
+        pkgDependencies: [ // package.json 中的 dependencies
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_home_qunar/package.json',
+                content: [Object],
+                type: 'dependencies'
+            },
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_module_qunar_platform/package.json',
+                content: [Object],
+                type: 'dependencies'
+            }
+        ],
+        pkgDevDep: [ // package.json 中的 devDependencies
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_home_qunar/package.json',
+                content: [Object],
+                type: 'devDependencies'
+            },
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_module_debugger/package.json',
+                content: {},
+                type: 'devDependencies'
+            },
+            {
+                id: '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_module_qunar_platform/package.json',
+                content: [Object],
+                type: 'devDependencies'
+            }
+        ],
+        ignoreInstallPkg: [ // package.json 中的 nanachi.ignoreInstallPkg
+            '^(eslint)',   '^(husky)',
+            '^(jest)',     '^(lint-)',
+            'sass-loader', 'jest-cli',
+            'stylelint',   '^(babel)',
+            'pre-commit',  'cross-env'
+        ],
+        projectConfigJson: [
+            '/Users/qitmac001157/Desktop/nnc_module_qunar_platform/.CACHE/download/wx/nnc_home_qunar/project.config.json'
+        ],
+        pages: [ // source/pages 下的所有页面
+            'pages/platform/indexWx/index',
+            'pages/alonePlatform/subscribePage/index',
+            'pages/platform/login/index',
+            'pages/orderList/orderList/index',
+            'pages/platform/userCenter/index',
+            'pages/platform/myPage/index',
+            'pages/orderList/noOrderList/index',
+            'pages/alonePlatform/orderList/index',
+            'pages/alonePlatform/noOrderList/index',
+            'pages/alonePlatform/citySelect/index',
+            'pages/alonePlatform/calendar/index',
+            'pages/alonePlatform/coupon/list/index',
+            'pages/alonePlatform/coupon/detail/index',
+            'pages/alonePlatform/flight/index',
+            'pages/alonePlatform/activeWebView/index',
+            'pages/alonePlatform/marketWebView/index',
+            'pages/alonePlatform/pay/index',
+            'pages/alonePlatform/login/index',
+            'pages/coupon/list/index',
+            'pages/coupon/detail/index',
+            'pages/platform/webView/index',
+            'pages/alonePlatform/webView/index',
+            'pages/alonePlatform/feedback/index',
+            'pages/alonePlatform/realNameGuide/index',
+            'pages/alonePlatform/pushMiddlePage/index',
+            'pages/alonePlatform/wxPay/realNameAuth/index',
+            'pages/alonePlatform/wxPay/payResult/index',
+            'pages/alonePlatform/contact/list/index',
+            'pages/alonePlatform/contact/editList/index',
+            'flight/pages/h5/h5',
+            'flight/pages/payOrder/payOrder',
+            'flight/pages/orderDetail/orderDetail',
+            'flight/pages/redirect/index',
+            'flight/pages/middlePage/middlePage',
+            'flight/pages/activity/activity',
+            'pages/alonePlatform/actWebWx/index',
+            'common/utils/hookUrl/index.js',
+            'common/utils/hotelLog.js',
+            'pages/ticketP/booking/booking',
+            'pages/ticketP/detail/detail',
+            'pages/ticketP/shop/shop',
+            'pages/tripP/focusWechat/index',
+            'pages/ppTrip/tripList/index',
+            'pages/tripP/tripListOfTimeLine/index',
+            'pages/tripP/tripShare/index',
+            'pages/alonePlatform/loginAuth/index',
+            'pages/platform/qPlay/index',
+            'pages/alonePlatform/lowPriceAuth/index',
+            'pages/alonePlatform/cqpay/holdpay/index',
+            'pages/alonePlatform/cqpay/holdpayNew/index',
+            'pages/alonePlatform/cqpay/holdpayDetail/index',
+            'pages/alonePlatform/cqpay/protocol/index',
+            'pages/debugger/home/index',
+            'pages/debugger/setting/index'
+        ]
+    }
+    */
     let tasks = [
-        //app.js路由注入
+        // app.js路由注入
         getMergedAppJsConent(getAppJsSourcePath(queue), map.pages, map.importSyntax),
-        //*Config.json合并
+        // xxConfig.json合并，返回 dist 和 content
         getMergedXConfigContent(map.xconfig),
-        //alias合并
+        // alias合并
         getMergedPkgJsonContent(getMergedData(map.alias)),
-        //project.config.json处理
+        // project.config.json处理
         getMiniAppProjectConfigJson(map.projectConfigJson),
-
     ];
 
     if (ANU_ENV === 'quick') {
@@ -591,103 +535,9 @@ export default function () {
         tasks.push(getSitemapContent(map.quickRules));
     }
 
-    function getNodeModulesList(config: any) {
-        let mergeData = getMergedData(config);
-        return Object.keys(mergeData).reduce(function (ret, key) {
-            ret.push(key + '@' + mergeData[key]);
-            return ret;
-        }, []);
-    }
+    execSyncInstallTasks(map);
 
-
-
-    //['cookie@^0.3.1', 'regenerator-runtime@0.12.1']
-    var installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
-
-    installList = Array.from(new Set(installList));
-
-    // 非快应用过滤hap-tookit安装依赖
-    if (ANU_ENV !== 'quick') {
-        installList = installList.filter((dep) => {
-            return !/hap\-toolkit/.test(dep);
-        });
-    } else {
-        const hapToolKitVersion = process.env.hapToolKitVersion;
-        installList = installList.map((dep) => {
-            if (/hap\-toolkit/.test(dep) && hapToolKitVersion) {
-                dep = `hap-toolkit@${hapToolKitVersion}`;
-            }
-            return dep;
-        });
-    }
-
-    // 集成环境上过滤这些没用的包安装
-    if (process.env.JENKINS_URL && map.ignoreInstallPkg.length) {
-
-
-        const ignoreInstallReg = new RegExp(map.ignoreInstallPkg.join('|'));
-        installList = installList.filter(function (el) {
-            return !ignoreInstallReg.test(el);
-        })
-    }
-
-    //semver.satisfies('1.2.9', '~1.2.3')
-    var installPkgList = installList.reduce(function (needInstall, pkg) {
-        //@xxx/yyy@1.0.0 => xxx
-        var pkgMeta = pkg.split('@');
-        var pkgName = pkgMeta[0] === '' ? '@' + pkgMeta[1] : pkgMeta[0];
-
-        var p = path.join(cwd, 'node_modules', pkgName, 'package.json');
-        var isExit = fs.existsSync(p);
-        if (!isExit) {
-            needInstall.push(pkg);
-        }
-        return needInstall;
-    }, []);
-
-    installPkgList = installPkgList.filter(function (dep: string) {
-        // 取后缀，过滤非法依赖
-        return !ignoreExt.includes('.' + dep.split('.').pop())
-    })
-
-    //如果本地node_modules存在该模块，则不安装
-    if (installPkgList.length) {
-        //installPkgList = installPkgList.slice(0,2);
-
-        let installList = installPkgList.join(' ');
-
-        // --no-save 是为了不污染用户的package.json
-        // eslint-disable-next-line
-        let installListLog = installPkgList.join('\n');
-
-        fs.ensureDir(path.join(cwd, 'node_modules'));
-        const npmRegistry = process.env.npmRegistry;
-
-        let cmd = '';
-        let installMsg = '';
-        if (npmRegistry) {
-            cmd = `npm install ${installList} --no-save --registry=${npmRegistry}`;
-            installMsg = `🚚 正在从 ${npmRegistry} 安装拆库依赖, 请稍候...\n${installListLog}`;
-        } else {
-            cmd = `npm install --prefer-offline ${installList} --no-save`;
-            installMsg = `🚚 正在安装拆库依赖, 请稍候...\n${installListLog}`;
-        }
-
-        console.log(chalk.bold.green(installMsg));
-
-        // eslint-disable-next-line
-        let std = shelljs.exec(cmd, {
-            silent: false
-        });
-
-
-        if (/npm ERR/.test(std.stderr)) {
-            // eslint-disable-next-line
-            console.log(chalk.red(std.stderr));
-            process.exit(1);
-        }
-    }
-
+    // 根据 tasks 中任务生成的 dist 和 content 写入文件内容
     return Promise.all(tasks)
         .then(function (queue) {
             queue = queue.map(function ({ dist, content }) {
@@ -708,4 +558,4 @@ export default function () {
             });
             return Promise.all(queue);
         });
-};
+}

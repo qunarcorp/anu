@@ -35,7 +35,7 @@ const config_1 = __importDefault(require("../config/config"));
 const installDefaultModule_1 = __importDefault(require("../tasks/chaikaMergeTask/installDefaultModule"));
 require("../tasks/chaikaMergeTask/injectChaikaEnv");
 const { version } = require('../package.json');
-const index_2 = __importDefault(require("../tasks/chaikaMergeTask/index"));
+const index_2 = require("../tasks/chaikaMergeTask/index");
 const isMutilePack_1 = require("../tasks/chaikaMergeTask/isMutilePack");
 const utils_1 = __importDefault(require("../packages/utils"));
 let cwd = process.cwd();
@@ -149,7 +149,7 @@ platforms_1.default.forEach(function (el) {
             const isSingleBundleProcessFlag = isSingleBundleProcess(compileType, options.component);
             let singleBundleSourcemap = config_1.default.sourcemap;
             if (isSingleBundleProcessFlag) {
-                const pkgPath = path.join(process.cwd(), 'package.json');
+                const pkgPath = path.join(cwd, 'package.json');
                 const pkg = require(pkgPath);
                 if (pkg.name === 'nnc_home_qunar' || pkg.name === 'nnc_module_qunar_platform') {
                     console.log(chalk_1.default.red(`请注意，您现在使用的是小程序的 home 包或者 platform 包，它们是不允许使用单包命令进行开发或者编译的`));
@@ -192,10 +192,10 @@ platforms_1.default.forEach(function (el) {
                     if (!process.env.JENKINS_URL) {
                         yield installDefaultModule_1.default(buildType);
                     }
-                    yield index_2.default();
+                    yield index_2.runChaikaMergeTask();
                 }
                 catch (err) {
-                    console.error('[build error]', err);
+                    console.error('[chaika merge error]', err);
                     process.exit(1);
                 }
             }

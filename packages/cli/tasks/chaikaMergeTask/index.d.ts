@@ -1,1 +1,2 @@
-export default function (): Promise<void>;
+declare const runChaikaMergeTask: () => Promise<void>;
+export { runChaikaMergeTask };

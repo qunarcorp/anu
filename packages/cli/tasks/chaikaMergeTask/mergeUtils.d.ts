@@ -1,0 +1,12 @@
+export declare function get_buildType(): string;
+export declare function get_ANU_ENV(): string;
+export declare function get_BUILD_ENV(): string;
+export declare function orderRouteByOrder(map: any): any;
+export declare function validateAppJsFileCount(queue: any): void;
+export declare function validateMiniAppProjectConfigJson(queue: any): void;
+export declare function validateConfigFileCount(queue: any): void;
+export declare function getMergeDir(): string;
+export declare function getDownLoadHomeDir(env: string): string;
+export declare function getValueByPath(path: any, data: any): any;
+export declare function xDiff(list: any): any;
+export declare function getMergedData(configList: any): any;

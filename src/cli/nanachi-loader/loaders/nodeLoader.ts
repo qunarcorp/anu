@@ -33,8 +33,8 @@ function patchMobx() {
             },
             CallExpression: function(astPath: any) {
                 // define(['react', 'xxx']) => define()
-                // 防止基于webpack编译系的小程序如百度小程序查找 amd define的node_modules依赖，会暴依赖找不到
-                // 删掉参数不会造成影响，现在几乎都是es, cjs模块化优先
+                // 防止基于webpack编译系的小程序如百度小程序查找 amd define的node_modules依赖，会暴依赖找不到
+                // 删掉参数不会造成影响，现在几乎都是es, cjs模块化优先
                 const calleeName = astPath.get('callee');
                 if (calleeName.node.name === 'define') {
                     astPath.node.arguments = [];
@@ -45,7 +45,7 @@ function patchMobx() {
 }
 
 module.exports = async function(code: string, map: any, meta: any) {
-    
+
     const callback = this.async();
     let relativePath = '';
     let queues: Array<NanachiQueue>;
@@ -86,7 +86,7 @@ module.exports = async function(code: string, map: any, meta: any) {
         }, map, meta);
         return;
     }
-    
+
     relativePath = path.join('npm', this.resourcePath.replace(/^.+?[\\\/]node_modules[\\\/]/, ''));
     // 解析node_modules中的npm包路径， 如： require('abc') => require('../../abc');
     queues = [{

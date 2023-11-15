@@ -73,7 +73,7 @@ async function nanachi(options: NanachiOptions = {}) {
     } = options;
 
     console.log('test 1.9');
-   
+
 
     function callback(err: Error, stats?: webpack.Stats) {
         if (err) {
@@ -81,7 +81,7 @@ async function nanachi(options: NanachiOptions = {}) {
             console.log(chalk.red(err.toString()));
             return;
         }
-       
+
         showLog();
         const info = stats.toJson();
         if (stats.hasWarnings() && !silent) {
@@ -187,8 +187,6 @@ async function nanachi(options: NanachiOptions = {}) {
             throw '检测到app.tsx，请使用typescript模式编译(-t/--typescript)';
         }
 
-        
-        
         injectBuildEnv({
             platform,
             compress,
@@ -226,7 +224,6 @@ async function nanachi(options: NanachiOptions = {}) {
             // maxAssetSize
         });
 
-       
         const compiler = webpack(webpackConfig);
 
         if (watch) {
@@ -261,7 +258,7 @@ function showLog() {
     while (warning.length) {
         warningLog(warning.shift());
     }
-    
+
     if (error.length) {
         error.forEach(function(error: Log){
             errorLog(error);
@@ -275,9 +272,9 @@ function showLog() {
 /**
  * **getWebViewRoutes**
  * 适配 windows, 找到 page: true 的页面路径
- * 
+ *
  * [webview 配置链接地址](https://rubylouvre.github.io/nanachi/documents/webview.html)
- * 
+ *
  * ``` js
  * static config = {
  *     webview: {

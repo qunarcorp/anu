@@ -43,6 +43,13 @@ enum Platforms {
 }
 
 export type validatePlatforms = 'wx' | 'qq' | 'ali' | 'bu' | 'tt' | 'quick' | 'h5' | '360';
+// input 为源码，output 为产物
+export type sourceTypeString = 'input' | 'output';
+export interface projectSourceType {
+    name: string, // 项目名
+    path: string, // 所在的缓存区路径
+    sourceType: sourceTypeString,
+}
 
 export interface GlobalConfigMap {
     buildType: validatePlatforms;      //构建类型默认微信小程序
@@ -59,8 +66,9 @@ export interface GlobalConfigMap {
     nanachiVersion: string;
     sourcemap: boolean,
     multiProject: Array<string>,//多工程开发时，除了当前工程，其他的工程
-    isSingleBundle?: boolean, 
+    isSingleBundle?: boolean,
     hasNewAppjs?: boolean,
+    projectSourceTypeList: Array<projectSourceType>, // 目前 build、 watch 和前置流程解耦（例如 install 和各种 tasks）适配的场景有点多，该参数用于告诉后续流程需要对哪些包进行哪些处理
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;
@@ -162,6 +170,7 @@ const config: GlobalConfigMap =  {
     sourcemap,
     plugins: {},
     multiProject: [],
+    projectSourceTypeList: [], // 通过 nanachi install 下载的所有的包的 sourceType，可能是源码也可能是产物
 };
 
 

@@ -45,13 +45,13 @@ if (buildType == 'quick') {
         /**
          * placeholderPattern
          * Type: RegExp | false Default: /^[_$A-Z0-9]+$/
-         * 
+         *
          * A pattern to search for when looking for Identifier and StringLiteral nodes
          * that should be considered placeholders. 'false' will disable placeholder searching
          * entirely, leaving only the 'placeholderWhitelist' value to find placeholders.
-         * 
+         *
          * isPage: false 时 templateString = console.warn(nanachi)
-         * 此时如果传入后面的 {CLASSNAME: t.identifier(className)} 
+         * 此时如果传入后面的 {CLASSNAME: t.identifier(className)}
          * 会抛出异常信息 Error: Unknown substitution "CLASSNAME" given
          */
 
@@ -209,7 +209,7 @@ const visitor: babel.Visitor = {
                     name
                 );
 
-                
+
                 // 给useState或自定义的变量增加输出
                 let funData: any = [];
                 let body = astPath.node.body.body;
@@ -520,7 +520,7 @@ const visitor: babel.Visitor = {
                     //将  this.config 变成 static config
                     var propertyName = (astPath.container as any).property.name; // tsc todo
                     if (propertyName === 'config' && !modules.configIsReady) {
-                        //对配置项进行映射                 
+                        //对配置项进行映射
                         transformConfig(modules, expression, buildType);
                         var staticConfig = template(`${modules.className}.config = %%CONFIGS%%;`, {
                             syntacticPlaceholders: true // tsc todo 参数是否正确？
@@ -953,7 +953,7 @@ const visitor: babel.Visitor = {
                             )
                         )
                     );
-                    //data-beacon-uid是用于实现日志自动上传, 并用于ReactWX的updateAttribute 
+                    //data-beacon-uid是用于实现日志自动上传, 并用于ReactWX的updateAttribute
                     if (
                         !attrs.setClassCode &&
                         !attrs.some(function (el: any) {

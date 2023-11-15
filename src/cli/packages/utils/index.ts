@@ -110,7 +110,7 @@ let utils = {
         return (astPath: any, modules: any) => {
             // 在回调函数中取patchNode，在外层取会比babel插件逻辑先执行，导致一直为{}
             const pagesNeedPatchComponents = config[config.buildType].patchPages || {};
-           
+
             var orig = astPath.node.name.name;
             //组件名肯定大写开头
             if (/^[A-Z]/.test(orig)) {
@@ -118,7 +118,7 @@ let utils = {
             }
             var pagePath = modules.sourcePath;
             var currentPage = pagesNeedPatchComponents[pagePath];
-            
+
             //schnee-ui补丁
             if (currentPage && currentPage[orig]) {
                 var patchName = toUpperCamel( 'x-' + orig );
@@ -199,7 +199,7 @@ let utils = {
         /**
          * placeholderPattern
          * Type: RegExp | false Default: /^[_$A-Z0-9]+$/
-         * 
+         *
          * A pattern to search for when looking for Identifier and StringLiteral nodes
          * that should be considered placeholders. 'false' will disable placeholder searching
          * entirely, leaving only the 'placeholderWhitelist' value to find placeholders.
@@ -248,7 +248,7 @@ let utils = {
             //     console.log(result.error);
             //     process.exit(1);
             // }
-           
+
             console.log(chalk.green.bold(`🚚 正在安装 ${npmName}, 请稍后...`));
             let cmd = [bin, ...options];
 
@@ -267,7 +267,7 @@ let utils = {
             if (std.code !== 1) {
                 console.log(chalk.green.bold(`✔  安装 ${npmName} 成功.`));
             }
-            
+
             let npmPath = '';
             npmName = npmName.split('@')[0];
             if (needModuleEntryPath) {
@@ -314,25 +314,25 @@ let utils = {
     },
     decodeChinise: require('./decodeChinese'),
     isWebView(fileId: string) {
-        
+
         if (config.buildType != 'quick') {
             return false;
         }
 
         let rules = config.WebViewRules && config.WebViewRules.pages || [];
-        
+
         if ( !rules.length ) {
             return false;
         }
-       
-       
+
+
         let isWebView =
         rules.includes(fileId) ||
         rules.some((rule: any) => {
                 //如果是webview设置成true, 则用增则匹配
                 return Object.prototype.toString.call(rule) === '[object RegExp]' && rule.test(fileId);
             });
-       
+
         return isWebView;
 
     },
@@ -374,10 +374,10 @@ let utils = {
             return p.buildType === platform;
         });
     },
-    customizer(objValue: any, srcValue: any) {
-      if (Array.isArray(objValue)) {
-        return objValue.concat(srcValue);
-      }
+    customizer(objValue: any, srcValue: any){
+        if (Array.isArray(objValue)){
+            return objValue.concat(srcValue);
+        }
     },
     deepMerge(...args: any) {
         return mergeWith(...args, utils.customizer);
@@ -415,7 +415,7 @@ let utils = {
 
     /**
      * 获取sourceMap的绝对地址
-     * @returns 
+     * @returns
      */
     getDisSourceMapDir():string{
         const projectRootPath = this.getProjectRootPath();
