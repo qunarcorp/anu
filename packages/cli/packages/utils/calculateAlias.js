@@ -16,6 +16,7 @@ const cwd = process.cwd();
 const babel = require('@babel/core');
 const nodeResolve = require('resolve');
 const config_1 = __importDefault(require("../../config/config"));
+const isMutilePack_1 = __importStar(require("../../tasks/chaikaMergeTask/isMutilePack"));
 const getDistPath = require('./getDistPath');
 function fixPath(p) {
     p = p.replace(/\\/g, '/');
@@ -101,7 +102,7 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
         if (isSingleBunle() && remoteNpmPackagesMap[importerSource]) {
             let from = path.dirname(srcPath);
             from = getDistPath(from);
-            let to = path.join(_1.default.getProjectRootPath(), 'dist', 'npm', remoteNpmPackagesMap[importerSource]);
+            let to = path.join(_1.default.getProjectRootPath(), isMutilePack_1.default() ? 'target' : 'dist', isMutilePack_1.getMultiplePackDirPrefixNew(), 'npm', remoteNpmPackagesMap[importerSource]);
             return fixPath(path.relative(from, to));
         }
         let from = path.dirname(srcPath);

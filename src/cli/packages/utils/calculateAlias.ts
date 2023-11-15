@@ -4,6 +4,7 @@ const cwd = process.cwd();
 const babel = require('@babel/core');
 const nodeResolve = require('resolve');
 import config from '../../config/config';
+import isMultiple, { getMultiplePackDirPrefix, getMultiplePackDirPrefixNew } from '../../tasks/chaikaMergeTask/isMutilePack';
 
 const getDistPath = require('./getDistPath');
 function fixPath(p: string) {
@@ -151,9 +152,8 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
             let from = path.dirname(srcPath);
             from = getDistPath(from);
 
-            // to 不再通过 nodeResovle 获得，而是直接拼接出来产物目录下的 'npm' + 列表给出的映射路径
-            // TODO: 写死 dist 路径不可取，比如使用 nanachi.multiple 的时候是不对的
-            let to = path.join(utils.getProjectRootPath(), 'dist', 'npm', remoteNpmPackagesMap[importerSource]);
+            // to 不再通过 nodeResovle 获得（也找不到），而是直接拼接出来产物目录下的 'npm' + 列表给出的映射路径
+            let to = path.join(utils.getProjectRootPath(), isMultiple() ? 'target' : 'dist', getMultiplePackDirPrefixNew(), 'npm', remoteNpmPackagesMap[importerSource]);
             return fixPath(path.relative(from, to));
         }
 
