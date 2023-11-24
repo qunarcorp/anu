@@ -12,6 +12,8 @@ import {
 
 import * as fs from 'fs-extra';
 import utils  from '../../packages/utils/index';
+const WebpackBar = require('webpackbar');
+
 const projectRootPath = utils.getProjectRootPath();
 const distRelativeDir = utils.getDistRelativeDir();
 const context = path.resolve(projectRootPath, distRelativeDir);
@@ -37,6 +39,9 @@ const plugins = [
     new webpack.EnvironmentPlugin({
         ANU_ENV: 'web',
         ...process.env
+    }),
+    new WebpackBar({
+        name: 'Webpack: React -> h5',
     }),
     // new CleanWebpackPlugin()
 ]

@@ -30,6 +30,7 @@ module.exports = {
             });
         }
         if (astPath.parent.type === 'Program') {
+            astPath.scope.removeBinding(modules.className);
             astPath.insertBefore(modules.ctorFn);
         }
         else {

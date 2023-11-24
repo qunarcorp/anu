@@ -84,16 +84,6 @@ const temp = `window.addEventListener('popstate', function ({
 });
 React.registerApp(this);
 this.onLaunch();
-CLASS_NAME.config.pages.forEach((path) => {
-    React.registerPage(
-        Loadable({
-            loader: () => import("." + path),
-            loading: QunarDefaultLoading,
-            delay: 300
-        }),
-        path
-    );
-});
 `;
 let registerTemplate = temp;
 
@@ -178,6 +168,31 @@ module.exports = function(): PluginObj {
 
             ClassBody: {
                 exit(astPath) {
+
+                    /**
+                     * 这里一个个展开的缘故是：import动态表达式会打包全部的文件，包含无依赖的文件。而import字符串则可在weback构建过程中通过静态分析优化依赖。
+                     * 因此，一个个展开而不是写变量引用。
+                     */
+                    const registerPageArr = importedPages.elements.map((v:t.StringLiteral)=>{
+                        const p = v.value;
+                        return `{
+                            loader: () => import('.${p}'),
+                        }`
+                    });
+
+                    const registerPageTemplate = `[${registerPageArr.join(',')}].forEach((item,index) => {
+                        React.registerPage(
+                            Loadable({
+                                loader: item.loader,
+                                loading: QunarDefaultLoading,
+                                delay: 300
+                            }),
+                            CLASS_NAME.config.pages[index]
+                        );
+                    })
+                    `;
+                    registerTemplate += registerPageTemplate;
+
                     registerTemplate += `const pathname = location.pathname.replace(/^\\/web/, '');
                     const search = location.search;
                     if (React.__isTab(pathname)) {

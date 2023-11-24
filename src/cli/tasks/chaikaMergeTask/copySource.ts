@@ -93,7 +93,7 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
         console.log(chalk.green(`正在拷贝项目：${projectPath}`));
 
         let projectDirName = projectPath.replace(/\\/g, '/').split('/').pop();
-        let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
+        let files = glob.sync( './!(node_modules|web|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
             cwd: projectPath,
         });
 

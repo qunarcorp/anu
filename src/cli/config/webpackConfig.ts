@@ -32,7 +32,7 @@ const nanachiStyleLoader  = require.resolve('../nanachi-loader/loaders/nanachiSt
 
 const cwd = process.cwd();
 
-const H5AliasList = ['react','@react','react-dom', 'react-loadable', '@qunar-default-loading', '@dynamic-page-loader', /^@internalComponents/];
+const H5AliasList = ['react-dom', 'react-loadable', '@qunar-default-loading', '@dynamic-page-loader', /^@internalComponents/];
 
 const isChaikaMode = function() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
@@ -327,14 +327,6 @@ export default function({
         }
     }
 
-    if (platform === 'h5') {
-        // 防止目录里面有些乱七八糟的文件
-        mergePlugins.push(
-            new webpack.IgnorePlugin({
-                resourceRegExp: /\.(\w?ux|pem)$/,
-            })
-        )
-    }
     let entry = path.join(cwd, 'source/app');
     if (typescript) { entry += '.tsx' };
     const barNameMap = {

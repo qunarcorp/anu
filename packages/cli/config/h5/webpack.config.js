@@ -31,9 +31,11 @@ const config = webpack_merge_1.default(webpack_config_base_1.default, {
                         require.resolve('@babel/plugin-syntax-dynamic-import'),
                         require.resolve('@babel/plugin-proposal-object-rest-spread'),
                         [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
-                        [require.resolve('@babel/plugin-proposal-class-properties'), { loose: true }]
+                        [require.resolve('@babel/plugin-proposal-class-properties')],
                     ],
-                    presets: [require.resolve('@babel/preset-react')]
+                    presets: [
+                        require.resolve('@babel/preset-react'),
+                    ]
                 }
             },
             {
@@ -41,7 +43,13 @@ const config = webpack_merge_1.default(webpack_config_base_1.default, {
                 loader: require.resolve('babel-loader'),
                 exclude: [/node_modules/],
                 options: {
-                    exclude: [/node_modules/],
+                    plugins: [
+                        require.resolve('@babel/plugin-transform-runtime'),
+                        require.resolve('@babel/plugin-syntax-dynamic-import'),
+                        require.resolve('@babel/plugin-proposal-object-rest-spread'),
+                        [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
+                        [require.resolve('@babel/plugin-proposal-class-properties')],
+                    ],
                     presets: [require.resolve('@babel/preset-react')]
                 }
             }

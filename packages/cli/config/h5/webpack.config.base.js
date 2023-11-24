@@ -17,6 +17,7 @@ const ramda_1 = __importDefault(require("ramda"));
 const configurations_1 = require("./configurations");
 const fs = __importStar(require("fs-extra"));
 const index_1 = __importDefault(require("../../packages/utils/index"));
+const WebpackBar = require('webpackbar');
 const projectRootPath = index_1.default.getProjectRootPath();
 const distRelativeDir = index_1.default.getDistRelativeDir();
 const context = path.resolve(projectRootPath, distRelativeDir);
@@ -38,6 +39,9 @@ const plugins = [
         template: templatePath
     }),
     new webpack_1.default.EnvironmentPlugin(Object.assign({ ANU_ENV: 'web' }, process.env)),
+    new WebpackBar({
+        name: 'Webpack: React -> h5',
+    }),
 ];
 const webpackConfig = {
     mode: 'development',

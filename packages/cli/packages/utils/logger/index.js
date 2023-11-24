@@ -30,7 +30,7 @@ exports.warningLog = ({ id, msg, loc }) => {
 exports.errorLog = ({ id, msg, loc = { line: '0', column: '1' } }) => {
     let result = '';
     result = chalk_1.default `{underline ${id}}\n{grey ${loc.line}:${loc.column}}\t{red error}\t${msg}\n`;
-    console.log(result);
+    console.log(result, msg);
 };
 exports.resetNum = () => {
     successNum = 0;

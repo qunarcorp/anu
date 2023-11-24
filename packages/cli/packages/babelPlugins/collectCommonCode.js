@@ -18,7 +18,8 @@ const utils_1 = __importDefault(require("../utils"));
 function isChaikaMode() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 }
-const fnNameList = ['ownKeys', '_objectSpread', '_defineProperty', 'asyncGeneratorStep', '_asyncToGenerator'];
+const fnNameList = ['ownKeys', '_objectSpread', '_defineProperty', '_toPropertyKey', '_toPrimitive', 'asyncGeneratorStep', '_asyncToGenerator'];
+const onlyImportFnNameList = ['_objectSpread', '_asyncToGenerator'];
 const cwd = process.cwd();
 const closureCache = [];
 const visitor = {
@@ -30,7 +31,9 @@ const visitor = {
                         const curFnName = astPath.node.id.name;
                         if (!fnNameList.includes(curFnName))
                             return;
-                        this.injectInportSpecifiers.push(curFnName);
+                        if (onlyImportFnNameList.includes(curFnName)) {
+                            this.injectInportSpecifiers.push(curFnName);
+                        }
                         if (!closureCache.find(el => el.name === curFnName)) {
                             closureCache.push({
                                 code: generator_1.default(astPath.node).code,

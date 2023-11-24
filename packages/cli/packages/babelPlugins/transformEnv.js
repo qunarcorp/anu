@@ -15,9 +15,6 @@ let defaultConfig = [
             }
         }
     ],
-    [require('babel-plugin-minify-dead-code-elimination'), {
-            keepFnArgs: true
-        }]
 ];
 if (/^(build)/.test(process.argv[2])
     && ['prod', 'production'].includes(process.env.BUILD_ENV)) {
