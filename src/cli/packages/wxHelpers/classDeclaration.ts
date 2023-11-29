@@ -9,7 +9,6 @@ module.exports = {
     enter(astPath: NodePath<t.ClassDeclaration>, state: any) {
         //重置数据
         const className = astPath.node.id.name;
-        // if(className==='UserCenterWx'){
         // 查找 render 方法
         const renderMethod = astPath.get('body').get('body').find(
             (method) => method.isClassMethod() && method.get('key').isIdentifier({ name: 'render' })
@@ -25,21 +24,15 @@ module.exports = {
                 // 获取返回语句的内容
                 const renderContent = returnStatement.get('argument');
                 const { type, test, consequent, alternate } = renderContent.node
-                // !this.state.isNormal ?  null:<text>{'123'}</text>
-                // if(type==='ConditionalExpression'&&(test.type ==='UnaryExpression'||consequent.type==='NullLiteral')){
                 if (type === 'ConditionalExpression' && consequent.type === 'NullLiteral') {
                     if (consequent.type === 'NullLiteral') {
                         const newConditionalExpression = t.conditionalExpression(test, t.stringLiteral(''), alternate)
                         renderContent.replaceWith(newConditionalExpression)
                     }
                 }
-
             }
         }
 
-
-
-        // }
         let modules = utils.getAnu(state);
         modules.className = astPath.node.id.name;
         modules.parentName = generate(astPath.node.superClass).code || 'Object';
