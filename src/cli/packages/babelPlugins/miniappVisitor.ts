@@ -191,6 +191,25 @@ const visitor: babel.Visitor = {
     FunctionDeclaration: {
         //enter里面会转换jsx中的JSXExpressionContainer
         exit(astPath: NodePath<t.FunctionDeclaration>, state: any) {
+
+            // 获取函数体
+            const functionBody = astPath.get('body');
+
+            // 遍历函数体
+            functionBody.traverse({
+                ReturnStatement(returnPath) {
+                    // 获取 ReturnStatement 的 argument
+                    const returnValue = returnPath.get('argument');
+                    if (t.isConditionalExpression(returnValue.node)) {
+                        const { test, consequent, alternate } = returnValue.node
+                        if (consequent.type === 'NullLiteral') {
+                            const newConditionalExpression = t.conditionalExpression(test, t.stringLiteral(''), alternate);
+                            returnValue.replaceWith(newConditionalExpression);
+                        }
+                    }
+                },
+            });
+
             //函数声明转换为无状态组件
             let modules = utils.getAnu(state);
             let name = astPath.node.id.name;
