@@ -27,6 +27,10 @@ function resolveNanachiAlias(alias) {
         '@assets': resolveFromContext(`${exports.intermediateDirectoryName}/assets`)
     };
     Object.keys(alias).forEach(function (k) {
+        if (alias[k].startsWith('node_modules')) {
+            resolved[k] = path.resolve(projectRootPath, alias[k]);
+            return true;
+        }
         const nanachiAlias = alias[k].replace('source/', '');
         resolved[k] = resolveFromContext(`${exports.intermediateDirectoryName}/${nanachiAlias}`);
     });

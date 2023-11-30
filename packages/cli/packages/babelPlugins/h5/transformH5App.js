@@ -217,8 +217,6 @@ module.exports = function () {
                             }
                             if (name === 'tabBar') {
                                 let buildType = process.env.ANU_ENV;
-                                if (buildType === 'web')
-                                    buildType = 'h5';
                                 let tabBarPros = value.properties, defaultList = null, buildTypeList = null;
                                 let newTabBarPros = tabBarPros.filter((el) => {
                                     if (el.key.name === 'list') {

@@ -37,7 +37,7 @@ const plugins = [
         template: templatePath
     }),
     new webpack.EnvironmentPlugin({
-        ANU_ENV: 'web',
+        ANU_ENV: 'h5',
         ...process.env
     }),
     new WebpackBar({

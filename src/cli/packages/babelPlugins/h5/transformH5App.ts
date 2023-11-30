@@ -307,7 +307,6 @@ module.exports = function(): PluginObj {
 
                             if (name === 'tabBar') {
                                 let buildType = process.env.ANU_ENV;
-                                if (buildType === 'web') buildType = 'h5';
                                 let tabBarPros = value.properties, defaultList:any = null, buildTypeList:any = null;
                                 let newTabBarPros = tabBarPros.filter((el:any) => {
                                     if (el.key.name === 'list') {

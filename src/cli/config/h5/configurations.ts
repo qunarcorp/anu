@@ -21,6 +21,12 @@ function resolveNanachiAlias(alias: Alias) {
     };
 
     Object.keys(alias).forEach(function(k) {
+        // 如果以node_modules开头的，则默认项目根路径
+        if (alias[k].startsWith('node_modules')) {
+            resolved[k] = path.resolve(projectRootPath, alias[k]);
+            return true;
+        }
+
         // NOTE
         // nanachi 定义的路径是相对于项目根目录的
         // 而在这应该是相对于 source 目录的

@@ -38,7 +38,7 @@ const plugins = [
     new HtmlWebpackPlugin({
         template: templatePath
     }),
-    new webpack_1.default.EnvironmentPlugin(Object.assign({ ANU_ENV: 'web' }, process.env)),
+    new webpack_1.default.EnvironmentPlugin(Object.assign({ ANU_ENV: 'h5' }, process.env)),
     new WebpackBar({
         name: 'Webpack: React -> h5',
     }),
