@@ -191,28 +191,27 @@ const visitor: babel.Visitor = {
     FunctionDeclaration: {
         //enter里面会转换jsx中的JSXExpressionContainer
         exit(astPath: NodePath<t.FunctionDeclaration>, state: any) {
-
+            let name = astPath.node.id.name;
             // 获取函数体
             const functionBody = astPath.get('body');
-
-            // 遍历函数体
-            functionBody.traverse({
-                ReturnStatement(returnPath) {
-                    // 获取 ReturnStatement 的 argument
-                    const returnValue = returnPath.get('argument');
-                    if (t.isConditionalExpression(returnValue.node)) {
-                        const { test, consequent, alternate } = returnValue.node
-                        if (consequent.type === 'NullLiteral') {
-                            const newConditionalExpression = t.conditionalExpression(test, t.stringLiteral(''), alternate);
-                            returnValue.replaceWith(newConditionalExpression);
-                        }
+            const node = functionBody.get('body')
+            // 拿到return的内容
+            const newBody = node[node.length - 1]
+            if (newBody) {
+                // 只处理顶层逻辑
+                const returnValue = newBody.get('argument');
+                if (t.isConditionalExpression(returnValue.node)) {
+                    const { test, consequent, alternate } = returnValue.node
+                    if (consequent.type === 'NullLiteral') {
+                        const newConditionalExpression = t.conditionalExpression(test, t.stringLiteral(''), alternate);
+                        returnValue.replaceWith(newConditionalExpression);
                     }
-                },
-            });
+                }
+            }
 
             //函数声明转换为无状态组件
             let modules = utils.getAnu(state);
-            let name = astPath.node.id.name;
+            // let name = astPath.node.id.name;
             if (
                 /^[A-Z]/.test(name) && //组件肯定是大写开头
                 modules.componentType === 'Component' &&
@@ -228,7 +227,7 @@ const visitor: babel.Visitor = {
                     name
                 );
 
-                
+
                 // 给useState或自定义的变量增加输出
                 let funData: any = [];
                 let body = astPath.node.body.body;
@@ -439,8 +438,8 @@ const visitor: babel.Visitor = {
                     code: JSON.stringify(json, null, 4),
                     type: 'json'
                 });
-            }else{
-                if(buildType === 'qq' ){
+            } else {
+                if (buildType === 'qq') {
                     let relPath = '';
 
                     if (/\/node_modules\//.test(modules.sourcePath.replace(/\\/g, '/'))) {
@@ -990,10 +989,10 @@ const visitor: babel.Visitor = {
             }
         }
     },
-    JSXFragment:{
+    JSXFragment: {
         // 兼容空标签
-        enter(astPath: NodePath<t.JSXFragment>){
-            if(astPath.parentPath.node.type == 'ReturnStatement'){
+        enter(astPath: NodePath<t.JSXFragment>) {
+            if (astPath.parentPath.node.type == 'ReturnStatement') {
                 astPath.replaceWith(
                     t.jSXElement(
                         t.jsxOpeningElement(t.jsxIdentifier('view'), []),
@@ -1001,7 +1000,7 @@ const visitor: babel.Visitor = {
                         astPath.node.children,
                     ),
                 )
-            }else{
+            } else {
                 astPath.replaceWithMultiple(astPath.node.children);
             }
         }
