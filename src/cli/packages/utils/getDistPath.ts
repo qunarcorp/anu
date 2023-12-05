@@ -1,6 +1,6 @@
 /**
  * 返回当前编译文件打包后的绝对路径
- * 
+ *
  * @param {string} sourcePath 当前解析文件的绝对路径
  * @return {string} 当前解析文件打包后的路径, 如:
  *   node_modules/cookie/index.js => dist/npm/cookie/index.js
@@ -15,6 +15,7 @@ import config from '../../config/config';
 function fixWinPath(p: string) {
     return p.replace(/\\/g, '/');
 }
+
 function getDistPath(sourcePath: string) {
     sourcePath = fixWinPath(sourcePath);
     let nodeModuleReg = /\/node_modules\//;
@@ -28,7 +29,7 @@ function getDistPath(sourcePath: string) {
             `${config.buildDir}`,
             'npm',
             sourcePath.split('/node_modules/').pop()
-        )
+        );
     } else {
         // /nnc_module_qunar_platform/.CACHE/nanachi/wx/source/npm/@qnpm/nui/source/components/Button/index.js
         // /nnc_module_qunar_platform/.CACHE/nanachi/wx/source/pages/xxx.js
@@ -60,8 +61,7 @@ function getDistPath(sourcePath: string) {
         }
     }
 
-
-    //快应用目录要替换成src
+    // 快应用目录要替换成src
     distPath = process.env.ANU_ENV === 'quick'
         ? distPath.replace(
             new RegExp('/' + config.buildDir + '/'),
@@ -70,7 +70,7 @@ function getDistPath(sourcePath: string) {
         : distPath;
 
     return distPath;
-};
+}
 
 module.exports = getDistPath;
 export default getDistPath;

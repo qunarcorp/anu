@@ -10,7 +10,7 @@ import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { NanachiOptions } from '../index';
 import globalStore from '../packages/utils/globalStore';
-import webpack = require('webpack');
+import webpack from 'webpack';
 const setWebView = require('../packages/utils/setWebVeiw');
 const cwd = process.cwd();
 const id = 'NanachiWebpackPlugin';
@@ -123,12 +123,13 @@ class NanachiWebpackPlugin implements webpack.Plugin {
     }
     apply(compiler: NanachiCompiler) {
 
+        // 为各种 loader 挂载 nanachiOptions
         compiler.hooks.compilation.tap(id, (compilation) => {
             compilation.hooks.normalModuleLoader.tap(id, (loaderContext) => {
                 loaderContext.nanachiOptions = this.nanachiOptions;
             });
         });
-        
+
         // 删除webpack打包产物
         compiler.hooks.emit.tap(id, (compilation) => {
             // if (this.nanachiOptions.platform === 'h5') {
@@ -172,7 +173,7 @@ class NanachiWebpackPlugin implements webpack.Plugin {
             resetNum();
             callback();
         });
-        
+
         compiler.hooks.done.tap(id, () => {
             this.timer.end();
             setWebView(compiler.NANACHI && compiler.NANACHI.webviews);
@@ -202,7 +203,7 @@ class NanachiWebpackPlugin implements webpack.Plugin {
             callAfterCompileOnceFn(nanachiUserConfig);
 
         });
-     
+
     }
 }
 

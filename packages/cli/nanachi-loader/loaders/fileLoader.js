@@ -62,14 +62,22 @@ module.exports = function ({ queues = [], exportCode = '' }, map, meta) {
                 return;
             }
             if (config_1.default.sourcemap && fileMap) {
-                fs.ensureFileSync(sourceMapPath + '.map');
-                fs.writeFile(sourceMapPath + '.map', JSON.stringify(fileMap), function (err) {
-                    if (err) {
-                        throw err;
-                    }
-                });
+                if (sourceMapPath.includes(`${config_1.default.buildType}ShadowApp.js`)) {
+                }
+                else {
+                    fs.ensureFileSync(sourceMapPath + '.map');
+                    fs.writeFile(sourceMapPath + '.map', JSON.stringify(fileMap), function (err) {
+                        if (err) {
+                            throw err;
+                        }
+                    });
+                }
             }
-            this.emitFile(relativePath, code, map);
+            if (relativePath.includes(`${config_1.default.buildType}ShadowApp.js`)) {
+            }
+            else {
+                this.emitFile(relativePath, code, map);
+            }
         });
         callback(null, exportCode, map, meta);
     });

@@ -1,5 +1,4 @@
 import { NanachiLoaderStruct } from './nanachiLoader';
-import { successLog } from '../../packages/utils/logger/index';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import config from '../../config/config';
@@ -32,7 +31,7 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
             }
         }
 
-       
+
         const sourceMapPath = path.join(utils.getDisSourceMapDir(), relativePath);
 
         // 与其他技术融合，可能得提前需要app.js, app.json
@@ -55,23 +54,31 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
                     }
                 });
             }
-            
+
             return;
         }
-        
-        if (config.sourcemap && fileMap){
-            fs.ensureFileSync(sourceMapPath+'.map');
-            fs.writeFile(sourceMapPath+'.map', JSON.stringify(fileMap), function(err) {
-                if (err) {
-                    throw err;
-                }
-            });
 
+        if (config.sourcemap && fileMap){
+            // 单包模式下会创建一个临时的 xxShadowApp.js，名字是固定的（属于关键字），此文件不需要生成 sourcemap
+            if (sourceMapPath.includes(`${config.buildType}ShadowApp.js`)) {
+                // do nothing
+            } else {
+                fs.ensureFileSync(sourceMapPath+'.map');
+                fs.writeFile(sourceMapPath+'.map', JSON.stringify(fileMap), function(err) {
+                    if (err) {
+                        throw err;
+                    }
+                });
+            }
         }
-    
-        this.emitFile(relativePath, code, map);
-      
+
+        // 同理，xxShadowApp.js 此文件不需要生成产物，目前暂时设定为这样吧
+        if (relativePath.includes(`${config.buildType}ShadowApp.js`)) {
+            // do nothing
+        } else {
+            this.emitFile(relativePath, code, map);
+        }
     });
-    
+
     callback(null, exportCode, map, meta);
 };

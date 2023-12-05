@@ -81,7 +81,7 @@ function getQuickPkgFile() {
         const curProjectPath = path.join(utils.getProjectRootPath(), 'package.json');
         let curProjectPkg = require(curProjectPath);
         curProjectPkg.scripts = curProjectPkg.scripts || {};
-        ['scripts', "devDependencies"].forEach(function (key) {
+        ['scripts', 'devDependencies'].forEach(function (key) {
             Object.assign(curProjectPkg[key], quickPkg[key]);
         });
         ret = ret.concat([

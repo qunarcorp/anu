@@ -4,9 +4,8 @@ import * as path from 'path';
 import config from '../../config/config';
 import utils from '../../packages/utils';
 import {getMultiplePackDirPrefix} from './isMutilePack';
-import chalk from 'chalk';
-const cwd = process.cwd();
-const downLoadDir = path.join(cwd, '.CACHE/download');
+
+const chalk = require('chalk');
 const mergeFilesQueue = require('./mergeFilesQueue');
 
 //这些文件对项目编译时来说，没啥用
@@ -35,7 +34,6 @@ const lockFiles: any = [
     'mini.config.json',
 ];
 
-
 function getDownLoadDir() {
     return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix());
 }
@@ -63,17 +61,10 @@ function isLockFile(fileName: string) {
     return lockFiles.includes(fileName);
 }
 
+function generateCopyProjectList() {
+    const projectList = Array.from(config.projectWatcherList);
 
-/**
- * 拷贝工作区项目到下载缓存区
- */
-function copyCurrentProjectToDownLoad(): Promise<any> {
-
-    let projectList = [cwd];
-    if (config.multiProject.length > 0) {
-        projectList = projectList.concat(config.multiProject);
-    }
-
+    // 校验 projectList
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
         // 如果当前目录不存在source目录，并且不存在app.js, 那可能是个非nanachi工程目录
@@ -81,12 +72,28 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
             !fs.existsSync(path.join(projectPath, 'source'))
             && !fs.existsSync(path.join(projectPath, 'app.js'))
         ) {
-            return Promise.resolve(1);
+            console.log(`[generateCopyProjectList] 目录 ${projectPath} 的校验未通过，请联系开发者`);
+            process.exit(1);
         }
     }
 
+    return projectList;
+}
+
+/**
+ * 拷贝工作区项目到下载缓存区
+ */
+function copyCurrentProjectToDownLoad(): Promise<any> {
+    // 单包模式下，启动的另一打包基座代码的进程会指定该参数，则跳过当前工作区项目的拷贝
+    if (config.noCurrent) {
+        return Promise.resolve(1);
+    }
+
+    const projectList = generateCopyProjectList();
+
     // 获取待复制文件路径，创建复制任务
     let allPromiseCopy: Array<Promise<void>> = [];
+    const finalProjectList = []; // 记录复制后的实际工程地址
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
 
@@ -97,6 +104,7 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
             cwd: projectPath,
         });
 
+        finalProjectList.push(path.join(getDownLoadDir(),projectDirName));
         const promiseCopy = files
             .map(function(el) {
                 let src = path.join(projectPath, el);
@@ -117,17 +125,60 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
         allPromiseCopy = allPromiseCopy.concat(promiseCopy);
     }
 
+    // 如果进行了拷贝，那么需要把当前拷贝项目的元数据写入 userConfig，保证下一步 copy 获取所有的目录列表
+    setCurrentProjectType(finalProjectList);
     return Promise.all(allPromiseCopy);
 }
 
+// 参考 setProjectSourceTypeList
+// copy 完成存在当前工作区项目真实目录后，把元数据写入 userConfig
+function setCurrentProjectType (projectList: string[]) {
+    // console.log('projectList', projectList);
+    projectList.forEach(function (projectPath: string) {
+        const pkgPath = path.join(projectPath, 'package.json');
+        const pkg = require(pkgPath);
 
+        // 如果 config.projectSourceTypeList 存在同名的，那么直接覆盖，否则新增
+        // 这里是为了应对 pkg 中依然写入当前工作区的包名，既被下载又被复制
+        const index = config.projectSourceTypeList.findIndex(function (el) {
+            return el.name === pkg.name;
+        });
+        if (index > -1) {
+            config.projectSourceTypeList[index] = {
+                name: pkg.name,
+                path: projectPath,
+                sourceType: 'input'
+            };
+        } else {
+            config.projectSourceTypeList.push({
+                name: pkg.name,
+                path: projectPath,
+                sourceType: 'input'
+            });
+        }
+    });
+}
 
 function copyDownLoadToNnc() {
-    let files = glob.sync(
-        getDownLoadDir()  + '/**',
-        {nodir: true}
-    );
+    // 获取 config.projectSourceTypeList 中的内容进行合并操作
+    const needMergeProjectList = config.projectSourceTypeList.filter(function (el) {
+        return el.sourceType === 'input'; // 只提取源码类型的，产物类型不进行合并，而是在打包完进行合并
+    });
 
+    // 只在指定 needMergeProjectList 目录下进行 glob 查找
+    let files = needMergeProjectList.map(function (el) {
+        // 校验 path，不能为空，否则 glob 会遍历电脑上的所有文件
+        if (!el.path) {
+            console.log(chalk.red(`[copyDownLoadToNnc] 项目 ${el.name} 的 path 元数据为空，请联系开发者`));
+            process.exit(1);
+        }
+        return glob.sync(
+            path.join(el.path, '/**'),
+            { nodir: true }
+        );
+    }).reduce(function (prev, next) {
+        return prev.concat(next);
+    }, []);
 
     files = files.filter((file)=>{
         let fileName = path.parse(file).base;
@@ -165,9 +216,11 @@ export default function(){
             return copyDownLoadToNnc();
         })
         .then(function(){
+            // console.log('[copyCurrentProjectToDownLoad] 拷贝完成');
             return Promise.resolve(1);
         })
         .catch(function(err){
+            // console.log('[copyCurrentProjectToDownLoad] 拷贝失败');
             return Promise.reject(err);
         });
 }

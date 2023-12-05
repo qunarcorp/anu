@@ -44,7 +44,7 @@ const visitor = {
             });
             if (!this.injectInportSpecifiers.length)
                 return;
-            const importSourcePath = utils_1.default.fixWinPath(path_1.default.relative(path_1.default.parse(utils_1.default.getDistPathFromSoucePath(utils_1.default.fixWinPath(state.filename))).dir, this.distCommonPath));
+            const importSourcePath = utils_1.default.fixWinPath(path_1.default.relative(path_1.default.parse(utils_1.default.getDistPathFromSourcePath(utils_1.default.fixWinPath(state.filename))).dir, this.distCommonPath));
             const specifiersAst = this.injectInportSpecifiers.map(name => t.importSpecifier(t.identifier(name), t.identifier(name)));
             const sourceAst = t.StringLiteral(!/^\./.test(importSourcePath) ? `./${importSourcePath}` : importSourcePath);
             astPath.node.body.unshift(t.importDeclaration(specifiersAst, sourceAst));

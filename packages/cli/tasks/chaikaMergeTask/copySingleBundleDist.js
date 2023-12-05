@@ -3,21 +3,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const mergeUtils_1 = require("./mergeUtils");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const glob_1 = __importDefault(require("glob"));
 const path_1 = __importDefault(require("path"));
-const cwd = process.cwd();
-const buildType = mergeUtils_1.get_buildType();
-const ANU_ENV = mergeUtils_1.get_ANU_ENV();
-const BUILD_ENV = mergeUtils_1.get_BUILD_ENV();
+const config_1 = __importDefault(require("../../config/config"));
+const chalk = require('chalk');
 function copySingleBundleToFullBundle(from, to, globList) {
     const files = globList || glob_1.default.sync(from + '/**', { nodir: true });
     const allPromiseCopy = files.map((file) => {
         const srcFile = path_1.default.join(file);
-        const distFile = path_1.default.join(to, path_1.default.relative(from, file));
-        fs_extra_1.default.ensureFileSync(distFile);
-        return fs_extra_1.default.copyFile(srcFile, distFile);
+        const destFile = path_1.default.join(to, path_1.default.relative(from, file));
+        if (fs_extra_1.default.existsSync(destFile) && config_1.default.forFirstCompile) {
+            console.log(chalk.yellow(`[copySingleBundleToFullBundle {初次编译提醒}] 目标路径 ${destFile} 已存在，拷贝时会产生覆盖，请自行检查是否需要处理`));
+        }
+        fs_extra_1.default.ensureFileSync(destFile);
+        return fs_extra_1.default.copyFile(srcFile, destFile);
     });
     return Promise.all(allPromiseCopy || []);
 }

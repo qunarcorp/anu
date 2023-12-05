@@ -18,12 +18,12 @@ const copy_webpack_plugin_1 = __importDefault(require("copy-webpack-plugin"));
 const ignoreDependencyErrorsPlugin_1 = __importDefault(require("../nanachi-loader/ignoreDependencyErrorsPlugin"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
-const { exec } = require('child_process');
 const webpack_1 = __importDefault(require("webpack"));
-const utils = require('../packages/utils/index');
 const configurations_1 = require("./h5/configurations");
 const quickAPIList_1 = __importDefault(require("../consts/quickAPIList"));
 const config_1 = __importDefault(require("./config"));
+const { exec } = require('child_process');
+const utils = require('../packages/utils/index');
 const fileLoader = require.resolve('../nanachi-loader/loaders/fileLoader');
 const aliasLoader = require.resolve('../nanachi-loader/loaders/aliasLoader');
 const nanachiLoader = require.resolve('../nanachi-loader/loaders/nanachiLoader');
@@ -35,13 +35,10 @@ const H5AliasList = ['react', '@react', 'react-dom', 'react-loadable', '@qunar-d
 const isChaikaMode = function () {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 };
-const isEntryFromShadowAppJs = function () {
-    return config_1.default.isSingleBundle && config_1.default.hasNewAppjs;
-};
 const WebpackBar = require('webpackbar');
-const quickConfigFileName = config_1.default.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
-    ? "quickConfig.huawei.json"
-    : "quickConfig.json";
+const quickConfigFileName = config_1.default.huawei && utils.isCheckQuickConfigFileExist('quickConfig.huawei.json')
+    ? 'quickConfig.huawei.json'
+    : 'quickConfig.json';
 global.nanachiVersion = config_1.default.nanachiVersion || '';
 function default_1({ watch, platform, compress, compressOption, plugins, rules, huawei, analysis, typescript, prevLoaders, postLoaders, prevJsLoaders, postJsLoaders, prevCssLoaders, postCssLoaders, }) {
     let externals = quickAPIList_1.default;
@@ -51,6 +48,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     externals.push(/runtimecommon\.js/);
     let aliasMap = require('../packages/utils/calculateAliasConfig')();
     let distPath = path.resolve(utils.getDistDir());
+    console.log('distPath', distPath);
     if (platform === 'h5') {
         distPath = path.join(distPath, configurations_1.intermediateDirectoryName);
     }
@@ -68,7 +66,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     const copyAssetsRules = [Object.assign({ from: '**', to: 'assets', context: 'source/assets', ignore: [
                 '**/*.@(js|jsx|json|sass|scss|less|css|ts|tsx)'
             ] }, copyPluginOption)];
-    const mergePlugins = [].concat(isChaikaMode() ? [new chaikaPlugin_1.default()] : [], analysis ? new sizePlugin_1.default() : [], new plugin_1.default({
+    const mergePlugins = [].concat([new chaikaPlugin_1.default()], analysis ? new sizePlugin_1.default() : [], new plugin_1.default({
         platform,
         compress
     }), new copy_webpack_plugin_1.default(copyAssetsRules), new ignoreDependencyErrorsPlugin_1.default(), plugins);
@@ -79,7 +77,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`;
     const cacheDirectory = path.resolve(path.join(basePath, cachePath));
     const useCache = !watch && !JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV;
-    if (!!JENKINS_URL) {
+    if (JENKINS_URL) {
         console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
         console.log(`\n\n本次构建是否要走缓存：${useCache}`);
     }
@@ -87,7 +85,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         exec(`rm -rf ${cacheDirectory}`, (err, stdout, stderr) => { });
     }
     const cacheLorder = {
-        loader: require.resolve("cache-loader-hash"),
+        loader: require.resolve('cache-loader-hash'),
         options: {
             mode: 'hash',
             cacheDirectory: cacheDirectory,
@@ -95,13 +93,12 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         }
     };
     const jsLorder = () => {
-        const __jsLorder = [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], postLoaders, postJsLoaders, nanachiLoader, typescript ? {
+        return [].concat(fileLoader, platform !== 'h5' ? aliasLoader : [], postLoaders, postJsLoaders, nanachiLoader, typescript ? {
             loader: require.resolve('ts-loader'),
             options: {
                 context: path.resolve(cwd)
             }
         } : [], prevJsLoaders, prevLoaders);
-        return __jsLorder;
     };
     function isJsFile(sourcePath) {
         return /\.[jt]sx?$/.test(sourcePath);
@@ -168,7 +165,7 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         mergePlugins.push(new quickPlugin_1.default());
         try {
             var quickConfig = {};
-            quickConfig = require(path.join(cwd, "source", quickConfigFileName));
+            quickConfig = require(path.join(cwd, 'source', quickConfigFileName));
             if (huawei) {
                 if (quickConfig && quickConfig.widgets) {
                     quickConfig.widgets.forEach(widget => {
@@ -198,11 +195,10 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
             resourceRegExp: /\.(\w?ux|pem)$/,
         }));
     }
-    let entry = isEntryFromShadowAppJs() ? path.join(cwd, 'shadowApp.js') : path.join(cwd, 'source/app');
+    let entry = utils.isSingleBundle() ? utils.getShadowAppJsPath() : path.join(cwd, 'source/app');
     if (typescript) {
         entry += '.tsx';
     }
-    ;
     const barNameMap = {
         quick: '快应用',
         wx: '微信小程序',
@@ -247,10 +243,14 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
             ]
         },
         watchOptions: {
-            ignored: /dist/
+            ignored: [
+                /dist/,
+                /.*ShadowApp\.js/,
+                /sourcemap/,
+                /.CACHE/
+            ]
         },
         externals
     };
 }
 exports.default = default_1;
-;

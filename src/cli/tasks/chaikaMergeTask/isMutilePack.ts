@@ -18,6 +18,8 @@ const isMultiple = function() {
 }
 
 export default isMultiple;
+
+// TODO 写的有问题，需要全部替换用到的地方
 export const getMultiplePackDirPrefix = function() {
     // 永远返回平台数据
     return isMultiple ? config.buildType : '';

@@ -10,44 +10,7 @@ import utils from '../../packages/utils';
 import platforms, { Platform } from '../../consts/platforms';
 const cwd = process.cwd();
 
-
-// 将本地 ProjectSourceTypeList 文件内容读取到 userConfig 中供后续流程使用（比如 copySource）
-function setProjectSourceTypeList() {
-    const jsonPath = path.join(cwd, `.CACHE/type${getMultiplePackDirPrefix()}.json`);
-
-    // 判断存在内容，存在则写入 json.projectSourceTypeList 到 config 中
-    // 此处插入非工作区的那些项目的元数据
-    if (fs.existsSync(jsonPath)) {
-        try {
-            const json = require(jsonPath);
-            config.projectSourceTypeList = json.projectSourceTypeList;
-        } catch (err) {
-            console.log(chalk.red(`[setProjectSourceTypeList] 读取 ${jsonPath} 文件失败，请联系开发者`));
-            process.exit(1);
-        }
-    }
-
-    // 此处插入工作区项目的元数据，需要根据当前执行的命令判断
-    const workspacePath = path.join(utils.getProjectRootPath());
-    const pkgPath = path.join(workspacePath, 'package.json');
-    const projectName = require(pkgPath).name;
-
-    if (config.isSingleBundle) { // 以产物类型进行 push
-        config.projectSourceTypeList = [...config.projectSourceTypeList, {
-            name: projectName,
-            path: (isMultipl), // 这里的 path 传入的是单包打包产物的路径
-            sourceType: 'output'
-        }];
-    } else { // 以源码类型进行 push
-        config.projectSourceTypeList = [...config.projectSourceTypeList, {
-            name: projectName,
-            path: '', // 这里的 path 可以随便传，copySource 中会再次覆写
-            sourceType: 'input'
-        }];
-    }
-}
-
-
+// TODO: input 和 output 有更加合理的方案去判断（从源头），但是成本有点大，先用这个也没问题
 // 根据传入的目录路径，判断一个包是否是 projectSourceType.sourceType 的 input 源码类型
 function isInputPackage(dirPath: string): sourceTypeString | undefined {
     if (!fs.existsSync(dirPath)) {
@@ -82,6 +45,8 @@ function isOutputPackage(dirPath: string): sourceTypeString | undefined {
 // 在 nanachi install 之后 （如果有），以及 nanachi build 和 watch 拷贝工作区代码之前执行
 // 因此只记录 install 的包的类型，工作区拷贝过去的包的类型不在文件中记录，而是根据运行时的命令动态设置
 function writeProjectSourceTypeList() {
+    console.log('正在记录下载依赖的类型');
+
     let downloadCacheDir = path.join(cwd, '.CACHE/download', getMultiplePackDirPrefix());
     let defaultJson: { [key: string]: any } = {};
     const listResult: projectSourceType[] = [];
@@ -96,24 +61,39 @@ function writeProjectSourceTypeList() {
 
     // 开始遍历 downloadCacheDir 下所有目录，判断是否是 input 或者 output 类型
     const dirs = fs.readdirSync(downloadCacheDir);
-    // 此处不包含工作区那个项目
+    // 此处不包含工作区那个项目，还没 copy
     dirs.forEach((dirName: string) => {
         const dirPath: string = path.join(downloadCacheDir, dirName);
         const type: sourceTypeString | undefined = isInputPackage(dirPath) || isOutputPackage(dirPath);
-        if (type) {
-            listResult.push({
-                name: dirName,
-                path: dirPath,
-                sourceType: type
-            });
-        } else {
-            console.log(chalk.red(`[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者`));
-            process.exit(1);
+        switch (type) {
+            case 'input': {
+                listResult.push({
+                    name: dirName,
+                    path: dirPath,
+                    sourceType: 'input'
+                });
+                break;
+            }
+            case 'output': {
+                listResult.push({
+                    name: dirName,
+                    path: dirPath,
+                    sourceType: 'output'
+                });
+                break;
+            }
+            default: {
+                console.log(chalk.red('[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者'));
+                process.exit(1);
+            }
         }
     });
 
+    // 覆写掉 projectSourceTypeList 中旧的内容，因为多个包有可能一个一个下载，也可能一起下载，每次全量扫描目录覆写的成本很低
+    // 而且我不需要关注 nanachi install 到底传入的是什么参数，来分辨哪个包是新增的，或者重新下载的
     defaultJson.projectSourceTypeList = listResult;
     fs.writeFileSync(writePath, JSON.stringify(defaultJson, null, 4));
+    console.log('依赖类型记录成功');
     return listResult;
 }
 
@@ -343,8 +323,6 @@ export default function (name: string, opts: any) {
         };
     }
 
-
-
     // nanachi install moduleName@#branchName
     // nanachi install moduleName@tagName
     if (isOldChaikaConfig(name)) {
@@ -376,8 +354,7 @@ export default function (name: string, opts: any) {
     }
     let { type, lib, version } = downloadInfo;
 
-    console.log(type);
-
+    console.log('install type:', type);
 
     switch (type) {
         case 'git':
@@ -391,8 +368,9 @@ export default function (name: string, opts: any) {
             break;
     }
 
-    // writePackagesType
-};
+    // 不管是执行什么方式的 install，都会覆写一下这个类型文件
+    writeProjectSourceTypeList();
+}
 
 
 

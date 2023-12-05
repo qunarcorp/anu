@@ -23,6 +23,10 @@ const BUILD_OPTIONS = {
     'component': {
         alias: 'c',
         desc: '单包打包'
+    },
+    'noCurrent': {
+        alias: 'nc',
+        desc: '打包时不包含当前包（不要主动调用）'
     }
 };
 exports.default = BUILD_OPTIONS;

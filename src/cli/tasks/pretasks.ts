@@ -30,24 +30,23 @@ function getRubbishFiles(buildType: string){
             })
         )
         : fileList = fileList.concat([utils.getDistDir()]);
-   
-   
+
+
     let libList = Array.from(new Set(Object.values(REACT_LIB_MAP)));
 
-  
+
     if (!isMultiple()) {
         libList = libList.filter(function(libName) {
             return libName !== REACT_LIB_MAP[buildType];
-        })
+        });
     } else {
         // 多小程序构建模式下，不用删除对应source/ReactXXX.js
         libList = [];
     }
-  
+
     fileList = fileList.concat(libList.map(function(libName){
         return path.join(projectRootPath, 'source', libName);
     }));
-
 
     // 非制定目录构建
     // if (!/dist\//.test(config.buildDir)) {
@@ -62,7 +61,7 @@ function getRubbishFiles(buildType: string){
     //     fileList = fileList.concat(libList);
     // }
 
-   
+
     return fileList.map(function(file){
         return {
             id: file,
@@ -89,14 +88,14 @@ function getQuickPkgFile() {
             content: JSON.stringify(projectPkg, null, 4),
             ACTION_TYPE: 'WRITE'
         }
-    ]
+    ];
 
     if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
-        // 项目根目录pkg.json 合并 scripts, devDependencies, 
+        // 项目根目录pkg.json 合并 scripts, devDependencies,
         const curProjectPath = path.join(utils.getProjectRootPath(), 'package.json');
         let curProjectPkg = require(curProjectPath);
         curProjectPkg.scripts = curProjectPkg.scripts || {};
-        ['scripts', "devDependencies"].forEach(function(key){
+        ['scripts', 'devDependencies'].forEach(function(key){
             Object.assign(curProjectPkg[key], quickPkg[key]);
         });
         ret = ret.concat([
@@ -105,7 +104,7 @@ function getQuickPkgFile() {
                 content: JSON.stringify(curProjectPkg, null, 4),
                 ACTION_TYPE: 'WRITE'
             }
-        ])
+        ]);
     }
 
     return ret;
@@ -121,7 +120,7 @@ function getCopyFiles() {
         id: path.join(cwd, 'source', fileName),
         dist: path.join(utils.getProjectRootPath(), 'src', fileName),
         ACTION_TYPE: 'COPY'
-    }))
+    }));
 }
 
 //copy 快应用构建的基础依赖
@@ -138,7 +137,6 @@ function getQuickBuildConfigFile(){
     } catch (e) {
     }
 
-    
     let defaultList = [
         {
             id: path.join(signDir, sign),
@@ -150,10 +148,9 @@ function getQuickBuildConfigFile(){
             dist: path.join(utils.getProjectRootPath(),  babelConfig),
             ACTION_TYPE: 'COPY'
         }
-    ]
+    ];
 
     return defaultList;
-
 }
 
 //从 github 同步UI
@@ -211,7 +208,7 @@ function getReactLibFile(ReactLibName: string): Array<taskItem> {
 //copy project.config.json
 function getProjectConfigFile(buildType: string) {
     if (buildType === 'quick' || buildType === 'h5') return [];
-    
+
     const map = {
         wx: 'project.config.json',
         bu: 'project.swan.json',
@@ -224,7 +221,7 @@ function getProjectConfigFile(buildType: string) {
         : src = path.join(cwd, 'source', fileName);
 
     const dist = path.join(utils.getDistDir(), fileName);
-   
+
     if (fs.existsSync(src)) {
         return [
             {
@@ -306,7 +303,7 @@ function injectPluginsConfig() {
     try {
         userConfig = require(path.join(cwd, 'source', `${config.buildType}Config.json`));
     } catch (e) {
-    
+
     }
     if (userConfig && userConfig.plugins && Object.prototype.toString.call(userConfig.plugins) === '[object Object]') {
         Object.keys(userConfig.plugins).forEach(key => {
@@ -332,7 +329,7 @@ interface taskItem {
 }
 
 export default async function runTask({ platform: buildType, beta, betaUi, compress }: NanachiOptions){
-   
+
     // 检查pages目录是否符合规范
     if (buildType !== 'quick' && getSubpackage(buildType).length > 0) {
         //checkPagePath(path.resolve(cwd, 'source/pages'));
@@ -340,7 +337,7 @@ export default async function runTask({ platform: buildType, beta, betaUi, compr
     const ReactLibName = REACT_LIB_MAP[buildType];
     const isQuick = buildType === 'quick';
     let tasks: Array<taskItem> = [];
-    
+
     // 安装nanachi-compress-loader包
     if (compress) {
         const compressLoaderName = 'nanachi-compress-loader';
@@ -368,7 +365,7 @@ export default async function runTask({ platform: buildType, beta, betaUi, compr
     } else {
         // tasks = tasks.concat(getReactLibFile(ReactLibName));
     }
-    
+
     //快应用下需要copy babel.config.js, 合并package.json等
     if (isQuick) {
         tasks = tasks.concat(getQuickBuildConfigFile(), getQuickPkgFile(), getCopyFiles());
@@ -382,13 +379,13 @@ export default async function runTask({ platform: buildType, beta, betaUi, compr
             );
         }
     }
-    
+
     injectPluginsConfig();
-    
+
     // copy project.config.json
     tasks = tasks.concat(getProjectConfigFile(buildType));
 
-    
+
     try {
         //每次build时候, 必须先删除'dist', 'build', 'sign', 'src', 'babel.config.js'等等冗余文件或者目录
         await Promise.all(getRubbishFiles(buildType).map(function(task){

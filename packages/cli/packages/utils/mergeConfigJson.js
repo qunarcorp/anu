@@ -10,17 +10,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const buildType = process.env.ANU_ENV;
 const config = require('../../config/config');
-module.exports = function (modules, json) {
+const mergeConfigJsonWithModuleJudge = (modules, json) => {
     if (modules.componentType !== 'App') {
         return json;
     }
+    return mergeConfigJson(json);
+};
+const mergeConfigJson = (json, XConfigJson) => {
     let configJson = {};
     let userConfig = {};
     try {
-        userConfig = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
+        if (XConfigJson) {
+            userConfig = XConfigJson;
+        }
+        else {
+            userConfig = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
+        }
     }
-    catch (err) {
-    }
+    catch (err) { }
     Object.assign(configJson, userConfig);
     if (buildType != 'quick') {
         delete configJson.subPackages;
@@ -31,4 +38,8 @@ module.exports = function (modules, json) {
     }
     Object.assign(json, configJson);
     return json;
+};
+module.exports = {
+    mergeConfigJsonWithModuleJudge,
+    mergeConfigJson
 };

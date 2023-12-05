@@ -1,6 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const buildType = process.env.ANU_ENV;
 const supportPlat = ['wx', 'bu', 'qq', 'ali', 'tt'];
 const keys = {
     ali: 'subPackages',
@@ -10,20 +7,31 @@ const keys = {
     tt: 'subpackages'
 };
 const getSubpackage = require('./getSubPackage');
-module.exports = function (modules, json) {
+const path = require('path');
+const utils = require('./index');
+const setSubPackageWithModuleJudge = (modules, json) => {
     if (modules.componentType !== 'App') {
         return json;
     }
-    if (!supportPlat.includes(buildType)) {
+    if (!supportPlat.includes(process.env.ANU_ENV)) {
         return json;
     }
+    return setSubPackage(json);
+};
+const setSubPackage = (json, XConfigJson) => {
     if (!json.pages)
         return json;
     let set = new Set();
     json.pages.forEach((route) => set.add(route));
     json.pages = Array.from(set);
-    json[keys[buildType]] = json[keys[buildType]] || [];
-    const subPackages = getSubpackage(buildType);
+    json[keys[process.env.ANU_ENV]] = json[keys[process.env.ANU_ENV]] || [];
+    let subPackages;
+    if (XConfigJson) {
+        subPackages = getSubpackage(process.env.ANU_ENV, XConfigJson);
+    }
+    else {
+        subPackages = getSubpackage(process.env.ANU_ENV);
+    }
     let routes = json.pages.slice();
     subPackages.forEach(function (el) {
         let { name, resource } = el;
@@ -32,11 +40,15 @@ module.exports = function (modules, json) {
             name: name,
             pages: []
         };
-        if (buildType === 'ali') {
+        if (process.env.ANU_ENV === 'ali') {
             delete subPackagesItem.name;
         }
         let reg = new RegExp('^' + resource + '$');
-        json[keys[buildType]].push(subPackagesItem);
+        if (json[keys[process.env.ANU_ENV]].find((el) => el.root === resource && el.pages && el.pages.length)) {
+        }
+        else {
+            json[keys[process.env.ANU_ENV]].push(subPackagesItem);
+        }
         json.pages.forEach(function (pageRoute) {
             const pageDirName = pageRoute.split('/').slice(0, 2).join('/');
             if (reg.test(pageDirName)) {
@@ -46,9 +58,13 @@ module.exports = function (modules, json) {
             }
         });
     });
-    if (!json[keys[buildType]].length) {
-        delete json[keys[buildType]];
+    if (!json[keys[process.env.ANU_ENV]].length) {
+        delete json[keys[process.env.ANU_ENV]];
     }
     json.pages = routes;
     return json;
+};
+module.exports = {
+    setSubPackageWithModuleJudge,
+    setSubPackage
 };

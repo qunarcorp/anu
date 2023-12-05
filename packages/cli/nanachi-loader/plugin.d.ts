@@ -1,5 +1,5 @@
 import { NanachiOptions } from '../index';
-import webpack = require('webpack');
+import webpack from 'webpack';
 interface NanachiCompiler extends webpack.Compiler {
     NANACHI?: {
         webviews?: Array<any>;

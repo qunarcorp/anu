@@ -15,7 +15,6 @@ import globalConfig from './config/config';
 import runBeforeParseTasks from './tasks/runBeforeParseTasks';
 import createH5Server from './tasks/createH5Server';
 import { validatePlatforms } from './config/config';
-import CopyWebpackPlugin from 'copy-webpack-plugin';
 import { intermediateDirectoryName } from './config/h5/configurations';
 import * as OS from 'os';
 import * as rd from 'rd';
@@ -74,7 +73,6 @@ async function nanachi(options: NanachiOptions = {}) {
 
     console.log('test 1.9');
 
-
     function callback(err: Error, stats?: webpack.Stats) {
         if (err) {
             // eslint-disable-next-line
@@ -96,6 +94,8 @@ async function nanachi(options: NanachiOptions = {}) {
         if (stats.hasErrors()) {
             info.errors.forEach(e => {
                 // eslint-disable-next-line
+                // console.log(e);
+                // console.log('\n');
                 console.error(chalk.red('Error:\n'), utils.cleanLog(e));
                 if (utils.isMportalEnv()) {
                     process.exit();
@@ -243,7 +243,7 @@ function injectBuildEnv({ platform, compress, huawei, typescript }: NanachiOptio
         compress,
         typescript,
         huawei: huawei || false
-    })
+    });
 }
 
 function showLog() {
@@ -288,7 +288,7 @@ function showLog() {
 function getWebViewRoutes(): string[]{
     const pages = path.join(process.cwd(), 'source', 'pages');
     let webViewRoutes: string[] = [];
-    if('win32' === OS.platform()){
+    if ('win32' === OS.platform()){
         webViewRoutes = rd.readFilterSync(pages, /\.js$/).filter((jsfile: string) => {
             const reg = new RegExp("pages:\\s*(\\btrue\\b|\\[.+\\])");
             const content: string = fs.readFileSync(jsfile).toString();
@@ -304,9 +304,9 @@ function getWebViewRoutes(): string[]{
 
         webViewRoutes = ret.split(/\s/)
             .filter(function (el) {
-                return /\/pages\//.test(el)
+                return /\/pages\//.test(el);
             }).map(function (el) {
-                return el.replace(/\:$/g, '')
+                return el.replace(/\:$/g, '');
             });
     }
     return webViewRoutes;

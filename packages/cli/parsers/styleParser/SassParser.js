@@ -23,8 +23,7 @@ class SassParser extends StyleParser_1.default {
                     if (!/\.s[ca]ss$/.test(importer)) {
                         importer = importer + '.scss';
                     }
-                    var filePathAbPath = path.join(baseDir, calculateAlias(props.filepath, importer));
-                    return filePathAbPath;
+                    return path.join(baseDir, calculateAlias(props.filepath, importer));
                 },
                 plugins: this.platform !== 'h5' ? [
                     require('../../packages/postcssPlugins/postCssPluginRemoveRules')

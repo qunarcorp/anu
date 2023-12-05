@@ -1,9 +1,16 @@
 import * as path from 'path';
 
-module.exports = function(buildType: string) {
+// 旧逻辑仅通过 buildType 查找
+// 如果传入了 XConfigJson 对象，则直接使用
+module.exports = function(buildType: string, XConfigJson: any) {
     let subPackages = [];
     try {
-        let appRootConfig = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
+        let appRootConfig;
+        if (XConfigJson) {
+            appRootConfig = XConfigJson;
+        } else {
+            appRootConfig = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
+        }
         /**
          * subPackages: [
          *      {
@@ -23,7 +30,7 @@ module.exports = function(buildType: string) {
         }, []);
         // subPackages = appRootConfig.subpackages || appRootConfig.subPackages || [];
     } catch (err) {
-        
+
     }
     return subPackages;
 };

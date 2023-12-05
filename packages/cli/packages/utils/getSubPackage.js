@@ -8,10 +8,16 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
-module.exports = function (buildType) {
+module.exports = function (buildType, XConfigJson) {
     let subPackages = [];
     try {
-        let appRootConfig = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
+        let appRootConfig;
+        if (XConfigJson) {
+            appRootConfig = XConfigJson;
+        }
+        else {
+            appRootConfig = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
+        }
         subPackages = Object.keys(appRootConfig).reduce((startValue, el) => {
             if (el.toLowerCase() === 'subpackages' && appRootConfig[el].length) {
                 startValue = startValue.concat(appRootConfig[el]);

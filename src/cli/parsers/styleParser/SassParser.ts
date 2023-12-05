@@ -1,7 +1,8 @@
 import StyleParser from './StyleParser';
-import { MAP } from '../../consts/index';
-import { StyleParserOptions } from './StyleParserFactory';
+import {MAP} from '../../consts/index';
+import {StyleParserOptions} from './StyleParserFactory';
 import * as path from 'path';
+
 const calculateAlias = require('../../packages/utils/calculateAlias');
 
 class SassParser extends StyleParser {
@@ -14,16 +15,11 @@ class SassParser extends StyleParser {
                     if (!/\.s[ca]ss$/.test(importer)) {
                         importer = importer + '.scss';
                     }
-                    //处理alias路径
-                    var filePathAbPath = path.join(
+                    // 处理内联，返回绝对路径
+                    return path.join(
                         baseDir,
                         calculateAlias(props.filepath, importer)
-                    )
-                    // 返回绝对路径
-                    /**
-                     * If you do not return an absolute path, your path will be resolved to an absolute path using the default resolver. You can use resolve for this.
-                     */
-                    return filePathAbPath;
+                    );
                     // return calculateAlias(props.filepath, importer);
                 },
                 // from: props.filepath,

@@ -1,7 +1,7 @@
 import globalStore from "../packages/utils/globalStore";
 
 export default () => {
-    // 获取源码中声明引入语句的每一行，然后看是否存在 \/* nanachi-ignore-dependency *\/
+    // 获取 ast 中声明引入语句的每一行，然后看是否存在名为 nanachi-ignore-dependency 的注释部分
     // 如果存在，看这行是否是引入语句，如果是，记录引入模块的路径以及源码的绝对路径，在编译完成后消费
     // 例如：import { View } from '@components/index'; => { '此处是源码路径': { '@components/index': true } }
 
@@ -37,7 +37,7 @@ export default () => {
             const node = path.node;
             const ignoreModulesPath = state.ignoreModulesPath;
             const modulePath = node.source.value;
-            
+
             // 仅支持开头注释，例如   /* nanachi-ignore-dependency */import EventEmitter from '@common/utils/EventEmitter';
             if (node.leadingComments) {
                 node.leadingComments.forEach((comment) => {

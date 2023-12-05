@@ -247,7 +247,7 @@ let utils = {
         }
         return flag;
     },
-    decodeChinise: require('./decodeChinese'),
+    decodeChinese: require('./decodeChinese'),
     isWebView(fileId) {
         if (config.buildType != 'quick') {
             return false;
@@ -256,11 +256,10 @@ let utils = {
         if (!rules.length) {
             return false;
         }
-        let isWebView = rules.includes(fileId) ||
+        return rules.includes(fileId) ||
             rules.some((rule) => {
                 return Object.prototype.toString.call(rule) === '[object RegExp]' && rule.test(fileId);
             });
-        return isWebView;
     },
     parseCamel: toUpperCamel,
     uniquefilter(arr, key = '') {
@@ -329,23 +328,42 @@ let utils = {
         const projectRootPath = this.getProjectRootPath();
         return path.join(projectRootPath, this.getDistRelativeDir());
     },
+    getFixedDistDir(setFix) {
+        const projectRootPath = this.getProjectRootPath();
+        return path.join(projectRootPath, this.getDistRelativeDir(setFix));
+    },
     getDisSourceMapDir() {
         const projectRootPath = this.getProjectRootPath();
-        return path.join(projectRootPath, 'sourcemap', config.buildType);
+        return path.join(projectRootPath, this.getDistRelativeDir());
     },
-    getDistRelativeDir() {
+    getDistRelativeDir(setFix) {
+        const addCSuffix = (setFix === undefined) ? this.isSingleBundle() && this.isWatchMode() : setFix;
+        const defaultMultipleName = addCSuffix ? 'targetc' : 'target';
+        const defaultNotMultipleName = addCSuffix ? 'distc' : 'dist';
         const isMultiple = userConfig.multiple || false;
         if (config.buildType === 'quick') {
             return 'src';
         }
-        return path.join(isMultiple ? 'target' : config.buildDir, isMultiple ? config.buildType : '');
+        return path.join(isMultiple ? defaultMultipleName : (config.inputBuildDir) ? config.inputBuildDir : defaultNotMultipleName, isMultiple ? config.buildType : '');
     },
-    getDistPathFromSoucePath(sourcePath) {
+    getDistPathFromSourcePath(sourcePath) {
         if (/\/node_modules\//.test(sourcePath)) {
             return path.join(this.getDistDir(), 'npm', sourcePath.split('/node_modules/').pop());
         }
         const fileName = sourcePath.split('/source/').pop();
         return path.join(this.getDistDir(), fileName);
+    },
+    isSingleBundle() {
+        return !!config.isSingleBundle;
+    },
+    isWatchMode() {
+        return !!config.isWatch;
+    },
+    isSingleBundleProcess(compileType, component) {
+        return (compileType === 'build' && component) || (compileType === 'watch' && component);
+    },
+    getShadowAppJsPath() {
+        return path.join(this.getProjectRootPath(), 'source', `${config.buildType}ShadowApp.js`);
     }
 };
 module.exports = utils;

@@ -4,7 +4,8 @@ const execSync = require('child_process').execSync;
 const t = require('@babel/types');
 import * as path from "path";
 import * as fs from "fs-extra";
-import { Platform } from '../../consts/platforms';
+import {Platform} from '../../consts/platforms';
+
 const cwd = process.cwd();
 const chalk = require('chalk');
 const spawn = require('cross-spawn');
@@ -24,6 +25,7 @@ try {
 } catch(e) {
 
 }
+// TODO 需要重构，不应该这么乱引用
 const userConfig = pkg && (pkg.nanachi || pkg.mpreact) || {};
 const mergeWith = require('lodash.mergewith');
 const crypto = require('crypto');
@@ -312,7 +314,7 @@ let utils = {
         }
         return flag;
     },
-    decodeChinise: require('./decodeChinese'),
+    decodeChinese: require('./decodeChinese'),
     isWebView(fileId: string) {
 
         if (config.buildType != 'quick') {
@@ -326,15 +328,11 @@ let utils = {
         }
 
 
-        let isWebView =
-        rules.includes(fileId) ||
-        rules.some((rule: any) => {
+        return rules.includes(fileId) ||
+            rules.some((rule: any) => {
                 //如果是webview设置成true, 则用增则匹配
                 return Object.prototype.toString.call(rule) === '[object RegExp]' && rule.test(fileId);
             });
-
-        return isWebView;
-
     },
     parseCamel: toUpperCamel,//转换为大驼峰风格
     uniquefilter(arr: any, key = '') {
@@ -413,34 +411,73 @@ let utils = {
         return path.join(projectRootPath, this.getDistRelativeDir());
     },
 
+    // 不同的模式下，输出到的产物目录可能不同，所以调用 getDistDir 时，会根据参数返回不同的路径
+    // 但是有的时候，要用到两种模式的产物目录路径进行操作（例如 copy 的 from 和 to），所以这个函数返回之前形式的固定产物目录
+    // 调用此函数之前，想好是否需要这种固定路径的场景
+    getFixedDistDir(setFix: boolean | undefined) {
+        const projectRootPath = this.getProjectRootPath();
+        return path.join(projectRootPath, this.getDistRelativeDir(setFix));
+    },
+
     /**
      * 获取sourceMap的绝对地址
      * @returns
      */
     getDisSourceMapDir():string{
         const projectRootPath = this.getProjectRootPath();
-        return path.join(projectRootPath, 'sourcemap', config.buildType);
+        return path.join(projectRootPath, this.getDistRelativeDir());
     },
 
-    getDistRelativeDir() {
+
+    // TODO 需要重构，即使像是目前这么写，实际上也是错的，只是按照之前错误的写法进行了适配
+    getDistRelativeDir(setFix: boolean | undefined) {
+        // 在单包模式下，如果仅执行 build，则不会进行基座代码的合并等一系列操作，所以也不用改变目录名
+        // 但如果执行 watch，则会有一个新的进程负责输出基座代码，所以会出现产物目录名重复
+        const addCSuffix = (setFix === undefined) ? this.isSingleBundle() && this.isWatchMode() : setFix;
+        const defaultMultipleName = addCSuffix ? 'targetc' : 'target';
+        const defaultNotMultipleName = addCSuffix ? 'distc': 'dist';
+
         const isMultiple = userConfig.multiple || false;
         if (config.buildType === 'quick') {
-            return 'src'
+            // 快应用没适配过单包单包，适配了再改
+            return 'src';
         }
         return path.join(
             // 快应用把dist, build目录占了。
             // 在同时构建多个小程序的时候，非快应用的构建到target目录里
-            isMultiple ? 'target' : config.buildDir,
+            isMultiple ? defaultMultipleName : (config.inputBuildDir) ? config.inputBuildDir : defaultNotMultipleName,
             isMultiple ? config.buildType : ''
         );
     },
 
-    getDistPathFromSoucePath(sourcePath: string) {
+    getDistPathFromSourcePath(sourcePath: string) {
         if (/\/node_modules\//.test(sourcePath)) {
             return path.join(this.getDistDir(), 'npm', sourcePath.split('/node_modules/').pop());
         }
         const fileName = sourcePath.split('/source/').pop();
         return path.join(this.getDistDir(), fileName);
+    },
+
+    isSingleBundle() {
+       return !!config.isSingleBundle;
+    },
+
+    isWatchMode() {
+      return !!config.isWatch;
+    },
+
+    // 刚执行程序的时候判断是不是单包，一般不允许调用，且只会被调用一次。想要在流程中判断，使用上边的 isSingleBundle 即可
+    isSingleBundleProcess(compileType: string, component: string | undefined) {
+        // 目前满足单包模式的条件
+        // 此方法不要直接调用，这个是用于设置 config.isSingleBundle 的
+        // 1. nanachi build --component
+        // 2. nanachi watch --component
+        return (compileType === 'build' && component) || (compileType === 'watch' && component);
+    },
+
+    // 获取单包模式下 xxShadowApp.js 所在的路径，不保证文件一定存在
+    getShadowAppJsPath() {
+        return path.join(this.getProjectRootPath(), 'source', `${config.buildType}ShadowApp.js`);
     }
 };
 

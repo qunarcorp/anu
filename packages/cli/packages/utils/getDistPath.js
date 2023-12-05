@@ -35,6 +35,5 @@ function getDistPath(sourcePath) {
         : distPath;
     return distPath;
 }
-;
 module.exports = getDistPath;
 exports.default = getDistPath;

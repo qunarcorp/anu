@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs-extra';
 import utils from '../../packages/utils';
@@ -7,7 +6,9 @@ import {getMultiplePackDirPrefix} from './isMutilePack';
 import mergeWith from 'lodash.mergewith';
 // @ts-ignore
 import diff from 'deep-diff';
+import { projectConfigJsonMap } from '../../consts';
 
+const chalk = require('chalk');
 
 const buildType = process.argv.length > 2 ? process.argv[2].split(':')[1] : 'wx';
 
@@ -34,6 +35,8 @@ export function get_BUILD_ENV () {
 }
 
 export function orderRouteByOrder(map: any) {
+    if (!map['pages']) return map;
+
     //根据order排序
     map['pages'] = map['pages'].sort(function (a: any, b: any) {
         return b.order - a.order;
@@ -122,6 +125,7 @@ export function getMergeDir() {
 }
 
 // 获取 skip 配置文件在不同的环境下有三种可能，取存在的那种即可
+// TODO: 马甲的支持得重新设计
 export function getDownLoadHomeDir(env: string) {
     // 壳子是 home 包 或者 .Cache 中的 download
     if (fs.existsSync(path.join(utils.getProjectRootPath(), `${env}SkipConfig.json`))) {
@@ -174,7 +178,7 @@ export function xDiff(list: any) {
             // [ DiffEdit { kind: 'E', path: [ 'list', 0, 'name' ], lhs: 1, rhs: 2 },
             return el.kind === 'E'
                 && el.path.every(function (el: string | number) {
-                    return typeof el === 'string'
+                    return typeof el === 'string';
                 });
         });
         if (x.length) {
@@ -186,7 +190,7 @@ export function xDiff(list: any) {
 
     // 冲突处理，并直接终止进程
     if (isConfict) {
-        var errList: any = [];
+        const errList: any = [];
         confictQueue.forEach(function (confictEl) {
             //let keyName = confictEl.path[confictEl.path.length - 1];
             let kind: any = [];
@@ -215,15 +219,15 @@ export function xDiff(list: any) {
             errList.push(kind);
         });
 
-        var msg = '';
+        let msg = '';
 
         errList.forEach(function (errEl: any) {
             let kindErr = '';
             errEl.forEach(function (errItem: any) {
                 var tpl = `
 冲突文件: ${(errItem.confictFile)}
-冲突路径 ${errItem.confictKeyPath}
-冲突详情：${JSON.stringify({[JSON.parse(errItem.confictKeyPath).pop()]: errItem.confictValue}, null, 4)}
+冲突路径: ${errItem.confictKeyPath}
+冲突详情: ${JSON.stringify({[JSON.parse(errItem.confictKeyPath).pop()]: errItem.confictValue}, null, 4)}
 `;
                 kindErr += tpl;
             });
@@ -250,3 +254,159 @@ export function xDiff(list: any) {
 export function getMergedData(configList: any) {
     return xDiff(configList);
 }
+
+// export function validateAppJsonIsExistInSource(dirPath: string) {
+//     const appJsonPossiblePath = path.join(dirPath, 'app.json');
+//
+//     return fs.existsSync(appJsonPossiblePath) ? appJsonPossiblePath : undefined;
+// }
+
+export function validateConfigJsonIsExistInSource(dirPath: string) {
+    const configJsonPossiblePath = path.join(dirPath, `${get_ANU_ENV()}Config.json`);
+    return fs.existsSync(configJsonPossiblePath) ? configJsonPossiblePath : undefined;
+}
+
+// 根据需要特殊处理再合并的文件列表，构建合并操作的元数据
+export function generateMetaFilesMap(queue: any = []) {
+    let map: any = {};
+    let env = ANU_ENV;
+
+    queue.forEach(function (file: any) {
+        file = file.replace(/\\/g, '/');
+
+        // 1. package.json
+        if (/\/package\.json$/.test(file)) {
+            let { dependencies = {}, devDependencies = {}, nanachi = {} } = require(file);
+            if (Object.keys(dependencies).length) {
+                delete dependencies['@qnpm/chaika-patch'];
+                map['pkgDependencies'] = map['pkgDependencies'] || [];
+                map['pkgDependencies'].push({
+                    id: file,
+                    content: dependencies,
+                    type: 'dependencies'
+                });
+            }
+            if (Object.keys(devDependencies).length) {
+                delete devDependencies['node-sass'];
+                delete devDependencies['@qnpm/chaika-patch'];
+                map['pkgDevDep'] = map['pkgDevDep'] || [];
+                map['pkgDevDep'].push({
+                    id: file,
+                    content: devDependencies,
+                    type: 'devDependencies'
+                });
+            }
+
+            map.ignoreInstallPkg = map.ignoreInstallPkg || [];
+            map.ignoreInstallPkg = map.ignoreInstallPkg.concat(nanachi.ignoreInstalledNpm || []);
+
+            return;
+        }
+
+        // app.json 中有 alias pages rules imports order
+        // alias -> map.alias -> package.json 注入（为了编译）
+        // pages -> map.pages -> app.js 注入 （为了编译）
+        // rules -> map.quickRules -> 仅在快应用下会进行注入
+        // imports -> map.importSyntax -> app.js 注入 （为了编译）
+        if (/\/app\.json$/.test(file)) {
+            const { alias = {}, pages = [], rules = [], imports = [], order = 0 } = require(file);
+            if (alias) {
+                map['alias'] = map['alias'] || [];
+                map['alias'].push({
+                    id: file,
+                    content: alias,
+                    type: 'alias'
+                });
+            }
+
+            if (pages.length) {
+                let allInjectRoutes = pages.reduce(function (ret: any, route: any) {
+                    let injectRoute = '';
+                    if ('[object Object]' === Object.prototype.toString.call(route)) {
+                        // ' wx, ali,bu ,tt ' => ['wx', 'ali', 'bu', 'tt']
+                        const supportPlat = route.platform.replace(/\s*/g, '').split(',');
+                        const supportEnv = route.env?.replace(/\s*/g, '').split(',');
+                        if (supportPlat.includes(env)) {
+                            if (!supportEnv || supportEnv.includes(BUILD_ENV)){
+                                injectRoute = route.route;
+                            }
+                        }
+                    } else {
+                        injectRoute = route;
+                    }
+
+                    if (injectRoute) {
+                        ret.add(injectRoute);
+                    }
+                    return ret;
+                }, new Set());
+
+                map['pages'] = map['pages'] || [];
+                map['pages'].push({
+                    routes: Array.from(allInjectRoutes),
+                    order: order
+                });
+            }
+
+            if (rules.length) {
+                map['quickRules'] = map['quickRules'] || new Map();
+                rules.forEach((curRule: any) => {
+                    const selector = JSON.stringify(curRule);
+                    if (map['quickRules'].has(selector)) {
+                        console.log(chalk.yellow(`无法合并, ${file.split('download/').pop()} 中已经存在规则：\n${JSON.stringify(curRule, null, 4)}\n`));
+                        return;
+                    }
+                    map['quickRules'].set(selector, 1);
+                });
+            }
+
+            map['importSyntax'] = map['importSyntax'] || [];
+            map['importSyntax'] = map['importSyntax'].concat(imports);
+            return;
+        }
+
+        // project.config.json
+        const projectConfigReg = (projectConfigJsonMap[buildType] || projectConfigJsonMap.wx).reg;
+        if (projectConfigReg.test(file)) {
+            map['projectConfigJson'] = map['projectConfigJson'] || [];
+            map['projectConfigJson'].push(file);
+        }
+
+        // xxConfig.json
+        const reg = new RegExp(env + 'Config.json$');
+        map['xconfig'] = map['xconfig'] || [];
+        if (reg.test(file)) {
+            try {
+                const config = require(file);
+                if (config) {
+                    map['xconfig'].push({
+                        id: file,
+                        content: config
+                    });
+                }
+            } catch (err) {
+                // eslint-disable-next-line
+            }
+        }
+    });
+    // console.log('my map:', map);
+    map = orderRouteByOrder(map);
+    return map;
+}
+
+// 去重分包配置
+export function getUniqueSubPkgConfig(list: Object[] = []) {
+    interface interFaceList {
+        name: string,
+        resource: string
+    }
+    return list.reduce(function (initList: Array<interFaceList>, curEle: interFaceList) {
+        let curName = curEle.name;
+        let hasEle = initList.some(function (el: interFaceList) {
+            return el.name === curName;
+        });
+        if (!hasEle) initList.push(curEle);
+        return initList;
+    }, []);
+}
+

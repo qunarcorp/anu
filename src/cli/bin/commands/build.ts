@@ -1,4 +1,3 @@
-
 import { NANACHI_CONFIG_PATH } from '../../consts/index';
 import * as fs from 'fs-extra';
 import nanachi from '../../index';
@@ -12,11 +11,11 @@ interface BulidOptions {
 }
 
 const build = async function(args: BulidOptions) {
-   
+
     try {
         const { beta, betaUi, watch, compress, huawei, analysis, silent, typescript, dir=''} = args;
         let { buildType } = args;
-      
+
         const nanachiConfig = {};
         // 360补丁
         if (buildType === '360') {
@@ -36,8 +35,6 @@ const build = async function(args: BulidOptions) {
             dir
         };
 
-       
-       
         // if (buildType !== 'quick' && dir) {
         //     config.buildDir = config.buildDir.replace(/\/$/, '') + '/' + dir.replace(/^\//, '');
         // }
@@ -51,15 +48,14 @@ const build = async function(args: BulidOptions) {
             deepMerge(nanachiConfig, userConfig);
         }
         deepMerge(nanachiConfig, baseConfig);
-        
-        nanachi(nanachiConfig);
 
+        nanachi(nanachiConfig);
     } catch (e) {
         // eslint-disable-next-line
         console.log(e);
         process.exit(1);
     }
-}
+};
 
 // export default build;
 module.exports = build;

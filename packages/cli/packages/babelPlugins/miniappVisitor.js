@@ -27,6 +27,7 @@ const ignorePrevAttri = require('../quickHelpers/ignorePrevAttri');
 const cwd = process.cwd();
 const quickFiles = require('../quickHelpers/quickFiles');
 const quickConfig = require('../quickHelpers/config');
+const generateAppJsonFromXConfigJson = require('./generateAppJsonFromXConfigJson');
 const helpers = require(`../${config_1.default[buildType].helpers}/index`);
 const inlineElement = {
     text: 1,
@@ -275,8 +276,8 @@ const visitor = {
                 }
             }
             if (Object.keys(json).length) {
-                json = require('../utils/setSubPackage')(modules, json);
-                json = require('../utils/mergeConfigJson')(modules, json);
+                json = require('../utils/setSubPackage').setSubPackageWithModuleJudge(modules, json);
+                json = require('../utils/mergeConfigJson').mergeConfigJsonWithModuleJudge(modules, json);
                 let relPath = '';
                 if (/\/node_modules\//.test(modules.sourcePath.replace(/\\/g, '/'))) {
                     relPath = 'npm/' + path.relative(path.join(cwd, 'node_modules'), modules.sourcePath);
@@ -285,17 +286,17 @@ const visitor = {
                     relPath = path.relative(path.resolve(cwd, 'source'), modules.sourcePath);
                 }
                 if (/app\.js/.test(relPath)) {
-                    const ignoreAppJsonProp = ['window', 'tabBar', 'pages', 'subpackages', 'preloadRule'];
                     let xConfigJson = {};
                     try {
                         xConfigJson = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
                     }
                     catch (err) {
                     }
-                    Object.keys(xConfigJson).forEach((key) => {
-                        if (!ignoreAppJsonProp.includes(key.toLowerCase())) {
-                            json[key] = xConfigJson[key];
-                        }
+                    generateAppJsonFromXConfigJson(xConfigJson, json);
+                    modules.queue.push({
+                        path: `${buildType}Config.json`,
+                        code: JSON.stringify(xConfigJson, null, 4),
+                        type: 'json'
                     });
                 }
                 modules.queue.push({

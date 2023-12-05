@@ -12,10 +12,6 @@ function fixPath(p: string) {
     return /^\w/.test(p) ? './' + p : p;
 }
 
-function isSingleBunle() {
-    return config.hasNewAppjs && config.isSingleBundle;
-}
-
 // 获取 import {a, b, c} from '@xxx/yyy', a, b, c 对应的模块真实路径，只适用于nanachi ui 组件库
 const getImportSpecifierFilePath = (function () {
     const ret = {};
@@ -62,14 +58,13 @@ const getImportSpecifierFilePath = (function () {
                                     }
                                 }
                             }
-
-                        }
+                        };
                     }
                 ]
             ]
         });
         return ret[entryFilePath][ImportSpecifierIdentifier];
-    }
+    };
 })();
 
 
@@ -119,6 +114,7 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
     //import Cat from '@components/Cat/index';
     //import Cat from '@PageIndex/Components/Cat/index;
     //@import url('@globalStyle/reset.scss');
+    //@import "@style/g-define.scss"; // 这种 css 别名引入也可以配置在 alias 中进行拦截
     if (aliasMap[rsegments[0]]) {
         let from = path.dirname(getDistPath(srcPath));
         //@common/b/c ==> userPath/project/source/common/a/b
@@ -148,7 +144,9 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
     // 2. import QMark from '@qnpm/qmark'; // 此为公共包的一个依赖，nodeResolver 肯定是找不到报错的 -> import QMark from "../../npm/@qnpm/qmark/dist/qmark.mini.umd.js";
     try {
         // 如果 remoteNpmPackagesMap 中存在对应的记录，则直接返回，该逻辑分支只在单包模式下生效
-        if (isSingleBunle() && remoteNpmPackagesMap[importerSource]) {
+        if (utils.isSingleBundle() && remoteNpmPackagesMap[importerSource]) {
+            // 判断引入语法的类型，如果后边明确写了 scss css sass less 的字样，则认为是样式文件，否则认为是 js 文件
+
             let from = path.dirname(srcPath);
             from = getDistPath(from);
 

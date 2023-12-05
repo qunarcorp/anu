@@ -9,3 +9,4 @@ export declare const MAP: {
     };
 };
 export declare const NANACHI_CONFIG_PATH: string;
+export declare const projectConfigJsonMap: any;

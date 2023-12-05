@@ -17,7 +17,7 @@ try {
 }
 catch (err) {
 }
-const buildDir = userConfig.buildDir || 'dist';
+const buildDir = userConfig.buildDir;
 const sourceDir = userConfig.sourceDir || 'source';
 const sourcemap = userConfig.sourcemap != undefined ? userConfig.sourcemap : true;
 var Platforms;
@@ -111,6 +111,7 @@ const config = {
         disabledTitleBarPages: new Set()
     },
     buildType: 'wx',
+    inputBuildDir: buildDir,
     buildDir: buildDir,
     sourceDir: sourceDir,
     huawei: false,
@@ -121,7 +122,9 @@ const config = {
     pluginTags: {},
     sourcemap,
     plugins: {},
-    multiProject: [],
+    noCurrent: false,
+    childProcessLaunchStatus: 'NONE',
+    forFirstCompile: true,
     projectSourceTypeList: [],
 };
 module.exports = config;

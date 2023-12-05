@@ -1,25 +1,24 @@
-
 import NanachiWebpackPlugin from '../nanachi-loader/plugin';
 import SizePlugin from '../nanachi-loader/sizePlugin';
 import QuickPlugin from '../nanachi-loader/quickPlugin';
 import ChaikaPlugin from '../nanachi-loader/chaika-plugin/chaikaPlugin';
-import CopyWebpackPlugin, {} from 'copy-webpack-plugin';
+import SingleBundlePlugin from '../nanachi-loader/chaika-plugin/singleBundlePlugin';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
 import IgnoreDependencyErrorsPlugin from '../nanachi-loader/ignoreDependencyErrorsPlugin';
-
-
-import { NanachiOptions } from '../index';
+import {NanachiOptions} from '../index';
 import * as path from 'path';
 import * as fs from 'fs';
-const { exec } = require('child_process');
 import webpack from 'webpack';
-const utils = require('../packages/utils/index');
-import { intermediateDirectoryName } from './h5/configurations';
+import {intermediateDirectoryName} from './h5/configurations';
 import quickAPIList from '../consts/quickAPIList';
 import config from './config';
+
+const { exec } = require('child_process');
+const utils = require('../packages/utils/index');
 //各种loader
 //生成文件
 const fileLoader = require.resolve('../nanachi-loader/loaders/fileLoader');
-//处理@component, @comom
+//处理@component, @common
 const aliasLoader = require.resolve('../nanachi-loader/loaders/aliasLoader');
 //visitor
 const nanachiLoader = require.resolve('../nanachi-loader/loaders/nanachiLoader');
@@ -37,20 +36,14 @@ const H5AliasList = ['react','@react','react-dom', 'react-loadable', '@qunar-def
 
 const isChaikaMode = function() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
-}
-
-const isEntryFromShadowAppJs = function() {
-    // 进入了单包模式，且成功的注入引入模块语句到了 shadowApp.js
-    return config.isSingleBundle && config.hasNewAppjs;
-}
-
+};
 
 const WebpackBar = require('webpackbar');
 // json 配置文件名
 const quickConfigFileName: string =
-  config.huawei && utils.isCheckQuickConfigFileExist("quickConfig.huawei.json")
-    ? "quickConfig.huawei.json"
-    : "quickConfig.json";
+  config.huawei && utils.isCheckQuickConfigFileExist('quickConfig.huawei.json')
+      ? 'quickConfig.huawei.json'
+      : 'quickConfig.json';
 
 global.nanachiVersion = config.nanachiVersion || '';
 
@@ -78,7 +71,7 @@ export default function({
     }
 
     externals.push(/runtimecommon\.js/);
-    
+
     let aliasMap = require('../packages/utils/calculateAliasConfig')();
     // chaika 模式下要打包到yourProject/dist中
     // if (process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE') {
@@ -87,7 +80,8 @@ export default function({
     //     distPath = path.resolve(cwd, utils.getDistName(platform));
     // }
     let distPath = path.resolve(utils.getDistDir());
- 
+    console.log('distPath', distPath);
+
     if (platform === 'h5') {
         distPath = path.join(distPath, intermediateDirectoryName);
     }
@@ -114,8 +108,9 @@ export default function({
         ],
         ...copyPluginOption // 压缩图片配置
     }];
-    const mergePlugins = [].concat( 
-        isChaikaMode() ? [ new ChaikaPlugin() ] : [],
+    const mergePlugins = [].concat(
+        // chaikaPlugin 改为各种情况下一定会加载的插件，在插件内部判断逻辑
+        [ new ChaikaPlugin() ],
         analysis ? new SizePlugin() : [],
         new NanachiWebpackPlugin({
             platform,
@@ -126,46 +121,46 @@ export default function({
         plugins);
 
 
-    const { skipNanachiCache = false, JENKINS_URL = '' } = process.env
-    const BUILD_ENV = process.env.BUILD_ENV || ''
-    const jenkinsPath = '/usr/local/q/npm'
-    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../')
+    const { skipNanachiCache = false, JENKINS_URL = '' } = process.env;
+    const BUILD_ENV = process.env.BUILD_ENV || '';
+    const jenkinsPath = '/usr/local/q/npm';
+    const basePath = fs.existsSync(jenkinsPath) ? path.join(jenkinsPath) : path.join(process.cwd(),'../../');
     const cachePath = `.qcache/nanachi-cache-loader/${BUILD_ENV}/${platform}`;
     const cacheDirectory = path.resolve(path.join(basePath,cachePath));
-   
-    
-   
+
+
+
     /**
      * 1 - watch模式不开启缓存；
      * 2 - 环境变量 skipNanachiCache = false不开启缓存；
      * 3 - 非微信平台不开启缓存
      * 4 - 没有 BUILD_ENV（编译环境不缓存）
-     * **/ 
-    const useCache = !watch && !JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV
-    if(!!JENKINS_URL) {
+     * **/
+    const useCache = !watch && !JSON.parse(skipNanachiCache) && platform == 'wx' && !!BUILD_ENV;
+    if (JENKINS_URL) {
         console.log(` watch模式是否开启: ${watch} \n 环境变量skipNanachiCache是否开启缓存: ${JSON.parse(skipNanachiCache)} \n 是否微信平台: ${platform == 'wx'} \n 有无BUILD_ENV: ${!!BUILD_ENV}`);
-        console.log(`\n\n本次构建是否要走缓存：${useCache}`)
+        console.log(`\n\n本次构建是否要走缓存：${useCache}`);
     }
-    if(!useCache) { // 这个删除是在编译之前执行的，时间长了会忘记这个顺序（以为程序出了问题，为啥internal没有被删除，第一次编译会生成internal，第二次编译检测internal有没有生成，如果有走缓存没有删除没用的缓存避免缓存错乱）
+    if (!useCache) { // 这个删除是在编译之前执行的，时间长了会忘记这个顺序（以为程序出了问题，为啥internal没有被删除，第一次编译会生成internal，第二次编译检测internal有没有生成，如果有走缓存没有删除没用的缓存避免缓存错乱）
         exec(`rm -rf ${cacheDirectory}`, (err, stdout, stderr) => {});
-    } 
-    
+    }
+
     const cacheLorder =  {
-        loader: require.resolve("cache-loader-hash"),
+        loader: require.resolve('cache-loader-hash'),
         options: {
             mode:'hash',
             cacheDirectory: cacheDirectory,
             // cache校验需要目前加入自己定义的一些会改变变异产物的变量
             cacheIdentifier: `cache-loader:${BUILD_ENV}-${process.env.NODE_ENV}-${process.env.SKIP}`, // 重新设置缓存，防止 skip 改变还走缓存
         }
-    }
+    };
 
     const jsLorder  = () => {
-        const __jsLorder = [].concat(
-            fileLoader, 
-            platform !== 'h5' ? aliasLoader: [], 
+        return [].concat(
+            fileLoader,
+            platform !== 'h5' ? aliasLoader : [],
             // useCache ? cacheLorder : [],
-            postLoaders, 
+            postLoaders,
             postJsLoaders,
             nanachiLoader,
             // {
@@ -184,8 +179,7 @@ export default function({
                 }
             } : [],
             prevJsLoaders,
-            prevLoaders )
-        return __jsLorder
+            prevLoaders);
     };
 
     function isJsFile(sourcePath: string) {
@@ -201,7 +195,7 @@ export default function({
     }
 
     function isThirdNpmUiComponentsFile(sourcePath: string) {
-        return /\/node_modules\/.+\/components\//.test(sourcePath)
+        return /\/node_modules\/.+\/components\//.test(sourcePath);
     }
 
     function isReactFile(sourcePath: string) {
@@ -214,11 +208,11 @@ export default function({
             return isNpmFile(sourcePath) && !isThirdNpmUiComponentsFile(sourcePath);
         },
         use: [].concat(
-            fileLoader, 
-            postLoaders, 
-            aliasLoader, 
+            fileLoader,
+            postLoaders,
+            aliasLoader,
             nodeLoader
-        ) 
+        )
     }];
 
     const mergeRule = [].concat(
@@ -242,7 +236,7 @@ export default function({
                 } else {
                     return false;
                 }
-              
+
             },
             //loader是从后往前处理
             use: jsLorder(),
@@ -252,20 +246,20 @@ export default function({
         {
             test: /React\w+/,
             use: [].concat(
-                fileLoader, 
+                fileLoader,
                 // useCache ? cacheLorder : [],
                 postLoaders,
-                nodeLoader, 
+                nodeLoader,
                 reactLoader
             )
         },
         {
             test: /\.(s[ca]ss|less|css)$/,
             use: [].concat(
-                fileLoader, 
-                platform !== 'h5' ? aliasLoader : [], 
+                fileLoader,
+                platform !== 'h5' ? aliasLoader : [],
                 // useCache ? cacheLorder : [],
-                postLoaders, 
+                postLoaders,
                 postCssLoaders,
                 nanachiStyleLoader,
                 prevCssLoaders,
@@ -280,13 +274,13 @@ export default function({
             }
         },
         rules);
-    
+
     if (platform === 'quick') {
         mergePlugins.push(new QuickPlugin());
         // quickConfig可能不存在 需要try catch
         try {
-             // quickConfig可能不存在 需要try catch
-             var quickConfig: {
+            // quickConfig可能不存在 需要try catch
+            var quickConfig: {
                  widgets?: Array<{
                      path?: string
                  }>;
@@ -294,11 +288,11 @@ export default function({
                      widgets?: any;
                  }
              } = {};
-             quickConfig = require(path.join(
+            quickConfig = require(path.join(
                 cwd,
-                "source",
+                'source',
                 quickConfigFileName
-             ))
+            ));
             if (huawei) {
                 if (quickConfig && quickConfig.widgets) {
                     quickConfig.widgets.forEach(widget => {
@@ -315,7 +309,7 @@ export default function({
                     });
                 }
             } else if (quickConfig && quickConfig.router && quickConfig.router.widgets) {
-        
+
                 Object.keys(quickConfig.router.widgets).forEach(key => {
                     const widgetPath = quickConfig.router.widgets[key].path;
                     if (widgetPath) {
@@ -340,14 +334,15 @@ export default function({
             new webpack.IgnorePlugin({
                 resourceRegExp: /\.(\w?ux|pem)$/,
             })
-        )
+        );
     }
 
-    // 由于单包模式下打包，source 中没有 app.js，所以使用根目录下的 shadowApp.js
+    // 由于单包模式下打包，source 中没有 app.js，所以使用 .Cache 目录下的 shadowApp.js
     // 这样单包产物中也不存多余的 app.js，也不需要管理 source 目录下多余的临时 app.js 的生命周期
-    let entry = isEntryFromShadowAppJs() ? path.join(cwd, 'shadowApp.js') : path.join(cwd, 'source/app');
+    let entry = utils.isSingleBundle() ? utils.getShadowAppJsPath() : path.join(cwd, 'source/app');
+    // let entry = utils.isSingleBundle() ? path.join(cwd, 'source/wxShadowApp.js') : path.join(cwd, 'source/app');
 
-    if (typescript) { entry += '.tsx' };
+    if (typescript) { entry += '.tsx'; }
     const barNameMap = {
         quick: '快应用',
         wx: '微信小程序',
@@ -356,7 +351,7 @@ export default function({
         qq: 'QQ小程序',
         tt: '头条小程序',
         h5: 'H5'
-    }
+    };
     return {
         entry: entry,
         mode: 'development',
@@ -374,7 +369,7 @@ export default function({
                     change(ctx, changedFileInfo) {
                         console.log('changedFileInfo:', changedFileInfo);
                         // Called when compile finished
-                         ctx.options.reporters = [];
+                        ctx.options.reporters = [];
                         return '';
                     },
                 }
@@ -393,7 +388,19 @@ export default function({
             ]
         },
         watchOptions: {
-            ignored: /dist/
+            // ignored: [
+            //     /dist/,
+            //     /node_modules/,
+            //     /\.CACHE/
+            // ]
+            // 加入忽略本地的文件 xxShadowApp.js xx代表任意长度的字符串
+            ignored: [
+                /dist/,
+                /.*ShadowApp\.js/,
+                /sourcemap/,
+                /.CACHE/
+            ]
+            // ignored: [/dist/, ]
         },
         externals
         // performance: {
@@ -404,4 +411,4 @@ export default function({
         //     maxAssetSize
         // }
     };
-};
+}

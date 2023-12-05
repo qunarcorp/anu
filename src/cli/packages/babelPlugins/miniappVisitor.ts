@@ -17,6 +17,7 @@ const cwd = process.cwd();
 
 const quickFiles = require('../quickHelpers/quickFiles');
 const quickConfig = require('../quickHelpers/config');
+const generateAppJsonFromXConfigJson = require('./generateAppJsonFromXConfigJson');
 /* eslint no-console: 0 */
 const helpers = require(`../${config[buildType].helpers}/index`);
 //const deps = [];
@@ -209,7 +210,6 @@ const visitor: babel.Visitor = {
                     name
                 );
 
-
                 // 给useState或自定义的变量增加输出
                 let funData: any = [];
                 let body = astPath.node.body.body;
@@ -345,13 +345,12 @@ const visitor: babel.Visitor = {
 
             //将app.js中的import语句变成pages数组
             if (modules.componentType === 'App') {
-                json.pages = modules.pages;
+                json.pages = modules.pages; // 这一步将 pages 挂载在 json 上，后续的 setSubPackage 会用到
                 delete modules.pages;
             }
 
             //支付宝在这里会做属性名转换
             helpers.configName(json, modules.componentType, modules.sourcePath);
-
 
             var keys = Object.keys(modules.usedComponents),
                 usings: {
@@ -382,13 +381,14 @@ const visitor: babel.Visitor = {
                 }
             }
 
-            //只有非空才生成json文件
+            // 只有非空才生成json文件
+            // 根目录下的 xConfig.json -> app.json 也可以参考这里
             if (Object.keys(json).length) {
-                //配置分包
-                json = require('../utils/setSubPackage')(modules, json);
+                // 配置分包，仅 App 类型执行
+                json = require('../utils/setSubPackage').setSubPackageWithModuleJudge(modules, json);
 
-                //merge ${buildType}Config.json
-                json = require('../utils/mergeConfigJson')(modules, json);
+                // 合并 xConfig.json，仅 App 类型执行
+                json = require('../utils/mergeConfigJson').mergeConfigJsonWithModuleJudge(modules, json);
 
                 let relPath = '';
 
@@ -398,20 +398,24 @@ const visitor: babel.Visitor = {
                     relPath = path.relative(path.resolve(cwd, 'source'), modules.sourcePath);
                 }
 
-                // xConfig.json中 除了 'window', 'tabBar', 'pages', 'subpackages', 'preloadRule, 其他属性都需要合并到app.json里
+                // xConfig.json中 除了 'window', 'tabBar', 'pages', 'subpackages', 'preloadRule', 其他属性都需要合并到app.json里
                 if (/app\.js/.test(relPath)) {
-                    const ignoreAppJsonProp = ['window', 'tabBar', 'pages', 'subpackages', 'preloadRule'];
+
                     let xConfigJson = {} as any;
                     try {
                         xConfigJson = require(path.join(process.cwd(), 'source', `${buildType}Config.json`));
                     } catch (err) {
                         // eslint-disable-next-line
                     }
-                    // 合并到 app.json 中
-                    Object.keys(xConfigJson).forEach((key) => {
-                        if (!ignoreAppJsonProp.includes(key.toLowerCase())) {
-                            json[key] = xConfigJson[key];
-                        }
+
+                    generateAppJsonFromXConfigJson(xConfigJson, json);
+
+                    // 转换 xConfig.json 不变，但是 xConfig.json 也需要生成一下，目的是完成与其他 xConfig 的合并，然后再删除
+                    // 后续的删除逻辑在 mergeSourceFilesInOutput 中实现
+                    modules.queue.push({
+                        path: `${buildType}Config.json`,
+                        code: JSON.stringify(xConfigJson, null, 4),
+                        type: 'json'
                     });
                 }
 
@@ -421,6 +425,7 @@ const visitor: babel.Visitor = {
                     type: 'json'
                 });
             }else{
+                // qq 小程序处理组件和页面目录下的 json 文件，内容为空占位用
                 if(buildType === 'qq' ){
                     let relPath = '';
 

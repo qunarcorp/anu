@@ -10,3 +10,6 @@ export declare function getDownLoadHomeDir(env: string): string;
 export declare function getValueByPath(path: any, data: any): any;
 export declare function xDiff(list: any): any;
 export declare function getMergedData(configList: any): any;
+export declare function validateConfigJsonIsExistInSource(dirPath: string): string;
+export declare function generateMetaFilesMap(queue?: any): any;
+export declare function getUniqueSubPkgConfig(list?: Object[]): Object;

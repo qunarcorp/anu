@@ -12,23 +12,23 @@ function isChaikaMode() {
 }
 
 /**
- * 
+ *
  * 抽取公共函数
- * 
+ *
  * e.g
- * 
+ *
  * import React from '@react';
  * function a() {}
  * function b() {}
  * function c() {}
  * App();
- * 
+ *
  * =============>
- * 
+ *
  * import React from '@react';
  * import {a, b, c} from '${somePath}.js';
  * App();
- * 
+ *
  */
 
 // 如何保证顺序？
@@ -56,19 +56,19 @@ const visitor = {
                             // 如果有新增的函数就需要重新写文件
                             // 比如A文件有a,b,c函数，B文件有b,c,d，分析到B文件，往closureCache新增了d，则公共文件就重新写入
                             this.needWrite = true;
-                        } 
+                        }
                         astPath.remove();
                     }
                 }
             });
 
-          
+
             // 插入 import 节点
             if (!this.injectInportSpecifiers.length) return;
-          
-          
+
+
             const importSourcePath = utils.fixWinPath(path.relative(
-                path.parse(utils.getDistPathFromSoucePath(utils.fixWinPath(state.filename))).dir,
+                path.parse(utils.getDistPathFromSourcePath(utils.fixWinPath(state.filename))).dir,
                 this.distCommonPath
             ));
             const specifiersAst = this.injectInportSpecifiers.map(name => t.importSpecifier(t.identifier(name), t.identifier(name)));
@@ -76,14 +76,14 @@ const visitor = {
             const sourceAst = t.StringLiteral(
                 !/^\./.test(importSourcePath) ? `./${importSourcePath}` : importSourcePath
             )
-            
+
             astPath.node.body.unshift(
                 t.importDeclaration(
                     specifiersAst,
                     sourceAst
                 )
             );
-            
+
         }
     }
 };

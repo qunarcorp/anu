@@ -97,3 +97,18 @@ export const MAP: {
 };
 
 export const NANACHI_CONFIG_PATH = path.resolve(cwd, 'nanachi.config.js');
+
+export const projectConfigJsonMap: any = {
+    'wx': {
+        reg: /\/project\.config\.json$/,
+        fileName: 'project.config.json',
+    },
+    'bu': {
+        reg: /\/project\.swan\.json$/,
+        fileName: 'project.swan.json',
+    },
+    'ali': {
+        reg: /\/mini\.config\.json$/,
+        fileName: 'mini.config.json',
+    },
+};

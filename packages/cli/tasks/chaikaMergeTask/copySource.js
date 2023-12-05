@@ -16,8 +16,7 @@ const path = __importStar(require("path"));
 const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../../packages/utils"));
 const isMutilePack_1 = require("./isMutilePack");
-const cwd = process.cwd();
-const downLoadDir = path.join(cwd, '.CACHE/download');
+const chalk = require('chalk');
 const mergeFilesQueue = require('./mergeFilesQueue');
 const ignoreFiles = [
     'package-lock.json'
@@ -58,25 +57,32 @@ function isMergeFile(fileName) {
 function isLockFile(fileName) {
     return lockFiles.includes(fileName);
 }
-function copyCurrentProjectToDownLoad() {
-    let projectList = [cwd];
-    if (config_1.default.multiProject.length > 0) {
-        projectList = projectList.concat(config_1.default.multiProject);
-    }
+function generateCopyProjectList() {
+    const projectList = Array.from(config_1.default.projectWatcherList);
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
         if (!fs_extra_1.default.existsSync(path.join(projectPath, 'source'))
             && !fs_extra_1.default.existsSync(path.join(projectPath, 'app.js'))) {
-            return Promise.resolve(1);
+            console.log(`[generateCopyProjectList] 目录 ${projectPath} 的校验未通过，请联系开发者`);
+            process.exit(1);
         }
     }
+    return projectList;
+}
+function copyCurrentProjectToDownLoad() {
+    if (config_1.default.noCurrent) {
+        return Promise.resolve(1);
+    }
+    const projectList = generateCopyProjectList();
     let allPromiseCopy = [];
+    const finalProjectList = [];
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
         let projectDirName = projectPath.replace(/\\/g, '/').split('/').pop();
         let files = glob_1.default.sync('./!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
             cwd: projectPath,
         });
+        finalProjectList.push(path.join(getDownLoadDir(), projectDirName));
         const promiseCopy = files
             .map(function (el) {
             let src = path.join(projectPath, el);
@@ -92,10 +98,45 @@ function copyCurrentProjectToDownLoad() {
         });
         allPromiseCopy = allPromiseCopy.concat(promiseCopy);
     }
+    setCurrentProjectType(finalProjectList);
     return Promise.all(allPromiseCopy);
 }
+function setCurrentProjectType(projectList) {
+    projectList.forEach(function (projectPath) {
+        const pkgPath = path.join(projectPath, 'package.json');
+        const pkg = require(pkgPath);
+        const index = config_1.default.projectSourceTypeList.findIndex(function (el) {
+            return el.name === pkg.name;
+        });
+        if (index > -1) {
+            config_1.default.projectSourceTypeList[index] = {
+                name: pkg.name,
+                path: projectPath,
+                sourceType: 'input'
+            };
+        }
+        else {
+            config_1.default.projectSourceTypeList.push({
+                name: pkg.name,
+                path: projectPath,
+                sourceType: 'input'
+            });
+        }
+    });
+}
 function copyDownLoadToNnc() {
-    let files = glob_1.default.sync(getDownLoadDir() + '/**', { nodir: true });
+    const needMergeProjectList = config_1.default.projectSourceTypeList.filter(function (el) {
+        return el.sourceType === 'input';
+    });
+    let files = needMergeProjectList.map(function (el) {
+        if (!el.path) {
+            console.log(chalk.red(`[copyDownLoadToNnc] 项目 ${el.name} 的 path 元数据为空，请联系开发者`));
+            process.exit(1);
+        }
+        return glob_1.default.sync(path.join(el.path, '/**'), { nodir: true });
+    }).reduce(function (prev, next) {
+        return prev.concat(next);
+    }, []);
     files = files.filter((file) => {
         let fileName = path.parse(file).base;
         if (isIgnoreFile(fileName)) {

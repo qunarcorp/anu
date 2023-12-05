@@ -21,6 +21,7 @@ declare enum Platforms {
     h5 = "h5",
     QIHOO = "360"
 }
+export declare type launchStatusType = 'NONE' | 'SUCCESS';
 export declare type validatePlatforms = 'wx' | 'qq' | 'ali' | 'bu' | 'tt' | 'quick' | 'h5' | '360';
 export declare type sourceTypeString = 'input' | 'output';
 export interface projectSourceType {
@@ -31,6 +32,7 @@ export interface projectSourceType {
 export interface GlobalConfigMap {
     buildType: validatePlatforms;
     buildDir: string;
+    inputBuildDir: string;
     sourceDir: string;
     huawei: boolean;
     '360mode': boolean;
@@ -42,10 +44,13 @@ export interface GlobalConfigMap {
     WebViewRules?: any;
     nanachiVersion: string;
     sourcemap: boolean;
-    multiProject: Array<string>;
     isSingleBundle?: boolean;
-    hasNewAppjs?: boolean;
+    isWatch?: boolean;
     projectSourceTypeList: Array<projectSourceType>;
+    projectWatcherList?: Set<string>;
+    noCurrent: boolean;
+    childProcessLaunchStatus: launchStatusType;
+    forFirstCompile: boolean;
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;

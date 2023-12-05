@@ -12,7 +12,7 @@ try {
     // eslint-disable-next-line
 }
 
-const buildDir = userConfig.buildDir || 'dist';
+const buildDir = userConfig.buildDir;
 const sourceDir = userConfig.sourceDir || 'source';
 const sourcemap = userConfig.sourcemap != undefined ? userConfig.sourcemap : true;
 
@@ -42,6 +42,9 @@ enum Platforms {
     QIHOO = '360'
 }
 
+
+export type launchStatusType = 'NONE' | 'SUCCESS'; // 单包监听模式下，子进程的启动状态
+
 export type validatePlatforms = 'wx' | 'qq' | 'ali' | 'bu' | 'tt' | 'quick' | 'h5' | '360';
 // input 为源码，output 为产物
 export type sourceTypeString = 'input' | 'output';
@@ -53,7 +56,8 @@ export interface projectSourceType {
 
 export interface GlobalConfigMap {
     buildType: validatePlatforms;      //构建类型默认微信小程序
-    buildDir: string;   //非快应用项目默认构建目录为dist
+    buildDir: string;
+    inputBuildDir: string, //非快应用项目默认构建目录为dist
     sourceDir: string;  //默认生成的源码目录
     huawei: boolean;
     '360mode': boolean;
@@ -65,10 +69,13 @@ export interface GlobalConfigMap {
     WebViewRules?: any; // TODO
     nanachiVersion: string;
     sourcemap: boolean,
-    multiProject: Array<string>,//多工程开发时，除了当前工程，其他的工程
     isSingleBundle?: boolean,
-    hasNewAppjs?: boolean,
+    isWatch?: boolean,
     projectSourceTypeList: Array<projectSourceType>, // 目前 build、 watch 和前置流程解耦（例如 install 和各种 tasks）适配的场景有点多，该参数用于告诉后续流程需要对哪些包进行哪些处理
+    projectWatcherList?: Set<string>, // 项目启动后，通过 webpack.compiler.watchFileSystem 监听的目录，最少包含当前项目，其次还包含 multiProject 里的那些
+    noCurrent: boolean,
+    childProcessLaunchStatus: launchStatusType,
+    forFirstCompile: boolean,
     [Platforms.wx]: PlatConfig;
     [Platforms.qq]: PlatConfig;
     [Platforms.ali]: PlatConfig;
@@ -158,8 +165,9 @@ const config: GlobalConfigMap =  {
         disabledTitleBarPages: new Set()
     },
     buildType: 'wx',      //构建类型默认微信小程序
-    // 会被重新写入
-    buildDir: buildDir,   //非快应用项目默认构建目录为dist
+    // TODO: 现在没办法只能搞出来两个变量，有时间重构
+    inputBuildDir: buildDir, //非快应用项目默认构建目录为dist
+    buildDir: buildDir, // 会根据一系列条件被重新写入
     sourceDir: sourceDir,  //默认生成的源码目录
     huawei: false,
     '360mode': false,
@@ -169,7 +177,9 @@ const config: GlobalConfigMap =  {
     pluginTags: {},
     sourcemap,
     plugins: {},
-    multiProject: [],
+    noCurrent: false,
+    childProcessLaunchStatus: 'NONE',
+    forFirstCompile: true,
     projectSourceTypeList: [], // 通过 nanachi install 下载的所有的包的 sourceType，可能是源码也可能是产物
 };
 

@@ -25,7 +25,7 @@ declare let utils: {
     getDeps(messages?: any[]): any[];
     getComponentOrAppOrPageReg(): RegExp;
     hasNpm(npmName: string): boolean;
-    decodeChinise: any;
+    decodeChinese: any;
     isWebView(fileId: string): any;
     parseCamel: any;
     uniquefilter(arr: any, key?: string): any;
@@ -41,8 +41,13 @@ declare let utils: {
     isCheckQuickConfigFileExist(configFile: string): boolean;
     getProjectRootPath(): string;
     getDistDir(): string;
+    getFixedDistDir(setFix: boolean): string;
     getDisSourceMapDir(): string;
-    getDistRelativeDir(): string;
-    getDistPathFromSoucePath(sourcePath: string): string;
+    getDistRelativeDir(setFix: boolean): string;
+    getDistPathFromSourcePath(sourcePath: string): string;
+    isSingleBundle(): boolean;
+    isWatchMode(): boolean;
+    isSingleBundleProcess(compileType: string, component: string): string;
+    getShadowAppJsPath(): string;
 };
 export default utils;

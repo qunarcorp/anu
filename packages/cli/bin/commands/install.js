@@ -30,36 +30,6 @@ const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../../packages/utils"));
 const platforms_1 = __importDefault(require("../../consts/platforms"));
 const cwd = process.cwd();
-function setProjectSourceTypeList() {
-    const jsonPath = path.join(cwd, `.CACHE/type${isMutilePack_1.getMultiplePackDirPrefix()}.json`);
-    if (fs.existsSync(jsonPath)) {
-        try {
-            const json = require(jsonPath);
-            config_1.default.projectSourceTypeList = json.projectSourceTypeList;
-        }
-        catch (err) {
-            console.log(chalk_1.default.red(`[setProjectSourceTypeList] 读取 ${jsonPath} 文件失败，请联系开发者`));
-            process.exit(1);
-        }
-    }
-    const workspacePath = path.join(utils_1.default.getProjectRootPath());
-    const pkgPath = path.join(workspacePath, 'package.json');
-    const projectName = require(pkgPath).name;
-    if (config_1.default.isSingleBundle) {
-        config_1.default.projectSourceTypeList = [...config_1.default.projectSourceTypeList, {
-                name: projectName,
-                path: (isMultipl),
-                sourceType: 'output'
-            }];
-    }
-    else {
-        config_1.default.projectSourceTypeList = [...config_1.default.projectSourceTypeList, {
-                name: projectName,
-                path: '',
-                sourceType: 'input'
-            }];
-    }
-}
 function isInputPackage(dirPath) {
     if (!fs.existsSync(dirPath)) {
         throw new Error(`[isInputPackage] 输入路径不存在 ${dirPath}`);
@@ -85,6 +55,7 @@ function isOutputPackage(dirPath) {
     }
 }
 function writeProjectSourceTypeList() {
+    console.log('正在记录下载依赖的类型');
     let downloadCacheDir = path.join(cwd, '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix());
     let defaultJson = {};
     const listResult = [];
@@ -100,20 +71,32 @@ function writeProjectSourceTypeList() {
     dirs.forEach((dirName) => {
         const dirPath = path.join(downloadCacheDir, dirName);
         const type = isInputPackage(dirPath) || isOutputPackage(dirPath);
-        if (type) {
-            listResult.push({
-                name: dirName,
-                path: dirPath,
-                sourceType: type
-            });
-        }
-        else {
-            console.log(chalk_1.default.red(`[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者`));
-            process.exit(1);
+        switch (type) {
+            case 'input': {
+                listResult.push({
+                    name: dirName,
+                    path: dirPath,
+                    sourceType: 'input'
+                });
+                break;
+            }
+            case 'output': {
+                listResult.push({
+                    name: dirName,
+                    path: dirPath,
+                    sourceType: 'output'
+                });
+                break;
+            }
+            default: {
+                console.log(chalk_1.default.red('[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者'));
+                process.exit(1);
+            }
         }
     });
     defaultJson.projectSourceTypeList = listResult;
     fs.writeFileSync(writePath, JSON.stringify(defaultJson, null, 4));
+    console.log('依赖类型记录成功');
     return listResult;
 }
 function writeVersions(moduleName, version) {
@@ -279,7 +262,7 @@ function default_1(name, opts) {
         };
     }
     let { type, lib, version } = downloadInfo;
-    console.log(type);
+    console.log('install type:', type);
     switch (type) {
         case 'git':
             downLoadGitRepo(lib, version);
@@ -289,6 +272,6 @@ function default_1(name, opts) {
         default:
             break;
     }
+    writeProjectSourceTypeList();
 }
 exports.default = default_1;
-;
