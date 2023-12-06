@@ -48,6 +48,7 @@ module.exports = {
             let tempExp = tempPath.get('declarations')[0];
             let left = tempExp.get('id').node, right = tempExp.get('init').node;
             tempPath.replaceWith(t.expressionStatement(t.assignmentExpression('=', left, right)));
+            tempPath.scope.removeBinding(modules.className);
             tempPath.insertBefore(modules.ctorFn);
         }
         // console.log(astPath.findParent(function(astPath) {

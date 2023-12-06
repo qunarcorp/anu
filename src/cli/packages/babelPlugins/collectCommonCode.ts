@@ -35,7 +35,7 @@ function isChaikaMode() {
 // 公共函数
 const fnNameList = ['ownKeys', '_objectSpread', '_defineProperty', '_toPropertyKey', '_toPrimitive', 'asyncGeneratorStep', '_asyncToGenerator'];
 // 只有这两个是需要引入的，其他几个函数皆是这两个函数调用
-const onlyImportFnNameList = ['_objectSpread', '_asyncToGenerator'];
+const onlyImportFnNameList = ['_objectSpread', '_asyncToGenerator', '_defineProperty'];
 const cwd = process.cwd();
 
 // 用于搜集所有文件里面的特定函数

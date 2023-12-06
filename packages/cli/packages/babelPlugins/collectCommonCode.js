@@ -19,7 +19,7 @@ function isChaikaMode() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 }
 const fnNameList = ['ownKeys', '_objectSpread', '_defineProperty', '_toPropertyKey', '_toPrimitive', 'asyncGeneratorStep', '_asyncToGenerator'];
-const onlyImportFnNameList = ['_objectSpread', '_asyncToGenerator'];
+const onlyImportFnNameList = ['_objectSpread', '_asyncToGenerator', '_defineProperty'];
 const cwd = process.cwd();
 const closureCache = [];
 const visitor = {
