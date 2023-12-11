@@ -207,7 +207,6 @@ async function nanachi(options: NanachiOptions = {}) {
             postLoaders.unshift('nanachi-compress-loader');
         }
 
-        debugger;
         const webpackConfig: webpack.Configuration = getWebPackConfig({
             watch,
             platform,
@@ -229,8 +228,6 @@ async function nanachi(options: NanachiOptions = {}) {
             // maxAssetSize
         });
 
-        debugger
-        console.log('webpackH5Config-1',JSON.stringify(webpackConfig))
         const compiler = webpack(webpackConfig);
 
         if (watch) {
@@ -244,7 +241,7 @@ async function nanachi(options: NanachiOptions = {}) {
 }
 
 function injectBuildEnv({ platform, compress, huawei, typescript }: NanachiOptions) {
-    process.env.ANU_ENV = (platform === 'h5' ? 'web' : platform);
+    process.env.ANU_ENV = platform;
     Object.assign(globalConfig, {
         buildType: platform,
         compress,

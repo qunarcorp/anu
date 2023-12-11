@@ -17,11 +17,13 @@ let defaultConfig = [
     //     // 可能是插件bug，会删除一些已使用参数，所以开启keepFnArgs【防止插件删除函数参数】
     //     keepFnArgs: true
     // }]
+    // 移除无用的代码，根据官方代码改编
+    [require('./transformDeadCode'), {keepFnArgs: true}]
 ]
 
 
 // [ '/usr/local/bin/node', '/usr/local/bin/nanachi', 'build:ali' ]
-if ( 
+if (
     /^(build)/.test(process.argv[2])
     && ['prod', 'production'].includes(process.env.BUILD_ENV)
 ) {

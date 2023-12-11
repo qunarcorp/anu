@@ -15,6 +15,7 @@ let defaultConfig = [
             }
         }
     ],
+    [require('./transformDeadCode'), { keepFnArgs: true }]
 ];
 if (/^(build)/.test(process.argv[2])
     && ['prod', 'production'].includes(process.env.BUILD_ENV)) {

@@ -52,7 +52,7 @@ class WxParser extends JavascriptParser_1.default {
                 ...this.filterCommonFile,
                 require('@babel/plugin-proposal-optional-chaining'),
                 ...require('../../packages/babelPlugins/patchAsyncAwait'),
-                ...(buildType === 'wx' ? [require('../../packages/babelPlugins/collectCommonCode')] : [])
+                require('../../packages/babelPlugins/collectCommonCode'),
             ]
         };
     }

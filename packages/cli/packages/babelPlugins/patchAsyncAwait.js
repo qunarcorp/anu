@@ -35,19 +35,25 @@ module.exports = [
     function () {
         return {
             visitor: {
-                FunctionDeclaration: {
-                    exit(astPath) {
-                        let name = astPath.node.id.name;
-                        if (!(name === '_asyncToGenerator' && hackList.includes(config_1.default.buildType))) {
-                            return;
-                        }
-                        let root = astPath.findParent(t.isProgram);
-                        root.node.body.unshift(t.importDeclaration([
-                            t.importDefaultSpecifier(t.identifier('regeneratorRuntime'))
-                        ], t.stringLiteral('regenerator-runtime/runtime')));
-                        needPatch = true;
+                Program: {
+                    exit(astPathP, state) {
+                        astPathP.traverse({
+                            FunctionDeclaration: {
+                                enter: (astPath) => {
+                                    let name = astPath.node.id.name;
+                                    if (!(name === '_asyncToGenerator' && hackList.includes(config_1.default.buildType))) {
+                                        return;
+                                    }
+                                    astPathP.node.body.unshift(t.importDeclaration([
+                                        t.importDefaultSpecifier(t.identifier('regeneratorRuntime'))
+                                    ], t.stringLiteral('regenerator-runtime/runtime')));
+                                    needPatch = true;
+                                    astPath.stop();
+                                }
+                            }
+                        });
                     }
-                }
+                },
             },
             post: function () {
                 if (needPatch && needInstall(pkgName.split('@')[0]) && !installFlag) {

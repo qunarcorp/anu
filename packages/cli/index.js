@@ -139,7 +139,6 @@ function nanachi(options = {}) {
             if (compress) {
                 postLoaders.unshift('nanachi-compress-loader');
             }
-            debugger;
             const webpackConfig = webpackConfig_1.default({
                 watch,
                 platform,
@@ -159,8 +158,6 @@ function nanachi(options = {}) {
                 rules,
                 huawei
             });
-            debugger;
-            console.log('webpackH5Config-1', JSON.stringify(webpackConfig));
             const compiler = webpack_1.default(webpackConfig);
             if (watch) {
                 compiler.watch({}, callback);
@@ -175,7 +172,7 @@ function nanachi(options = {}) {
     });
 }
 function injectBuildEnv({ platform, compress, huawei, typescript }) {
-    process.env.ANU_ENV = (platform === 'h5' ? 'web' : platform);
+    process.env.ANU_ENV = platform;
     Object.assign(config_1.default, {
         buildType: platform,
         compress,
