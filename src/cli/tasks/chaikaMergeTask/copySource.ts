@@ -4,6 +4,7 @@ import * as path from 'path';
 import config from '../../config/config';
 import utils from '../../packages/utils';
 import {getMultiplePackDirPrefix} from './isMutilePack';
+import {getMergeDir} from './mergeUtils';
 
 const chalk = require('chalk');
 const mergeFilesQueue = require('./mergeFilesQueue');
@@ -36,10 +37,6 @@ const lockFiles: any = [
 
 function getDownLoadDir() {
     return path.join(utils.getProjectRootPath(), '.CACHE/download', getMultiplePackDirPrefix());
-}
-
-function getMergeDir() {
-    return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
 }
 
 function isIgnoreFile(fileName: string){
@@ -93,11 +90,9 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
 
     // 获取待复制文件路径，创建复制任务
     let allPromiseCopy: Array<Promise<void>> = [];
-    const finalProjectList = []; // 记录复制后的实际工程地址
+    const finalProjectList: string[] = []; // 记录复制后的实际工程地址
     for (let i = 0; i < projectList.length; i++) {
         const projectPath = projectList[i];
-
-        // console.log(chalk.green(`正在拷贝项目：${projectPath}`));
 
         let projectDirName = projectPath.replace(/\\/g, '/').split('/').pop();
         let files = glob.sync( './!(node_modules|target|dist|src|sign|build|.CACHE|.chaika_cache|nanachi|sourcemap)', {
@@ -125,9 +120,13 @@ function copyCurrentProjectToDownLoad(): Promise<any> {
         allPromiseCopy = allPromiseCopy.concat(promiseCopy);
     }
 
-    // 如果进行了拷贝，那么需要把当前拷贝项目的元数据写入 userConfig，保证下一步 copy 获取所有的目录列表
-    setCurrentProjectType(finalProjectList);
-    return Promise.all(allPromiseCopy);
+    return Promise.all(allPromiseCopy).then(()=>{
+        // 如果进行了拷贝，那么需要把当前拷贝项目的元数据写入 userConfig，保证下一步 copy 获取所有的目录列表
+        setCurrentProjectType(finalProjectList);
+        return Promise.resolve(1);
+    }).catch((err)=>{
+        return Promise.reject(err);
+    });
 }
 
 // 参考 setProjectSourceTypeList

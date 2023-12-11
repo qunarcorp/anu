@@ -26,17 +26,17 @@ async function installDefaultModule(buildType: string) {
 
     // 如果存在，就不再安装（相当于 nanachi install 已经针对特定 tag 拉了下来）
     for (let i of installModules) {
-        i.exists = await fs.pathExists(i.installModulePath)
+        i.exists = await fs.pathExists(i.installModulePath);
     }
 
-    installModules.filter(function(curModule:any) {
+    for (const curModule1 of installModules.filter(function (curModule: any) {
         return !curModule.exists;
-    }).forEach(function(curModule:any) {
-        install(
-            `${curModule.name.replace(/^(nnc_module_)|(nnc_)/, '')}@#${curModule.installVersion}`,
+    })) {
+        await install(
+            `${curModule1.name.replace(/^(nnc_module_)|(nnc_)/, '')}@#${curModule1.installVersion}`,
             {}
         );
-    });
+    }
 }
 
 export default installDefaultModule;

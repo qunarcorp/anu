@@ -22,6 +22,7 @@ const webpack_1 = __importDefault(require("webpack"));
 const configurations_1 = require("./h5/configurations");
 const quickAPIList_1 = __importDefault(require("../consts/quickAPIList"));
 const config_1 = __importDefault(require("./config"));
+const glob_1 = __importDefault(require("glob"));
 const { exec } = require('child_process');
 const utils = require('../packages/utils/index');
 const fileLoader = require.resolve('../nanachi-loader/loaders/fileLoader');
@@ -32,14 +33,45 @@ const reactLoader = require.resolve('../nanachi-loader/loaders/reactLoader');
 const nanachiStyleLoader = require.resolve('../nanachi-loader/loaders/nanachiStyleLoader');
 const cwd = process.cwd();
 const H5AliasList = ['react', '@react', 'react-dom', 'react-loadable', '@qunar-default-loading', '@dynamic-page-loader', /^@internalComponents/];
-const isChaikaMode = function () {
-    return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
-};
 const WebpackBar = require('webpackbar');
 const quickConfigFileName = config_1.default.huawei && utils.isCheckQuickConfigFileExist('quickConfig.huawei.json')
     ? 'quickConfig.huawei.json'
     : 'quickConfig.json';
 global.nanachiVersion = config_1.default.nanachiVersion || '';
+function collectAllJsInMainAndCommonPackages() {
+    if (utils.isSingleBundle() && config_1.default.noCurrent === false)
+        return [];
+    const judgeNames = ['nnc_module_qunar_platform'];
+    const judgeDirName = ['components', 'common'];
+    const needScanOriginalDir = [];
+    judgeNames.forEach((name) => {
+        const target = config_1.default.projectSourceTypeList.find(el => el.name === name);
+        if (target) {
+            needScanOriginalDir.push(target.path);
+        }
+        else {
+            console.error(`[collectAllJsInMainAndCommonPackages] 未找到 ${name} 对应在下载缓存区中的地址，无法进行后续流程，请联系 nanachi 开发者`);
+            process.exit(1);
+        }
+    });
+    const needScanOriginalJsFiles = {};
+    needScanOriginalDir.forEach((el) => {
+        needScanOriginalJsFiles[el] = [];
+        judgeDirName.forEach((name) => {
+            const judgeFullPath = path.join(el, 'source', name);
+            const files = glob_1.default.sync(path.join(judgeFullPath, '/**/*.@(js|ts)'), { nodir: true });
+            needScanOriginalJsFiles[el].push(...files);
+        });
+    });
+    const needAddedExtraEntryList = [];
+    Object.keys(needScanOriginalJsFiles).forEach((key) => {
+        needScanOriginalJsFiles[key].forEach((p) => {
+            const relativePath = path.relative(key, p);
+            needAddedExtraEntryList.push(path.join(cwd, relativePath));
+        });
+    });
+    return needAddedExtraEntryList;
+}
 function default_1({ watch, platform, compress, compressOption, plugins, rules, huawei, analysis, typescript, prevLoaders, postLoaders, prevJsLoaders, postJsLoaders, prevCssLoaders, postCssLoaders, }) {
     let externals = quickAPIList_1.default;
     if (platform === 'h5') {
@@ -48,7 +80,6 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
     externals.push(/runtimecommon\.js/);
     let aliasMap = require('../packages/utils/calculateAliasConfig')();
     let distPath = path.resolve(utils.getDistDir());
-    console.log('distPath', distPath);
     if (platform === 'h5') {
         distPath = path.join(distPath, configurations_1.intermediateDirectoryName);
     }
@@ -195,7 +226,8 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
             resourceRegExp: /\.(\w?ux|pem)$/,
         }));
     }
-    let entry = utils.isSingleBundle() ? utils.getShadowAppJsPath() : path.join(cwd, 'source/app');
+    const extraIslandJsFileList = collectAllJsInMainAndCommonPackages();
+    let entry = utils.isSingleBundle() ? utils.getShadowAppJsPath() : [path.join(cwd, 'source/app'), ...extraIslandJsFileList];
     if (typescript) {
         entry += '.tsx';
     }

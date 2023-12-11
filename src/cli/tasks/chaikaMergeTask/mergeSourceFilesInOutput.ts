@@ -6,7 +6,6 @@ import {
 } from './mergeUtils';
 import utils from '../../packages/utils';
 import {getMultiplePackDirPrefixNew} from './isMutilePack';
-import config from '../../config/config';
 
 const generateAppJsonFromXConfigJson = require('../../packages/babelPlugins/generateAppJsonFromXConfigJson');
 const {setSubPackage} = require('../../packages/utils/setSubPackage');
@@ -17,7 +16,6 @@ const fs = require('fs-extra');
 
 // 在产物类型的包里，我们只检查 xConfig.json，具体原因看这个文件其他的注释
 function collectWaitedMergeFiles(dirPath: string) {
-    console.log('dirPath', dirPath);
     const sourceConfigJsonExistedPath = validateConfigJsonIsExistInSource(dirPath);
 
     const needMergeFileList: string[] = [];
@@ -95,7 +93,8 @@ function traverseMergedXConfigToAppJson(map: any, waitedMergeProjectDirList: any
     try {
         json = require(finalAppJsonPath);
     } catch(err) {
-        console.error(chalk.red(`[traverseMergedXConfigToAppJson] 读取产物 app.json 失败，请联系开发者`))
+        console.error(chalk.red(`[traverseMergedXConfigToAppJson] 读取产物 app.json 失败，请联系开发者`));
+        process.exit(1);
     }
     // console.log('[traverseMergedXConfigToAppJson] finalAppJson before:', json);
 
@@ -139,7 +138,6 @@ export default function (waitedMergeProjectDirList: string[]) {
     } else {
         map = {}; // 跳过后续所有流程
     }
-    console.log('my map:', map);
 
     /**
      * 实际上在编译后，我们只需要对 Xconfig 中的内容进行处理，因为其他类型的文件都根据编译流程核对过，仅对编译流程有效

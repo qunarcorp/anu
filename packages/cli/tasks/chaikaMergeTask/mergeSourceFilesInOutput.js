@@ -13,7 +13,6 @@ const chalk = require('chalk');
 const path = require('path');
 const fs = require('fs-extra');
 function collectWaitedMergeFiles(dirPath) {
-    console.log('dirPath', dirPath);
     const sourceConfigJsonExistedPath = mergeUtils_1.validateConfigJsonIsExistInSource(dirPath);
     const needMergeFileList = [];
     if (sourceConfigJsonExistedPath) {
@@ -64,6 +63,7 @@ function traverseMergedXConfigToAppJson(map, waitedMergeProjectDirList) {
     }
     catch (err) {
         console.error(chalk.red(`[traverseMergedXConfigToAppJson] 读取产物 app.json 失败，请联系开发者`));
+        process.exit(1);
     }
     const redundantPages = collectAllPagesFromAppJson(waitedMergeProjectDirList);
     json.pages = json.pages.concat(redundantPages);
@@ -85,7 +85,6 @@ function default_1(waitedMergeProjectDirList) {
     else {
         map = {};
     }
-    console.log('my map:', map);
     return Promise.resolve(traverseMergedXConfigToAppJson(map, waitedMergeProjectDirList))
         .then(function ({ dist, content }) {
         return new Promise(function (res, rej) {

@@ -5,7 +5,7 @@ import * as fs from 'fs-extra';
 import {getMultiplePackDirPrefix, getMultiplePackDirPrefixNew} from './isMutilePack';
 import config, {projectSourceType} from '../../config/config';
 import copySingleBundleToFullBundle from './copySingleBundleDist';
-import mergeSourceFilesInOutput from "./mergeSourceFilesInOutput";
+import mergeSourceFilesInOutput from './mergeSourceFilesInOutput';
 import utils from '../../packages/utils';
 import chalk from 'chalk';
 import glob from 'glob';
@@ -79,10 +79,24 @@ function getParamsFromWorkSpaceCopyTask() {
     projectSourceTypeListOutput.push({
         name,
         path: currentSingleBundlePath,
+        sourcemap: utils.getDisSourceMapDir(),
         sourceType: 'output'
     });
 
     return filterOnlyDirOnTypeList(projectSourceTypeListOutput);
+}
+
+/**
+ * 非单包模式下，需要从下载缓存区的 output 类型的产物目录下的 sourcemap 中将所有文件合并到固定的最终 sourcemap 目录
+ */
+function getParamsFromSourcemapPath(list: string[]) {
+    return list.map((sourcemapPath: string) => {
+        const from = sourcemapPath;
+        // 这里 to 也是写死的
+        const to = utils.getDisSourceMapDir();
+        const globList = glob.sync(from + '/**', {nodir: true});
+        return { from, to, globList };
+    });
 }
 
 /**
@@ -160,7 +174,7 @@ const runSingleBundleWatchCacheMergeTask = async () => {
 
 // 产物类型的源码，const runOutputSourceConfigMergeTask = async (list: any[]) => {，还需要合并 xxConfig.json 和 app.json 这部分配置文件代码
 // 不论是单包打包产物还是 nanachi install 下载到的产物类型的包，都要走这个任务
-const runOutputSourceConfigMergeTask = async (list: any[]) => {
+const runOutputSourceConfigMergeTask = async (list: string[]) => {
     try {
         await mergeSourceFilesInOutput(list);
     } catch (err) {
@@ -195,9 +209,21 @@ const runSourceConfigMoveTask = async () => {
 };
 
 // 将多个包的 sourcemap 文件夹合并到一个包中，合并的地址是唯一的
-const runSourcemapMergeTask = async(list) => {
+const runSourcemapMergeTask = async(list: any[]) => {
+    try {
+        const copyList = getParamsFromSourcemapPath(list);
 
-}
+        const allCopyTasks = copyList.map(({from, to, globList}) => {
+            // @ts-ignore
+            console.log(`[runSourcemapMergeTask] 准备合并的项目路径: ${from} -> ${to}`);
+            return copySingleBundleToFullBundle(from, to, globList);
+        });
+
+        await Promise.all(allCopyTasks);
+    } catch (err) {
+        console.log('[runSourcemapMergeTask] Merge error:',err);
+    }
+};
 
 export {
     runChaikaMergeTask,

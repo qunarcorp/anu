@@ -38,6 +38,7 @@ const { version } = require('../package.json');
 const index_2 = require("../tasks/chaikaMergeTask/index");
 const isMutilePack_1 = require("../tasks/chaikaMergeTask/isMutilePack");
 const utils_1 = __importDefault(require("../packages/utils"));
+const mergeUtils_1 = require("../tasks/chaikaMergeTask/mergeUtils");
 let cwd = process.cwd();
 function isChaikaMode() {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
@@ -58,7 +59,9 @@ cli.addCommand('install [name]', null, 'description: 安装拆库模块. 文档:
         alias: 'p'
     }
 }, function (name, opts) {
-    install_1.default(name, opts);
+    return __awaiter(this, void 0, void 0, function* () {
+        yield install_1.default(name, opts);
+    });
 });
 ['page', 'component'].forEach(type => {
     cli.addCommand(`${type} <page-name>`, null, `description: 创建${type}s/<${type}-name>/index.js模版`, {}, (name) => {
@@ -74,9 +77,6 @@ function copyReactLibFile(buildType) {
         : path.join(projectRootPath, 'source', ReactLibName);
     fs_extra_1.default.ensureFileSync(dist);
     fs_extra_1.default.copySync(src, dist);
-}
-function getMergeDir() {
-    return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
 }
 function getMultipleBuildTargetDir() {
     return utils_1.default.getDistDir();
@@ -148,9 +148,12 @@ platforms_1.default.forEach(function (el) {
                     process.exit(1);
                 }
                 isChaika = false;
-                singleBundleSourcemap = true;
                 if (compileType === 'build') {
                     singleBundleSourcemap = true;
+                }
+                if (compileType === 'watch') {
+                    console.log(chalk_1.default.yellow('检测到目前是单包打包的 watch 模式，此模式下不支持 sourcemap，已强制将其关闭'));
+                    singleBundleSourcemap = false;
                 }
                 process.env.NANACHI_CHAIK_MODE === 'NOT_CHAIK_MODE';
                 console.log(chalk_1.default.green('提示：请注意您在使用 nanachi 的单包模式，部分参数会强制对齐到单包模式的要求\n'));
@@ -171,7 +174,7 @@ platforms_1.default.forEach(function (el) {
             }
             if (isChaika) {
                 checkChaikaPatchInstalled();
-                fs_extra_1.default.emptyDirSync(getMergeDir());
+                fs_extra_1.default.emptyDirSync(mergeUtils_1.getMergeDir());
                 fs_extra_1.default.emptyDirSync(getMultipleBuildTargetDir());
                 if (options.multiProject) {
                     const multiProject = options.multiProject.split(',').map((v) => {

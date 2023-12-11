@@ -51,6 +51,7 @@ export type sourceTypeString = 'input' | 'output';
 export interface projectSourceType {
     name: string, // 项目名
     path: string, // 所在的缓存区路径
+    sourcemap ?: string, // 如果是产物类型，需要区分产物目录和sourcemap目录
     sourceType: sourceTypeString,
 }
 

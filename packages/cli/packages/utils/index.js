@@ -334,7 +334,7 @@ let utils = {
     },
     getDisSourceMapDir() {
         const projectRootPath = this.getProjectRootPath();
-        return path.join(projectRootPath, this.getDistRelativeDir());
+        return path.join(projectRootPath, 'sourcemap', config.buildType);
     },
     getDistRelativeDir(setFix) {
         const addCSuffix = (setFix === undefined) ? this.isSingleBundle() && this.isWatchMode() : setFix;
@@ -364,6 +364,9 @@ let utils = {
     },
     getShadowAppJsPath() {
         return path.join(this.getProjectRootPath(), 'source', `${config.buildType}ShadowApp.js`);
+    },
+    getWorkSpaceSourceDirPath() {
+        return path.join(this.getProjectRootPath(), 'source');
     }
 };
 module.exports = utils;

@@ -28,6 +28,10 @@ function getListFromDownloadCache() {
     const { projectSourceTypeList } = config_1.default;
     return projectSourceTypeList.filter((item) => item.sourceType === 'output').map(item => item.path) || [];
 }
+function getSourcemapListFromDownloadCache() {
+    const { projectSourceTypeList } = config_1.default;
+    return projectSourceTypeList.filter((item) => item.sourceType === 'output').map(item => item.sourcemap) || [];
+}
 class ChaikaPlugin {
     constructor() {
         this.envStringWhiteList = [
@@ -81,27 +85,25 @@ class ChaikaPlugin {
                 config_1.default.childProcessLaunchStatus = 'SUCCESS';
             }
             if (isSingleBundle) {
-                console.log(chalk.yellow('单包打包产物配置文件拷贝中，拷贝成功前请不要移动产物目录下的文件'));
+                console.log(chalk.yellow('[单包打包产物配置文件] 拷贝中，拷贝成功前请不要移动产物目录下的文件'));
                 yield chaikaMergeTask_1.runSourceConfigMoveTask();
-                console.log(chalk.green('拷贝成功'));
+                console.log(chalk.green('[单包打包产物配置文件] 拷贝成功'));
             }
             const mergeProjectDirList = !utils_1.default.isSingleBundle() ? getListFromDownloadCache() : getListFromSingleBundleDist();
             if (!isSingleBundle) {
-                console.log(chalk.yellow('下载缓存区产物代码合并中，合并成功前请不要移动产物目录下的文件'));
+                console.log(chalk.yellow('[下载缓存区产物代码] 合并中，合并成功前请不要移动产物目录下的文件'));
                 yield chaikaMergeTask_1.runOutputCacheCodesMergeTask();
                 yield chaikaMergeTask_1.runOutputSourceConfigMergeTask(mergeProjectDirList);
-                console.log(chalk.green('合并成功'));
+                yield chaikaMergeTask_1.runSourcemapMergeTask(getSourcemapListFromDownloadCache());
+                console.log(chalk.green('[下载缓存区产物代码] 合并成功'));
             }
             if (isSingleBundle && isWatch) {
-                console.log(chalk.yellow('单包打包产物合并中，合并成功前请不要移动产物目录下的文件'));
+                console.log(chalk.yellow('[单包打包产物] 合并中，合并成功前请不要移动产物目录下的文件'));
                 yield chaikaMergeTask_1.runSingleBundleWatchCacheMergeTask();
                 yield chaikaMergeTask_1.runOutputSourceConfigMergeTask(mergeProjectDirList);
-                console.log(chalk.green('合并成功'));
+                console.log(chalk.green('[单包打包产物] 合并成功'));
             }
             if (config_1.default.forFirstCompile) {
-                console.log(chalk.yellow(`执行配置文件中 import 语句插入`));
-                this.addImportSyntaxToAppJs(mergeProjectDirList);
-                console.log(chalk.green(`插入成功`));
                 config_1.default.forFirstCompile = false;
             }
             if (isWatch) {

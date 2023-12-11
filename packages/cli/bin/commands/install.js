@@ -83,7 +83,8 @@ function writeProjectSourceTypeList() {
             case 'output': {
                 listResult.push({
                     name: dirName,
-                    path: dirPath,
+                    path: dirPath + '/dist',
+                    sourcemap: dirPath + '/sourcemap',
                     sourceType: 'output'
                 });
                 break;
@@ -93,6 +94,7 @@ function writeProjectSourceTypeList() {
                 process.exit(1);
             }
         }
+        console.log(chalk_1.default.green(`[writeProjectSourceTypeList] 记录路径 ${dirName}，类型为 ${type}`));
     });
     defaultJson.projectSourceTypeList = listResult;
     fs.writeFileSync(writePath, JSON.stringify(defaultJson, null, 4));
@@ -184,94 +186,98 @@ function downLoadBinaryLib(binaryLibUrl, patchModuleName) {
         }
         const libDist = path.join(utils_1.default.getProjectRootPath(), `.CACHE/lib/${path.basename(patchModuleName)}`, isMutilePack_1.getMultiplePackDirPrefix());
         fs.ensureFileSync(libDist);
-        fs.writeFile(libDist, data, function (err) {
-            if (err) {
-                console.log(err);
-                return;
-            }
+        try {
+            fs.writeFileSync(libDist, data);
             console.log(chalk_1.default.green(`安装依赖包 ${binaryLibUrl} 成功.`));
             const unPackDist = path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix(), patchModuleName);
             unPack(libDist, unPackDist);
-        });
+        }
+        catch (err) {
+            console.log(err);
+            process.exit(1);
+        }
         writeVersions(patchModuleName, binaryLibUrl.split('/').pop());
     });
 }
 function downLoadPkgDepModule() {
-    var pkg = require(path.join(cwd, 'package.json'));
-    var depModules = pkg.modules || {};
-    let depKey = Object.keys(depModules);
-    const nanachiChaikaConfig = getNanachiChaikaConfig();
-    if (!depKey.length) {
-        console.log(chalk_1.default.bold.red('未在package.json中发现拆库依赖包, 全量安装失败.'));
-        process.exit(1);
-    }
-    depKey.forEach(function (key) {
-        if (Object.keys(nanachiChaikaConfig).length
-            && nanachiChaikaConfig.onInstallTarball
-            && typeof nanachiChaikaConfig.onInstallTarball === 'function') {
-            let gitRepo = nanachiChaikaConfig.onInstallTarball(key, depModules[key]);
-            downLoadGitRepo(gitRepo, depModules[key]);
+    return __awaiter(this, void 0, void 0, function* () {
+        var pkg = require(path.join(cwd, 'package.json'));
+        var depModules = pkg.modules || {};
+        let depKey = Object.keys(depModules);
+        const nanachiChaikaConfig = getNanachiChaikaConfig();
+        if (!depKey.length) {
+            console.log(chalk_1.default.bold.red('未在package.json中发现拆库依赖包, 全量安装失败.'));
+            process.exit(1);
         }
-        else if (isOldChaikaConfig(`${key}@${depModules[key]}`)) {
-            const ret = require(path.join(utils_1.default.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall'))(`${key}@${depModules[key]}`);
-            if (ret.type === 'git') {
-                downLoadGitRepo(ret.gitRepo, ret.branchName);
+        for (const key of depKey) {
+            if (Object.keys(nanachiChaikaConfig).length
+                && nanachiChaikaConfig.onInstallTarball
+                && typeof nanachiChaikaConfig.onInstallTarball === 'function') {
+                let gitRepo = nanachiChaikaConfig.onInstallTarball(key, depModules[key]);
+                downLoadGitRepo(gitRepo, depModules[key]);
+            }
+            else if (isOldChaikaConfig(`${key}@${depModules[key]}`)) {
+                const ret = require(path.join(utils_1.default.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall'))(`${key}@${depModules[key]}`);
+                if (ret.type === 'git') {
+                    downLoadGitRepo(ret.gitRepo, ret.branchName);
+                }
+                else {
+                    yield downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
+                }
             }
             else {
-                downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
             }
-        }
-        else {
         }
     });
 }
 function default_1(name, opts) {
-    if (opts.platform && platforms_1.default.some((v) => v.buildType === opts.platform)) {
-        config_1.default.buildType = opts.platform;
-    }
-    console.log(chalk_1.default.bold.yellow(`传入的平台参数：${opts.platform}，处理后的平台参数：${config_1.default.buildType}`));
-    if (process.env.NANACHI_CHAIK_MODE != 'CHAIK_MODE') {
-        console.log(chalk_1.default.bold.red('需在package.json中配置{"nanachi": {"chaika": true }}, 拆库开发功能请查阅文档: https://rubylouvre.github.io/nanachi/documents/chaika.html'));
-        process.exit(1);
-    }
-    let downloadInfo = {
-        type: '',
-        lib: ''
-    };
-    if (!name && !opts.branch) {
-        downloadInfo = {
-            type: 'all',
+    return __awaiter(this, void 0, void 0, function* () {
+        if (opts.platform && platforms_1.default.some((v) => v.buildType === opts.platform)) {
+            config_1.default.buildType = opts.platform;
+        }
+        console.log(chalk_1.default.bold.yellow(`传入的平台参数：${opts.platform}，处理后的平台参数：${config_1.default.buildType}`));
+        if (process.env.NANACHI_CHAIK_MODE != 'CHAIK_MODE') {
+            console.log(chalk_1.default.bold.red('需在package.json中配置{"nanachi": {"chaika": true }}, 拆库开发功能请查阅文档: https://rubylouvre.github.io/nanachi/documents/chaika.html'));
+            process.exit(1);
+        }
+        let downloadInfo = {
+            type: '',
             lib: ''
         };
-    }
-    if (isOldChaikaConfig(name)) {
-        const ret = require(path.join(utils_1.default.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall'))(name);
-        if (ret.type === 'git') {
-            downLoadGitRepo(ret.gitRepo, ret.branchName);
+        if (!name && !opts.branch) {
+            downloadInfo = {
+                type: 'all',
+                lib: ''
+            };
         }
-        else {
-            downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
+        if (isOldChaikaConfig(name)) {
+            const ret = require(path.join(utils_1.default.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall'))(name);
+            if (ret.type === 'git') {
+                downLoadGitRepo(ret.gitRepo, ret.branchName);
+            }
+            else {
+                yield downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
+            }
+            return;
         }
-        return;
-    }
-    if (/\.git$/.test(name) && opts.branch && typeof opts.branch === 'string') {
-        downloadInfo = {
-            type: 'git',
-            lib: name,
-            version: opts.branch
-        };
-    }
-    let { type, lib, version } = downloadInfo;
-    console.log('install type:', type);
-    switch (type) {
-        case 'git':
-            downLoadGitRepo(lib, version);
-            break;
-        case 'all':
-            downLoadPkgDepModule();
-        default:
-            break;
-    }
-    writeProjectSourceTypeList();
+        if (/\.git$/.test(name) && opts.branch && typeof opts.branch === 'string') {
+            downloadInfo = {
+                type: 'git',
+                lib: name,
+                version: opts.branch
+            };
+        }
+        let { type, lib, version } = downloadInfo;
+        switch (type) {
+            case 'git':
+                downLoadGitRepo(lib, version);
+                break;
+            case 'all':
+                yield downLoadPkgDepModule();
+            default:
+                break;
+        }
+        writeProjectSourceTypeList();
+    });
 }
 exports.default = default_1;

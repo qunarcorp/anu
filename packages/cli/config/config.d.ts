@@ -27,6 +27,7 @@ export declare type sourceTypeString = 'input' | 'output';
 export interface projectSourceType {
     name: string;
     path: string;
+    sourcemap?: string;
     sourceType: sourceTypeString;
 }
 export interface GlobalConfigMap {

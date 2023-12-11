@@ -31,7 +31,6 @@ module.exports = async function({ queues = [], exportCode = '' }: NanachiLoaderS
             }
         }
 
-
         const sourceMapPath = path.join(utils.getDisSourceMapDir(), relativePath);
 
         // 与其他技术融合，可能得提前需要app.js, app.json

@@ -30,11 +30,11 @@ function installDefaultModule(buildType) {
         for (let i of installModules) {
             i.exists = yield fs_extra_1.default.pathExists(i.installModulePath);
         }
-        installModules.filter(function (curModule) {
+        for (const curModule1 of installModules.filter(function (curModule) {
             return !curModule.exists;
-        }).forEach(function (curModule) {
-            install_1.default(`${curModule.name.replace(/^(nnc_module_)|(nnc_)/, '')}@#${curModule.installVersion}`, {});
-        });
+        })) {
+            yield install_1.default(`${curModule1.name.replace(/^(nnc_module_)|(nnc_)/, '')}@#${curModule1.installVersion}`, {});
+        }
     });
 }
 exports.default = installDefaultModule;

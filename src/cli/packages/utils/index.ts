@@ -425,7 +425,7 @@ let utils = {
      */
     getDisSourceMapDir():string{
         const projectRootPath = this.getProjectRootPath();
-        return path.join(projectRootPath, this.getDistRelativeDir());
+        return path.join(projectRootPath, 'sourcemap', config.buildType);
     },
 
 
@@ -439,7 +439,7 @@ let utils = {
 
         const isMultiple = userConfig.multiple || false;
         if (config.buildType === 'quick') {
-            // 快应用没适配过单包单包，适配了再改
+            // TODO 快应用没适配过单包，适配了再改
             return 'src';
         }
         return path.join(
@@ -478,6 +478,11 @@ let utils = {
     // 获取单包模式下 xxShadowApp.js 所在的路径，不保证文件一定存在
     getShadowAppJsPath() {
         return path.join(this.getProjectRootPath(), 'source', `${config.buildType}ShadowApp.js`);
+    },
+
+    // 获取当前工作区的源码目录
+    getWorkSpaceSourceDirPath() {
+        return path.join(this.getProjectRootPath(), 'source');
     }
 };
 

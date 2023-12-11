@@ -16,6 +16,7 @@ const path = __importStar(require("path"));
 const config_1 = __importDefault(require("../../config/config"));
 const utils_1 = __importDefault(require("../../packages/utils"));
 const isMutilePack_1 = require("./isMutilePack");
+const mergeUtils_1 = require("./mergeUtils");
 const chalk = require('chalk');
 const mergeFilesQueue = require('./mergeFilesQueue');
 const ignoreFiles = [
@@ -37,9 +38,6 @@ const lockFiles = [
 ];
 function getDownLoadDir() {
     return path.join(utils_1.default.getProjectRootPath(), '.CACHE/download', isMutilePack_1.getMultiplePackDirPrefix());
-}
-function getMergeDir() {
-    return path.join(utils_1.default.getProjectRootPath(), '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix());
 }
 function isIgnoreFile(fileName) {
     return ignoreFiles.includes(fileName)
@@ -98,8 +96,12 @@ function copyCurrentProjectToDownLoad() {
         });
         allPromiseCopy = allPromiseCopy.concat(promiseCopy);
     }
-    setCurrentProjectType(finalProjectList);
-    return Promise.all(allPromiseCopy);
+    return Promise.all(allPromiseCopy).then(() => {
+        setCurrentProjectType(finalProjectList);
+        return Promise.resolve(1);
+    }).catch((err) => {
+        return Promise.reject(err);
+    });
 }
 function setCurrentProjectType(projectList) {
     projectList.forEach(function (projectPath) {
@@ -153,10 +155,10 @@ function copyDownLoadToNnc() {
         let dist = '';
         file = file.replace(/\\/g, '/');
         if (/\/source\//.test(file)) {
-            dist = path.join(getMergeDir(), 'source', file.split('/source/').pop());
+            dist = path.join(mergeUtils_1.getMergeDir(), 'source', file.split('/source/').pop());
         }
         else {
-            dist = path.join(getMergeDir(), file.split('/').pop());
+            dist = path.join(mergeUtils_1.getMergeDir(), file.split('/').pop());
         }
         fs_extra_1.default.ensureFileSync(dist);
         return fs_extra_1.default.copyFile(file, dist);

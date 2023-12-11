@@ -71,9 +71,18 @@ function getParamsFromWorkSpaceCopyTask() {
     projectSourceTypeListOutput.push({
         name,
         path: currentSingleBundlePath,
+        sourcemap: utils_1.default.getDisSourceMapDir(),
         sourceType: 'output'
     });
     return filterOnlyDirOnTypeList(projectSourceTypeListOutput);
+}
+function getParamsFromSourcemapPath(list) {
+    return list.map((sourcemapPath) => {
+        const from = sourcemapPath;
+        const to = utils_1.default.getDisSourceMapDir();
+        const globList = glob_1.default.sync(from + '/**', { nodir: true });
+        return { from, to, globList };
+    });
 }
 function setProjectSourceTypeList() {
     const jsonPath = path.join(cwd, `.CACHE/type${isMutilePack_1.getMultiplePackDirPrefix()}.json`);
@@ -161,5 +170,16 @@ const runSourceConfigMoveTask = () => __awaiter(void 0, void 0, void 0, function
 });
 exports.runSourceConfigMoveTask = runSourceConfigMoveTask;
 const runSourcemapMergeTask = (list) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const copyList = getParamsFromSourcemapPath(list);
+        const allCopyTasks = copyList.map(({ from, to, globList }) => {
+            console.log(`[runSourcemapMergeTask] 准备合并的项目路径: ${from} -> ${to}`);
+            return copySingleBundleDist_1.default(from, to, globList);
+        });
+        yield Promise.all(allCopyTasks);
+    }
+    catch (err) {
+        console.log('[runSourcemapMergeTask] Merge error:', err);
+    }
 });
 exports.runSourcemapMergeTask = runSourcemapMergeTask;

@@ -6,6 +6,7 @@ import {
     runSingleBundleWatchCacheMergeTask,
     runOutputSourceConfigMergeTask,
     runSourceConfigMoveTask,
+    runSourcemapMergeTask,
 } from "../../tasks/chaikaMergeTask";
 import {getMultiplePackDirPrefixNew} from "../../tasks/chaikaMergeTask/isMutilePack";
 
@@ -22,6 +23,11 @@ function getListFromSingleBundleDist() {
 function getListFromDownloadCache() {
     const { projectSourceTypeList} = config;
     return projectSourceTypeList.filter((item) => item.sourceType === 'output').map(item=>item.path) || [];
+}
+
+function getSourcemapListFromDownloadCache() {
+    const { projectSourceTypeList} = config;
+    return projectSourceTypeList.filter((item) => item.sourceType === 'output').map(item=>item.sourcemap) || [];
 }
 
 
@@ -102,9 +108,9 @@ class ChaikaPlugin {
 
             // 仅在单包模式下的 build 和 watch，将子包json配置文件直接拷贝到子包的产物目录下
             if (isSingleBundle) {
-                console.log(chalk.yellow('单包打包产物配置文件拷贝中，拷贝成功前请不要移动产物目录下的文件'));
+                console.log(chalk.yellow('[单包打包产物配置文件] 拷贝中，拷贝成功前请不要移动产物目录下的文件'));
                 await runSourceConfigMoveTask();
-                console.log(chalk.green('拷贝成功'));
+                console.log(chalk.green('[单包打包产物配置文件] 拷贝成功'));
             }
 
             const mergeProjectDirList = !utils.isSingleBundle() ? getListFromDownloadCache() : getListFromSingleBundleDist();
@@ -115,22 +121,23 @@ class ChaikaPlugin {
             // 3. 单包模式下，watch 后对工作区的打包产物进行合并（distc -> dist）（此处是在子进程打包合并完之后处理的）
             // 注意判断条件是互斥的
             if (!isSingleBundle) { // 1、2
-                console.log(chalk.yellow('下载缓存区产物代码合并中，合并成功前请不要移动产物目录下的文件'));
+                console.log(chalk.yellow('[下载缓存区产物代码] 合并中，合并成功前请不要移动产物目录下的文件'));
                 await runOutputCacheCodesMergeTask(); // 合并 js
                 await runOutputSourceConfigMergeTask(mergeProjectDirList); // 合并 json
-                console.log(chalk.green('合并成功'));
+                await runSourcemapMergeTask(getSourcemapListFromDownloadCache()); // 合并 sourcemap
+                console.log(chalk.green('[下载缓存区产物代码] 合并成功'));
             }
             if (isSingleBundle && isWatch) { // 3
-                console.log(chalk.yellow('单包打包产物合并中，合并成功前请不要移动产物目录下的文件'));
+                console.log(chalk.yellow('[单包打包产物] 合并中，合并成功前请不要移动产物目录下的文件'));
                 await runSingleBundleWatchCacheMergeTask(); // 合并 js
                 await runOutputSourceConfigMergeTask(mergeProjectDirList); // 合并 json
-                console.log(chalk.green('合并成功'));
+                console.log(chalk.green('[单包打包产物] 合并成功'));
             }
             if (config.forFirstCompile) { // 记录一下是否是第一次进入 done 这个钩子
-                // 如果是第一次执行，则做一次 importSyntax 到 app.js 的插入
-                console.log(chalk.yellow(`执行配置文件中 import 语句插入`));
-                this.addImportSyntaxToAppJs(mergeProjectDirList);
-                console.log(chalk.green(`插入成功`));
+                // // 如果是第一次执行，则做一次 importSyntax 到 app.js 的插入
+                // console.log(chalk.yellow(`执行配置文件中 import 语句插入`));
+                // this.addImportSyntaxToAppJs(mergeProjectDirList);
+                // console.log(chalk.green(`插入成功`));
 
                 config.forFirstCompile = false;
             }
@@ -253,6 +260,8 @@ class ChaikaPlugin {
             console.log(`[addImportSyntaxToAppJs] 没找到 ${appJsPath} 文件，跳过插入流程`)
         }
     }
+
+
 }
 
 export default ChaikaPlugin;

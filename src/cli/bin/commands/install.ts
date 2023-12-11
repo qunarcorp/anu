@@ -17,7 +17,6 @@ function isInputPackage(dirPath: string): sourceTypeString | undefined {
         throw new Error(`[isInputPackage] 输入路径不存在 ${dirPath}`);
     }
 
-    // 判断路径下是否存在 package.json，存在则返回 'input'， 否则返回 undefined
     const packageJsonPath = path.join(dirPath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
         return 'input';
@@ -74,10 +73,11 @@ function writeProjectSourceTypeList() {
                 });
                 break;
             }
-            case 'output': {
+            case 'output': { // output 类型还有一层，是区分产物和sourcemap目录的
                 listResult.push({
                     name: dirName,
-                    path: dirPath,
+                    path: dirPath + '/dist',
+                    sourcemap: dirPath + '/sourcemap',
                     sourceType: 'output'
                 });
                 break;
@@ -87,6 +87,7 @@ function writeProjectSourceTypeList() {
                 process.exit(1);
             }
         }
+        console.log(chalk.green(`[writeProjectSourceTypeList] 记录路径 ${dirName}，类型为 ${type}`));
     });
 
     // 覆写掉 projectSourceTypeList 中旧的内容，因为多个包有可能一个一个下载，也可能一起下载，每次全量扫描目录覆写的成本很低
@@ -131,7 +132,7 @@ function unPack(src: string, dist: string) {
                 /\/package\.json$/.test(el)
                 || /\/\.\w+$/.test(el)
             ) {
-                fs.removeSync(path.join(dist, '..', fileName))
+                fs.removeSync(path.join(dist, '..', fileName));
                 fs.moveSync(el, path.join(dist, '..', fileName));
             }
         });
@@ -212,13 +213,8 @@ async function downLoadBinaryLib(binaryLibUrl: string, patchModuleName: string) 
     );
 
     fs.ensureFileSync(libDist);
-    fs.writeFile(libDist, data, function (err) {
-        if (err) {
-            // eslint-disable-next-line
-            console.log(err);
-            return;
-        }
-        // eslint-disable-next-line
+    try {
+        fs.writeFileSync(libDist, data);
         console.log(chalk.green(`安装依赖包 ${binaryLibUrl} 成功.`));
         const unPackDist = path.join(
             utils.getProjectRootPath(),
@@ -226,16 +222,17 @@ async function downLoadBinaryLib(binaryLibUrl: string, patchModuleName: string) 
             getMultiplePackDirPrefix(),
             patchModuleName
         );
-        unPack(
-            libDist,
-            unPackDist
-        );
-    });
+        unPack(libDist, unPackDist);
+    } catch (err) {
+        console.log(err);
+        process.exit(1);
+    }
+
     writeVersions(patchModuleName, binaryLibUrl.split('/').pop());
 }
 
 
-function downLoadPkgDepModule() {
+async function downLoadPkgDepModule() {
     var pkg = require(path.join(cwd, 'package.json'));
     var depModules = pkg.modules || {};
     let depKey = Object.keys(depModules);
@@ -246,7 +243,7 @@ function downLoadPkgDepModule() {
         process.exit(1);
     }
 
-    depKey.forEach(function (key) {
+    for (const key of depKey) {
         // 用户自定义根据tag或者branch下载模块包
         if (
             Object.keys(nanachiChaikaConfig).length
@@ -276,22 +273,20 @@ function downLoadPkgDepModule() {
 
             const ret = require(
                 path.join(utils.getProjectRootPath(), 'node_modules', '@qnpm/chaika-patch/mutiInstall')
-            )(`${key}@${depModules[key]}`)
+            )(`${key}@${depModules[key]}`);
             if (ret.type === 'git') {
                 downLoadGitRepo(ret.gitRepo, ret.branchName);
             } else {
-                downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
+                await downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
             }
-
         } else {
 
         }
-
-    });
+    }
 }
 
 
-export default function (name: string, opts: any) {
+export default async function (name: string, opts: any) {
 
     if (opts.platform && platforms.some((v: Platform) => v.buildType === opts.platform)) {
         config.buildType = opts.platform;
@@ -332,7 +327,7 @@ export default function (name: string, opts: any) {
         if (ret.type === 'git') {
             downLoadGitRepo(ret.gitRepo, ret.branchName);
         } else {
-            downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
+            await downLoadBinaryLib(ret.patchModuleUrl, ret.patchModuleName);
         }
         return;
     }
@@ -354,8 +349,6 @@ export default function (name: string, opts: any) {
     }
     let { type, lib, version } = downloadInfo;
 
-    console.log('install type:', type);
-
     switch (type) {
         case 'git':
             downLoadGitRepo(lib, version);
@@ -363,7 +356,7 @@ export default function (name: string, opts: any) {
         // case 'binary':
         //     downLoadBinaryLib(lib);
         case 'all':
-            downLoadPkgDepModule();
+            await downLoadPkgDepModule();
         default:
             break;
     }

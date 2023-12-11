@@ -1,1 +1,1 @@
-export default function (name: string, opts: any): void;
+export default function (name: string, opts: any): Promise<void>;

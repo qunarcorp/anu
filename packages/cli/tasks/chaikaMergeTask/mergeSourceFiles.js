@@ -1,10 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mergeUtils_1 = require("./mergeUtils");
 const consts_1 = require("../../consts");
 const installTasks_1 = require("./installTasks");
+const utils_1 = __importDefault(require("../../packages/utils"));
+const config_1 = __importDefault(require("../../config/config"));
 const fs = require('fs-extra');
 const path = require('path');
+const chalk = require('chalk');
 const cwd = process.cwd();
 let mergeFilesQueue = require('./mergeFilesQueue');
 const buildType = mergeUtils_1.get_buildType();
@@ -110,12 +116,44 @@ function getMiniAppProjectConfigJson(projectConfigQueue = []) {
         content: distContent
     };
 }
+function addWorkSpaceImportAndAlias(map) {
+    const workSpaceAppJsonPath = path.join(utils_1.default.getWorkSpaceSourceDirPath(), 'app.json');
+    if (fs.existsSync(workSpaceAppJsonPath)) {
+        let workSpaceAppJson;
+        try {
+            workSpaceAppJson = require(workSpaceAppJsonPath);
+        }
+        catch (err) {
+            console.log(chalk.red('[addWorkSpaceImportAndAlias] 工作区 app.json 解析失败，请联系 nanachi 开发者'));
+            process.exit(1);
+        }
+        const alias = workSpaceAppJson.alias || {};
+        const importSyntax = workSpaceAppJson.imports || [];
+        importSyntax.forEach((el, index) => {
+            importSyntax[index] = `/* nanachi-ignore-dependency */${el}`;
+        });
+        map.alias = map.alias || [];
+        map.alias.push({
+            id: workSpaceAppJsonPath,
+            content: alias,
+            type: 'alias'
+        });
+        map.importSyntax = map.importSyntax || [];
+        map.importSyntax = map.importSyntax.concat(importSyntax);
+    }
+    else {
+        console.log(chalk.yellow('[addWorkSpaceImportAndAlias] 工作区 app.json 不存在，跳过处理'));
+    }
+}
 function default_1() {
     let queue = Array.from(mergeFilesQueue);
     mergeUtils_1.validateAppJsFileCount(queue);
     mergeUtils_1.validateConfigFileCount(queue);
     mergeUtils_1.validateMiniAppProjectConfigJson(queue);
     let map = mergeUtils_1.generateMetaFilesMap(queue);
+    if (config_1.default.noCurrent) {
+        addWorkSpaceImportAndAlias(map);
+    }
     let tasks = [
         getMergedAppJsConent(getAppJsSourcePath(queue), map.pages, map.importSyntax),
         getMergedXConfigContent(map.xconfig),

@@ -2,7 +2,6 @@ import NanachiWebpackPlugin from '../nanachi-loader/plugin';
 import SizePlugin from '../nanachi-loader/sizePlugin';
 import QuickPlugin from '../nanachi-loader/quickPlugin';
 import ChaikaPlugin from '../nanachi-loader/chaika-plugin/chaikaPlugin';
-import SingleBundlePlugin from '../nanachi-loader/chaika-plugin/singleBundlePlugin';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import IgnoreDependencyErrorsPlugin from '../nanachi-loader/ignoreDependencyErrorsPlugin';
 import {NanachiOptions} from '../index';
@@ -12,6 +11,7 @@ import webpack from 'webpack';
 import {intermediateDirectoryName} from './h5/configurations';
 import quickAPIList from '../consts/quickAPIList';
 import config from './config';
+import glob from 'glob';
 
 const { exec } = require('child_process');
 const utils = require('../packages/utils/index');
@@ -34,10 +34,6 @@ const cwd = process.cwd();
 
 const H5AliasList = ['react','@react','react-dom', 'react-loadable', '@qunar-default-loading', '@dynamic-page-loader', /^@internalComponents/];
 
-const isChaikaMode = function() {
-    return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
-};
-
 const WebpackBar = require('webpackbar');
 // json 配置文件名
 const quickConfigFileName: string =
@@ -46,6 +42,56 @@ const quickConfigFileName: string =
       : 'quickConfig.json';
 
 global.nanachiVersion = config.nanachiVersion || '';
+
+/**
+ * 收集标记为 main 和 common 的包的全部内含 js 文件路径
+ * 收集的目的是为了处理单包打包流程中部分只有在子包中引入的文件，而仅仅打包主包和公共包的情况下，这部分代码不会参与打包和合并
+ * 因此现在的流程保证主包和公共包中的所有文件都会被打包，无论是否当前的代码中是否被入口扫描到
+ */
+function collectAllJsInMainAndCommonPackages() : string[] {
+    // 单包模式下，不需要收集所有主包依赖，直接启动的 build or watch 流程也不需要收集
+    // noCurrent 只会在通过 watch -c 中启动的 build 流程上设置，因此基本确定了只有子进程的打包才会采集所有主包依赖
+    if (utils.isSingleBundle() && config.noCurrent === false) return [];
+
+    // TODO: 目前是根据包名判断，未来需要跟 cli 入口那里一样，针对包做命名
+    const judgeNames = ['nnc_module_qunar_platform']; // 不包含 main 包，避免原始的入口 app.js 重复被加入还得去重
+    const judgeDirName = ['components', 'common']; // 理论上，只需要针对主包这两个文件夹做扫描
+
+    // 获取下载缓存区中的特定包的地址
+    const needScanOriginalDir: string[] = [];
+    judgeNames.forEach((name) => {
+        const target = config.projectSourceTypeList.find(el => el.name === name);
+        if (target) {
+            needScanOriginalDir.push(target.path);
+        } else {
+            console.error(`[collectAllJsInMainAndCommonPackages] 未找到 ${name} 对应在下载缓存区中的地址，无法进行后续流程，请联系 nanachi 开发者`);
+            process.exit(1);
+        }
+    });
+
+    // 获取 needScanOriginalDir 中每个路径的 ./source/{judgeDirName} 的所有以 .js .ts 结尾的文件
+    const needScanOriginalJsFiles: { [key: string]: string[] } = {};
+    needScanOriginalDir.forEach((el) => {
+        needScanOriginalJsFiles[el] = [];
+        judgeDirName.forEach((name) => {
+            const judgeFullPath = path.join(el, 'source', name);
+            // 通过 glob 搜索所有目录下以及嵌套目录下 .js 文件或者 .ts 文件，然后加入到 needScanOriginalJsFiles 中
+            const files = glob.sync(path.join(judgeFullPath, '/**/*.@(js|ts)'), {nodir: true});
+            needScanOriginalJsFiles[el].push(...files);
+        });
+    });
+
+    // 将待加入的路径转换为合并后打包目录中的路径
+    const needAddedExtraEntryList: string[] = [];
+    Object.keys(needScanOriginalJsFiles).forEach((key) => {
+        needScanOriginalJsFiles[key].forEach((p) => {
+            const relativePath = path.relative(key, p);
+            needAddedExtraEntryList.push(path.join(cwd, relativePath));
+        });
+    });
+
+    return needAddedExtraEntryList;
+}
 
 export default function({
     watch,
@@ -80,7 +126,7 @@ export default function({
     //     distPath = path.resolve(cwd, utils.getDistName(platform));
     // }
     let distPath = path.resolve(utils.getDistDir());
-    console.log('distPath', distPath);
+    // console.log('distPath', distPath);
 
     if (platform === 'h5') {
         distPath = path.join(distPath, intermediateDirectoryName);
@@ -179,7 +225,8 @@ export default function({
                 }
             } : [],
             prevJsLoaders,
-            prevLoaders);
+            prevLoaders,
+        );
     };
 
     function isJsFile(sourcePath: string) {
@@ -236,7 +283,6 @@ export default function({
                 } else {
                     return false;
                 }
-
             },
             //loader是从后往前处理
             use: jsLorder(),
@@ -277,9 +323,7 @@ export default function({
 
     if (platform === 'quick') {
         mergePlugins.push(new QuickPlugin());
-        // quickConfig可能不存在 需要try catch
         try {
-            // quickConfig可能不存在 需要try catch
             var quickConfig: {
                  widgets?: Array<{
                      path?: string
@@ -337,10 +381,11 @@ export default function({
         );
     }
 
-    // 由于单包模式下打包，source 中没有 app.js，所以使用 .Cache 目录下的 shadowApp.js
-    // 这样单包产物中也不存多余的 app.js，也不需要管理 source 目录下多余的临时 app.js 的生命周期
-    let entry = utils.isSingleBundle() ? utils.getShadowAppJsPath() : path.join(cwd, 'source/app');
-    // let entry = utils.isSingleBundle() ? path.join(cwd, 'source/wxShadowApp.js') : path.join(cwd, 'source/app');
+    const extraIslandJsFileList = collectAllJsInMainAndCommonPackages();
+    // console.log('extraIslandJsFileList', extraIslandJsFileList);
+
+    // 单包模式下使用生成的 shadowApp.js 作为入口
+    let entry = utils.isSingleBundle() ? utils.getShadowAppJsPath() : [path.join(cwd, 'source/app'), ...extraIslandJsFileList];
 
     if (typescript) { entry += '.tsx'; }
     const barNameMap = {

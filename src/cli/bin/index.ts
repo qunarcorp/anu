@@ -18,6 +18,7 @@ const { version } = require('../package.json');
 import { runChaikaMergeTask } from '../tasks/chaikaMergeTask/index';
 import { getMultiplePackDirPrefix } from '../tasks/chaikaMergeTask/isMutilePack';
 import utils from '../packages/utils';
+import { getMergeDir } from '../tasks/chaikaMergeTask/mergeUtils';
 import runBeforeBuildOrWatch from "../tasks/runBeforeBuildOrWatch"; // TODO 需要把一部分逻辑迁移到这里
 let cwd = process.cwd();
 
@@ -50,8 +51,8 @@ cli.addCommand(
             alias: 'p'
         }
     },
-    function (name, opts) {
-        install(name, opts);
+    async function (name, opts) {
+        await install(name, opts);
     }
 );
 
@@ -86,10 +87,6 @@ function copyReactLibFile(buildType: string) {
         : path.join(projectRootPath, 'source', ReactLibName);
     fs.ensureFileSync(dist);
     fs.copySync(src, dist);
-}
-
-function getMergeDir() {
-    return path.join(utils.getProjectRootPath(), '.CACHE/nanachi', getMultiplePackDirPrefix());
 }
 
 function getMultipleBuildTargetDir() {
@@ -202,9 +199,12 @@ platforms.forEach(function (el) {
 
                     // 修改运行中的值，不去修改 pkg 中的值，因为多个进程同时会读取，所以就各取所需
                     isChaika = false; // isChaika 强制为 false 避免触发合包的操作
-                    singleBundleSourcemap = true;
                     if (compileType === 'build') { // TODO 暂时先这么写测试，之后去掉
                         singleBundleSourcemap = true;
+                    }
+                    if (compileType === 'watch') {
+                        console.log(chalk.yellow('检测到目前是单包打包的 watch 模式，此模式下不支持 sourcemap，已强制将其关闭'));
+                        singleBundleSourcemap = false;
                     }
                     process.env.NANACHI_CHAIK_MODE === 'NOT_CHAIK_MODE'; // 防止其他代码调用 isChaikaMode() 时出现问题
                     console.log(chalk.green('提示：请注意您在使用 nanachi 的单包模式，部分参数会强制对齐到单包模式的要求\n'));

@@ -49,5 +49,6 @@ declare let utils: {
     isWatchMode(): boolean;
     isSingleBundleProcess(compileType: string, component: string): string;
     getShadowAppJsPath(): string;
+    getWorkSpaceSourceDirPath(): string;
 };
 export default utils;

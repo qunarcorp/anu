@@ -45,7 +45,7 @@ export function execSyncInstallTasks (map: any) {
             return !ignoreInstallReg.test(el);
         });
     }
-
+    console.log('installPkgList before', installList)
     let installPkgList = installList.reduce(function (needInstall, pkg) {
         //@xxx/yyy@1.0.0 => xxx
         const pkgMeta = pkg.split('@');
@@ -68,6 +68,7 @@ export function execSyncInstallTasks (map: any) {
 
     // 本地 node_modules 的依赖有两个来源：1.当前工作区的工程需要的依赖  2. 下载缓存区的其他工程所需依赖
     // 安装来源为 installPkgList
+    console.log('installPkgList after', installPkgList);
     if (installPkgList.length) {
         //installPkgList = installPkgList.slice(0,2);
 
