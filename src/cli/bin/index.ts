@@ -199,7 +199,10 @@ platforms.forEach(function (el) {
 
                     // 修改运行中的值，不去修改 pkg 中的值，因为多个进程同时会读取，所以就各取所需
                     isChaika = false; // isChaika 强制为 false 避免触发合包的操作
-                    if (compileType === 'build') { // TODO 暂时先这么写测试，之后去掉
+
+                    // 对于单包打包流程，build -c 按照默认设置，但是很多子包会设置 userConfig.sourcemap，所以在集成环境强制为 true
+                    // watch -c 目前没适配生成合并 sourcemap 的逻辑，也没必要看，所以任何情况都强制为 false
+                    if (compileType === 'build' && process.env.JENKINS_URL) {
                         singleBundleSourcemap = true;
                     }
                     if (compileType === 'watch') {

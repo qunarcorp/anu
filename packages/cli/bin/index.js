@@ -148,7 +148,7 @@ platforms_1.default.forEach(function (el) {
                     process.exit(1);
                 }
                 isChaika = false;
-                if (compileType === 'build') {
+                if (compileType === 'build' && process.env.JENKINS_URL) {
                     singleBundleSourcemap = true;
                 }
                 if (compileType === 'watch') {

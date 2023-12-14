@@ -22,7 +22,7 @@ const id = 'ChaikaPlugin';
 const fs = require('fs-extra');
 const chalk = require('chalk');
 function getListFromSingleBundleDist() {
-    return utils_1.default.isSingleBundle() ? [path.join(utils_1.default.getDistDir(), isMutilePack_1.getMultiplePackDirPrefixNew())] : [];
+    return utils_1.default.isSingleBundle() ? [utils_1.default.getDistDir()] : [];
 }
 function getListFromDownloadCache() {
     const { projectSourceTypeList } = config_1.default;

@@ -67,7 +67,7 @@ function getParamsFromProjectSourceTypeList() {
 function getParamsFromWorkSpaceCopyTask() {
     const projectSourceTypeListOutput = [];
     const name = require(path.join(utils_1.default.getProjectRootPath(), 'package.json')).name;
-    const currentSingleBundlePath = path.join(utils_1.default.getDistDir(), isMutilePack_1.getMultiplePackDirPrefixNew());
+    const currentSingleBundlePath = path.join(utils_1.default.getDistDir());
     projectSourceTypeListOutput.push({
         name,
         path: currentSingleBundlePath,
@@ -154,7 +154,7 @@ const runSourceConfigMoveTask = () => __awaiter(void 0, void 0, void 0, function
             if (fs.existsSync(filePossiblePath)) {
                 return {
                     from: filePossiblePath,
-                    to: path.join(utils_1.default.getDistDir(), isMutilePack_1.getMultiplePackDirPrefixNew(), el)
+                    to: path.join(utils_1.default.getDistDir(), el)
                 };
             }
         });

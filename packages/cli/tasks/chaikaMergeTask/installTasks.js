@@ -38,7 +38,6 @@ function execSyncInstallTasks(map) {
             return !ignoreInstallReg.test(el);
         });
     }
-    console.log('installPkgList before', installList);
     let installPkgList = installList.reduce(function (needInstall, pkg) {
         const pkgMeta = pkg.split('@');
         const pkgName = pkgMeta[0] === '' ? '@' + pkgMeta[1] : pkgMeta[0];
@@ -52,7 +51,6 @@ function execSyncInstallTasks(map) {
     installPkgList = installPkgList.filter(function (dep) {
         return !ignoreExt.includes('.' + dep.split('.').pop());
     });
-    console.log('installPkgList after', installPkgList);
     if (installPkgList.length) {
         let installList = installPkgList.join(' ');
         let installListLog = installPkgList.join('\n');

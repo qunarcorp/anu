@@ -17,7 +17,7 @@ const fs = require('fs-extra');
 const chalk = require('chalk');
 
 function getListFromSingleBundleDist() {
-    return utils.isSingleBundle() ? [ path.join(utils.getDistDir(), getMultiplePackDirPrefixNew()) ] : [];
+    return utils.isSingleBundle() ? [ utils.getDistDir() ] : [];
 }
 
 function getListFromDownloadCache() {
