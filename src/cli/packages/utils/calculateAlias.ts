@@ -83,7 +83,6 @@ const getImportSpecifierFilePath = (function () {
 // import md5 from 'md5';
 // @import url('@globalStyle/reset.css');
 
-
 function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: Array<string | RegExp>, importSpecifierName: string): string {
     const aliasMap = require('./calculateAliasConfig')();
     const remoteNpmPackagesMap = require('./calculateRemoteNpmPackages')();

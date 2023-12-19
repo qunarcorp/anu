@@ -94,8 +94,6 @@ async function nanachi(options: NanachiOptions = {}) {
         if (stats.hasErrors()) {
             info.errors.forEach(e => {
                 // eslint-disable-next-line
-                // console.log(e);
-                // console.log('\n');
                 console.error(chalk.red('Error:\n'), utils.cleanLog(e));
                 if (utils.isMportalEnv()) {
                     process.exit();

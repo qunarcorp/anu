@@ -87,6 +87,7 @@ function copyReactLibFile(buildType: string) {
         : path.join(projectRootPath, 'source', ReactLibName);
     fs.ensureFileSync(dist);
     fs.copySync(src, dist);
+    console.log(chalk.green(`[copyReactLibFile] React文件拷贝完成，目标路径为: ${dist}`));
 }
 
 function getMultipleBuildTargetDir() {
@@ -195,7 +196,8 @@ platforms.forEach(function (el) {
                         console.log(chalk.yellow('检测到目前是单包打包的 watch 模式，此模式下不支持 sourcemap，已强制将其关闭'));
                         singleBundleSourcemap = false;
                     }
-                    process.env.NANACHI_CHAIK_MODE === 'NOT_CHAIK_MODE'; // 防止其他代码调用 isChaikaMode() 时出现问题
+
+                    process.env.NANACHI_CHAIK_MODE = 'NOT_CHAIK_MODE'; // 防止其他代码调用 isChaikaMode() 时出现问题
                     console.log(chalk.green('提示：请注意您在使用 nanachi 的单包模式，部分参数会强制对齐到单包模式的要求\n'));
                     console.log(chalk.green('提示：另外单包模式可能会出现读取不到当前包配置的 alias，如果编译出现问题请检查 package.json 的 nanachi 字段上是否包含 alias 且当前包代码的路径别名都已经配置完成\n'))
                 }
@@ -235,7 +237,6 @@ platforms.forEach(function (el) {
                         config.projectWatcherList = new Set([...config.projectWatcherList, ...multiProject]);
                     }
                 }
-
                 copyReactLibFile(buildType);
 
                 if (isSingleBundleProcessFlag) {
