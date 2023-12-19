@@ -83,7 +83,7 @@ function writeProjectSourceTypeList() {
                 break;
             }
             default: {
-                console.log(chalk.red('[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者'));
+                console.error(chalk.red('[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者'));
                 process.exit(1);
             }
         }
@@ -113,10 +113,14 @@ function writeVersions(moduleName: string, version: string) {
 
 
 function unPack(src: string, dist: string) {
-    dist = path.join(dist, 'source');
-    fs.ensureDirSync(dist);
-    fs.emptyDirSync(dist);
-    const unzipExec = shelljs.exec(`tar -zxvf ${src} -C ${dist}`, {
+    /*
+    src: /Users/qitmac001157/Desktop/nnc_module_qunar_flight_old_nanachi/.CACHE/lib/nnc_module_qunar_platform/wx
+    dist: /Users/qitmac001157/Desktop/nnc_module_qunar_flight_old_nanachi/.CACHE/download/wx/nnc_module_qunar_platform
+    */
+    const distSource = path.join(dist, 'source');
+    fs.ensureDirSync(distSource);
+    fs.emptyDirSync(distSource);
+    const unzipExec = shelljs.exec(`tar -zxvf ${src} -C ${distSource}`, {
         silent: true
     });
 
@@ -124,24 +128,61 @@ function unPack(src: string, dist: string) {
         // eslint-disable-next-line
         console.log(chalk.bold.red(unzipExec.stderr));
     }
-    try {
-        let files = glob.sync(dist + '/**', { nodir: true, dot: true });
-        files.forEach(function (el: string) {
-            let fileName = path.basename(el);
-            if (
-                /\/package\.json$/.test(el)
-                || /\/\.\w+$/.test(el)
-            ) {
-                fs.removeSync(path.join(dist, '..', fileName));
-                fs.moveSync(el, path.join(dist, '..', fileName));
+
+    // 解压后针对产物类型和源码类型做判断，首先校验压缩后的目录
+    const type: sourceTypeString | undefined = isInputPackage(distSource) || isOutputPackage(distSource);
+    switch (type) {
+        case 'input': {
+            try {
+                let files = glob.sync(distSource + '/**', { nodir: true, dot: true });
+                files.forEach(function (el: string) {
+                    let fileName = path.basename(el);
+                    if (
+                        /\/package\.json$/.test(el)
+                        || /\/\.\w+$/.test(el)
+                    ) {
+                        fs.removeSync(path.join(distSource, '..', fileName));
+                        fs.moveSync(el, path.join(distSource, '..', fileName));
+                    }
+                });
+
+            } catch (err) {
+                // eslint-disable-next-line
+                console.error('[unPack error]:', err);
+                process.exit(1);
             }
-        });
+            break;
+        }
+        case 'output': {
+            // 检查解压缩目录下是否存在目标平台的产物
+            const targetPlatformDir = path.join(distSource, config.buildType);
+            if (!fs.existsSync(targetPlatformDir)) {
+                console.error(chalk.red(`[unPack error] 解压后的 ${distSource} 目录下不存在 ${config.buildType} 目录，请手动检查下该版本号下载的压缩包中是否有对应平台的产物！`));
+                process.exit(1);
+            }
 
-    } catch (err) {
-        // eslint-disable-next-line
-        console.log('[unPack error]:', err);
+            // 此时解压目录下存在 /${platform}/dist & /${platform}/sourcemap
+            const outputCodeDistDir = path.join(targetPlatformDir, 'dist');
+            const outputCodeSourcemapDir = path.join(targetPlatformDir, 'sourcemap');
+            if (!fs.existsSync(outputCodeDistDir) || !fs.existsSync(outputCodeSourcemapDir)) {
+                console.error(chalk.red(`[unPack error] 解压后的 ${targetPlatformDir} 目录下不存在 dist 或者 sourcemap 目录，请手动检查下该版本号下载的压缩包中是否有对应平台的产物！`));
+                process.exit(1);
+            }
+
+            const finalDistDir = path.join(dist, 'dist');
+            const finalSourcemapDir = path.join(dist, 'sourcemap');
+            fs.ensureDirSync(finalDistDir);
+            fs.ensureDirSync(finalSourcemapDir);
+            fs.copySync(outputCodeDistDir, finalDistDir);
+            fs.copySync(outputCodeSourcemapDir, finalSourcemapDir);
+            fs.removeSync(distSource); // 特定平台的文件夹转移完成后，其余平台的文件都可以删除
+            break;
+        }
+        default: {
+            console.error(chalk.red('[install-unPack] 出现了无法识别的类型，请联系开发者'));
+            process.exit(1);
+        }
     }
-
 }
 
 function isOldChaikaConfig(name = "") {
@@ -209,7 +250,6 @@ async function downLoadBinaryLib(binaryLibUrl: string, patchModuleName: string) 
         utils.getProjectRootPath(),
         `.CACHE/lib/${path.basename(patchModuleName)}`,
         getMultiplePackDirPrefix()
-
     );
 
     fs.ensureFileSync(libDist);
@@ -291,7 +331,6 @@ export default async function (name: string, opts: any) {
     if (opts.platform && platforms.some((v: Platform) => v.buildType === opts.platform)) {
         config.buildType = opts.platform;
     }
-
 
     console.log(chalk.bold.yellow(`传入的平台参数：${opts.platform}，处理后的平台参数：${config.buildType}`));
 

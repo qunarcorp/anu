@@ -90,7 +90,7 @@ function writeProjectSourceTypeList() {
                 break;
             }
             default: {
-                console.log(chalk_1.default.red('[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者'));
+                console.error(chalk_1.default.red('[writeProjectSourceTypeList] 出现了无法识别的类型，请联系开发者'));
                 process.exit(1);
             }
         }
@@ -113,28 +113,60 @@ function writeVersions(moduleName, version) {
     fs.writeFileSync(vPath, JSON.stringify(defaultVJson, null, 4));
 }
 function unPack(src, dist) {
-    dist = path.join(dist, 'source');
-    fs.ensureDirSync(dist);
-    fs.emptyDirSync(dist);
-    const unzipExec = shelljs_1.default.exec(`tar -zxvf ${src} -C ${dist}`, {
+    const distSource = path.join(dist, 'source');
+    fs.ensureDirSync(distSource);
+    fs.emptyDirSync(distSource);
+    const unzipExec = shelljs_1.default.exec(`tar -zxvf ${src} -C ${distSource}`, {
         silent: true
     });
     if (unzipExec.code) {
         console.log(chalk_1.default.bold.red(unzipExec.stderr));
     }
-    try {
-        let files = glob_1.default.sync(dist + '/**', { nodir: true, dot: true });
-        files.forEach(function (el) {
-            let fileName = path.basename(el);
-            if (/\/package\.json$/.test(el)
-                || /\/\.\w+$/.test(el)) {
-                fs.removeSync(path.join(dist, '..', fileName));
-                fs.moveSync(el, path.join(dist, '..', fileName));
+    const type = isInputPackage(distSource) || isOutputPackage(distSource);
+    switch (type) {
+        case 'input': {
+            try {
+                let files = glob_1.default.sync(distSource + '/**', { nodir: true, dot: true });
+                files.forEach(function (el) {
+                    let fileName = path.basename(el);
+                    if (/\/package\.json$/.test(el)
+                        || /\/\.\w+$/.test(el)) {
+                        fs.removeSync(path.join(distSource, '..', fileName));
+                        fs.moveSync(el, path.join(distSource, '..', fileName));
+                    }
+                });
             }
-        });
-    }
-    catch (err) {
-        console.log('[unPack error]:', err);
+            catch (err) {
+                console.error('[unPack error]:', err);
+                process.exit(1);
+            }
+            break;
+        }
+        case 'output': {
+            const targetPlatformDir = path.join(distSource, config_1.default.buildType);
+            if (!fs.existsSync(targetPlatformDir)) {
+                console.error(chalk_1.default.red(`[unPack error] 解压后的 ${distSource} 目录下不存在 ${config_1.default.buildType} 目录，请手动检查下该版本号下载的压缩包中是否有对应平台的产物！`));
+                process.exit(1);
+            }
+            const outputCodeDistDir = path.join(targetPlatformDir, 'dist');
+            const outputCodeSourcemapDir = path.join(targetPlatformDir, 'sourcemap');
+            if (!fs.existsSync(outputCodeDistDir) || !fs.existsSync(outputCodeSourcemapDir)) {
+                console.error(chalk_1.default.red(`[unPack error] 解压后的 ${targetPlatformDir} 目录下不存在 dist 或者 sourcemap 目录，请手动检查下该版本号下载的压缩包中是否有对应平台的产物！`));
+                process.exit(1);
+            }
+            const finalDistDir = path.join(dist, 'dist');
+            const finalSourcemapDir = path.join(dist, 'sourcemap');
+            fs.ensureDirSync(finalDistDir);
+            fs.ensureDirSync(finalSourcemapDir);
+            fs.copySync(outputCodeDistDir, finalDistDir);
+            fs.copySync(outputCodeSourcemapDir, finalSourcemapDir);
+            fs.removeSync(distSource);
+            break;
+        }
+        default: {
+            console.error(chalk_1.default.red('[install-unPack] 出现了无法识别的类型，请联系开发者'));
+            process.exit(1);
+        }
     }
 }
 function isOldChaikaConfig(name = "") {

@@ -129,7 +129,7 @@ function generateShadowAppJsForSingleBundle(buildType) {
         fs_extra_1.default.writeFileSync(shadowAppJsPath, shadowAppJsContent);
     }
     else {
-        console.log(chalk_1.default.red(`请注意，您现在使用的是单包模式，但是 source 目录下不存在 app.json 文件，请联系 nanachi 开发者`));
+        console.log(chalk_1.default.red('请注意，您现在使用的是单包模式，但是 source 目录下不存在 app.json 文件，请联系 nanachi 开发者'));
         process.exit(1);
     }
 }
