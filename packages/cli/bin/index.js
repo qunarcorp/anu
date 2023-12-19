@@ -75,9 +75,10 @@ function copyReactLibFile(buildType) {
     const dist = isChaikaMode()
         ? path.join(projectRootPath, '.CACHE/nanachi', isMutilePack_1.getMultiplePackDirPrefix(), 'source', ReactLibName)
         : path.join(projectRootPath, 'source', ReactLibName);
+    console.log(chalk_1.default.green(`[copyReactLibFile] 准备进行 React 文件拷贝完成，from ${src} to ${dist}`));
     fs_extra_1.default.ensureFileSync(dist);
     fs_extra_1.default.copySync(src, dist);
-    console.log(chalk_1.default.green(`[copyReactLibFile] React文件拷贝完成，目标路径为: ${dist}`));
+    console.log(chalk_1.default.green('[copyReactLibFile] React 文件拷贝完成'));
 }
 function getMultipleBuildTargetDir() {
     return utils_1.default.getDistDir();

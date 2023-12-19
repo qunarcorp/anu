@@ -23,7 +23,7 @@ function copySingleBundleToFullBundle(from: string, to: string, globList: string
         // 判断目标路径是否存在，如果存在输出个提示，但不解决冲突，让用户看到提示自行决定是否解决冲突
         // 实际这里不应该出现冲突，出现冲突意味着合并过程中出现了文件覆盖的情况
         // 注意：只有第一次编译的时候会提示，之后编译的时候大概率出现 destFile 存在的情况（比如我修改一个文件触发rebuild，一定会提示），所以除第一次编译以外不再提醒了
-        if (fs.existsSync(destFile) && config.forFirstCompile) {
+        if (fs.existsSync(destFile) && config.forFirstCompile && config.isWatch) {
             console.log(chalk.yellow(`[copySingleBundleToFullBundle {初次编译提醒}] 目标路径 ${destFile} 已存在，拷贝时会产生覆盖，请自行检查是否需要处理`));
         }
 

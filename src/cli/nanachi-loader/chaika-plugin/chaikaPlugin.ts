@@ -119,7 +119,6 @@ class ChaikaPlugin {
             // 1. 多包模式下，build 后对下载缓存区中的打包产物（output 类型）进行合并
             // 2. 多包模式下，watch 后对下载缓存区中的打包产物（output 类型）进行合并
             // 3. 单包模式下，watch 后对工作区的打包产物进行合并（distc -> dist）（此处是在子进程打包合并完之后处理的）
-            // 注意判断条件是互斥的
             if (!isSingleBundle) { // 1、2
                 console.log(chalk.yellow('[下载缓存区产物代码] 合并中，合并成功前请不要移动产物目录下的文件'));
                 await runOutputCacheCodesMergeTask(); // 合并 js
@@ -134,11 +133,6 @@ class ChaikaPlugin {
                 console.log(chalk.green('[单包打包产物] 合并成功'));
             }
             if (config.forFirstCompile) { // 记录一下是否是第一次进入 done 这个钩子
-                // // 如果是第一次执行，则做一次 importSyntax 到 app.js 的插入
-                // console.log(chalk.yellow(`执行配置文件中 import 语句插入`));
-                // this.addImportSyntaxToAppJs(mergeProjectDirList);
-                // console.log(chalk.green(`插入成功`));
-
                 config.forFirstCompile = false;
             }
             if (isWatch) {

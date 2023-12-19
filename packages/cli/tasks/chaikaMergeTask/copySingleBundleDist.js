@@ -13,7 +13,7 @@ function copySingleBundleToFullBundle(from, to, globList) {
     const allPromiseCopy = files.map((file) => {
         const srcFile = path_1.default.join(file);
         const destFile = path_1.default.join(to, path_1.default.relative(from, file));
-        if (fs_extra_1.default.existsSync(destFile) && config_1.default.forFirstCompile) {
+        if (fs_extra_1.default.existsSync(destFile) && config_1.default.forFirstCompile && config_1.default.isWatch) {
             console.log(chalk.yellow(`[copySingleBundleToFullBundle {初次编译提醒}] 目标路径 ${destFile} 已存在，拷贝时会产生覆盖，请自行检查是否需要处理`));
         }
         fs_extra_1.default.ensureFileSync(destFile);

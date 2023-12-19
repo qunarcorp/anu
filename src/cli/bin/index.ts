@@ -85,9 +85,10 @@ function copyReactLibFile(buildType: string) {
             ReactLibName
         )
         : path.join(projectRootPath, 'source', ReactLibName);
+    console.log(chalk.green(`[copyReactLibFile] 准备进行 React 文件拷贝完成，from ${src} to ${dist}`));
     fs.ensureFileSync(dist);
     fs.copySync(src, dist);
-    console.log(chalk.green(`[copyReactLibFile] React文件拷贝完成，目标路径为: ${dist}`));
+    console.log(chalk.green('[copyReactLibFile] React 文件拷贝完成'));
 }
 
 function getMultipleBuildTargetDir() {

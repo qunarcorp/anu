@@ -6,7 +6,6 @@ import {
     get_ANU_ENV,
     get_BUILD_ENV,
     get_buildType,
-    getDownLoadHomeDir,
     getUniqueSubPkgConfig,
     getMergedData,
     getMergeDir,
@@ -19,11 +18,11 @@ import {
 import { projectConfigJsonMap } from '../../consts';
 import {execSyncInstallTasks} from './installTasks';
 import utils from '../../packages/utils';
-import config from '../../config/config';
+import config, {projectSourceType} from '../../config/config';
+import chalk from 'chalk';
 
 const fs = require('fs-extra');
 const path = require('path');
-const chalk = require('chalk');
 const cwd = process.cwd();
 
 let mergeFilesQueue = require('./mergeFilesQueue');
@@ -31,6 +30,10 @@ let mergeFilesQueue = require('./mergeFilesQueue');
 const buildType = get_buildType();
 const ANU_ENV = get_ANU_ENV();
 const BUILD_ENV = get_BUILD_ENV();
+
+type checkJsonImportSyntaxObject = {
+
+}
 
 /**
  * 将指定内容插入到 app.js 中
@@ -226,40 +229,46 @@ function getMiniAppProjectConfigJson(projectConfigQueue: any = []) {
 // import 语句涉及到对 js 文件内容的增加，且大概率使用到 alias
 // 因此如果是单包打包触发的多包打包，需要把工作区项目里的这部分内容加入打包流程中，做到在编译前合并，而不是编译后
 // 否则 js 文件内容的删减会影响到 sourcemap 的生成（在编译结束后对 js 做修改会影响到 sourcemap 的可用性）
-function addWorkSpaceImportAndAlias(map: any) {
+// 除此之外，如果 nanachi install 下载过产物包，也需要检查一下各产物包是否也存在这种情况
+/**
+ *
+ * @param map  本次打包时使用的元数据对象，用于标记后续编译流程需要执行的任务
+ * @param appJsonPath  需要检查的 app.json 文件路径，所有需要的字段都在文件里
+ */
+function addImportAndAlias(map: any, appJsonPath: string) {
     // alias 和 import 的数据都在 app.json 中
-    const workSpaceAppJsonPath = path.join(utils.getWorkSpaceSourceDirPath(), 'app.json');
-
-    if (fs.existsSync(workSpaceAppJsonPath)) {
-        let workSpaceAppJson;
+    if (fs.existsSync(appJsonPath)) {
+        let targetAppJson;
         try {
-            workSpaceAppJson = require(workSpaceAppJsonPath);
+            targetAppJson = require(appJsonPath);
         } catch (err) {
-            console.log(chalk.red('[addWorkSpaceImportAndAlias] 工作区 app.json 解析失败，请联系 nanachi 开发者'));
+            console.error(chalk.red(`[addWorkSpaceImportAndAlias] ${appJsonPath} 文件解析失败，请联系 nanachi 开发者`));
             process.exit(1);
         }
-        const alias = workSpaceAppJson.alias || {};
-        const importSyntax = workSpaceAppJson.imports || [];
 
-        // 给 importSyntax 中每个语句的前边加入 /* nanachi-ignore-dependency */
-        // 防止因为打包时找不到依赖抛 module not found 异常
-        importSyntax.forEach((el: string, index: number) => {
-            importSyntax[index] = `/* nanachi-ignore-dependency */${el}`;
-        });
+        if (targetAppJson.imports && Array.isArray(targetAppJson.imports) && targetAppJson.imports.length > 0) {
+            const alias = targetAppJson.alias || {};
+            const importSyntax = targetAppJson.imports || [];
 
-        map.alias = map.alias || [];
-        map.alias.push({
-            id: workSpaceAppJsonPath,
-            content: alias,
-            type: 'alias'
-        });
+            // 给 importSyntax 中每个语句的前边加入 /* nanachi-ignore-dependency */
+            // 防止因为打包时找不到依赖抛 module not found 异常
+            importSyntax.forEach((el: string, index: number) => {
+                importSyntax[index] = `/* nanachi-ignore-dependency */${el}`;
+            });
 
-        map.importSyntax = map.importSyntax || [];
-        // 此处不去重了，因为光从字符串判断不出来是否有重复引入的情况
-        // 如果重复引用了，编译时会报错
-        map.importSyntax = map.importSyntax.concat(importSyntax);
-    } else {
-        console.log(chalk.yellow('[addWorkSpaceImportAndAlias] 工作区 app.json 不存在，跳过处理'));
+            // 需要注意这里，如果是 import 语句涉及到的 alias，需要写在 app.json 里的，不能《只》写在 pkg 里
+            map.alias = map.alias || [];
+            map.alias.push({
+                id: appJsonPath,
+                content: alias,
+                type: 'alias'
+            });
+
+            map.importSyntax = map.importSyntax || [];
+            // 此处不去重了，因为光从字符串判断不出来是否有重复引入的情况
+            // 如果重复引用了，编译时会报错
+            map.importSyntax = map.importSyntax.concat(importSyntax);
+        }
     }
 }
 
@@ -278,10 +287,17 @@ export default function () {
     // 校验完开始合并，此处准备后续合并需要的元数据对象
     let map: any = generateMetaFilesMap(queue);
 
-    // 当 build or watch 命令是由单包触发的多包打包时，需要把工作区的 import 和 alias 加入到 map 中一起在编译前处理
+    // 当 build or watch 命令是由单包触发的多包打包时，需要处理工作区的 app.json
     if (config.noCurrent) {
-        addWorkSpaceImportAndAlias(map);
+        addImportAndAlias(map, path.join(utils.getWorkSpaceSourceDirPath(), 'app.json'));
     }
+
+    config.projectSourceTypeList.forEach((project: projectSourceType) => {
+        // 当前项目下载缓存区中存在产物类型的包时，需要处理其中的 app.json
+        if (project.sourceType === 'output') {
+            addImportAndAlias(map, path.join(project.path, 'app.json'));
+        }
+    });
 
     // console.log('map', JSON.stringify(map));
     /* 以下是旧流程中使用 flight 作为工作区开发的 map
