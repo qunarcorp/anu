@@ -46,7 +46,7 @@ class WxParser extends JavascriptParser_1.default {
                 require('../../packages/babelPlugins/collectTitleBarConfig'),
                 require('../../packages/babelPlugins/patchComponents'),
                 ...require('../../packages/babelPlugins/transformEnv'),
-                [require('@babel/plugin-transform-template-literals'), { loose: true }],
+                [require('../../packages/babelPlugins/transformTemplateLiterals'), { loose: true }],
                 require('../../packages/babelPlugins/transformIfImport'),
                 require('../../packages/babelPlugins/transformIfFun'),
                 ...this.filterCommonFile,
