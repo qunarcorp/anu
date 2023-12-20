@@ -21,9 +21,11 @@ function getNodeModulesList(config: any) {
 export function execSyncInstallTasks (map: any) {
     //['cookie@^0.3.1', 'regenerator-runtime@0.12.1']
     // installList 是全部需要安装的依赖列表
+    console.log('map.pkgDependencies:', map.pkgDependencies);
+    console.log('map.pkgDevDep:', map.pkgDevDep);
     let installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
     installList = Array.from(new Set(installList));
-
+    console.log('installList:', installList.join('\n'));
     if (ANU_ENV !== 'quick') {
         installList = installList.filter((dep) => {
             return !/hap\-toolkit/.test(dep);

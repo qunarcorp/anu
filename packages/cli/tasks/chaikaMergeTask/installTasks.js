@@ -16,8 +16,11 @@ function getNodeModulesList(config) {
     }, []);
 }
 function execSyncInstallTasks(map) {
+    console.log('map.pkgDependencies:', map.pkgDependencies);
+    console.log('map.pkgDevDep:', map.pkgDevDep);
     let installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
     installList = Array.from(new Set(installList));
+    console.log('installList:', installList.join('\n'));
     if (ANU_ENV !== 'quick') {
         installList = installList.filter((dep) => {
             return !/hap\-toolkit/.test(dep);
