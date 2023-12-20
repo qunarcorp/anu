@@ -62,7 +62,7 @@ class QuickParser extends JavascriptParser_1.default {
                 require('../../packages/babelPlugins/transformIfImport'),
                 require('../../packages/babelPlugins/transformIfFun'),
                 ...this.filterCommonFile,
-                require('@babel/plugin-proposal-optional-chaining'),
+                require('../../packages/babelPlugins/proposalOptionalChaining'),
                 ...require('../../packages/babelPlugins/patchAsyncAwait'),
             ]
         };
