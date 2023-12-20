@@ -21,11 +21,11 @@ function getNodeModulesList(config: any) {
 export function execSyncInstallTasks (map: any) {
     //['cookie@^0.3.1', 'regenerator-runtime@0.12.1']
     // installList 是全部需要安装的依赖列表
-    console.log('map.pkgDependencies:', map.pkgDependencies);
-    console.log('map.pkgDevDep:', map.pkgDevDep);
+    // console.log('map.pkgDependencies:', map.pkgDependencies);
+    // console.log('map.pkgDevDep:', map.pkgDevDep);
     let installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
     installList = Array.from(new Set(installList));
-    console.log('installList:', installList.join('\n'));
+    console.log('installList1:', installList.join('\n'));
     if (ANU_ENV !== 'quick') {
         installList = installList.filter((dep) => {
             return !/hap\-toolkit/.test(dep);
@@ -48,6 +48,7 @@ export function execSyncInstallTasks (map: any) {
         });
     }
     // console.log('installPkgList before', installList)
+    console.log('installList2:', installList.join('\n'));
     let installPkgList = installList.reduce(function (needInstall, pkg) {
         //@xxx/yyy@1.0.0 => xxx
         const pkgMeta = pkg.split('@');
@@ -59,6 +60,8 @@ export function execSyncInstallTasks (map: any) {
         const isExit = fs.existsSync(p);
         if (!isExit) {
             needInstall.push(pkg);
+        } else {
+            console.log(`[execSyncInstallTasks] 依赖 ${pkg} 在目录 ${p} 下已存在，跳过安装`);
         }
         return needInstall;
     }, []);
@@ -71,6 +74,7 @@ export function execSyncInstallTasks (map: any) {
     // 本地 node_modules 的依赖有两个来源：1.当前工作区的工程需要的依赖  2. 下载缓存区的其他工程所需依赖
     // 安装来源为 installPkgList
     // console.log('installPkgList after', installPkgList);
+    console.log('installList3:', installPkgList.join('\n'));
     if (installPkgList.length) {
         //installPkgList = installPkgList.slice(0,2);
 

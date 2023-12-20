@@ -278,7 +278,7 @@ function addImportAndAlias(map: any, appJsonPath: string) {
  * 需要特殊处理的文件类型：lockFile、app.js、app.json、pkg.json
  */
 export default function () {
-    console.log('mergeFilesQueue:', mergeFilesQueue);
+    // console.log('mergeFilesQueue:', mergeFilesQueue);
     let queue = Array.from(mergeFilesQueue);
     validateAppJsFileCount(queue); // 校验 app.js 是否只存在一个
     validateConfigFileCount(queue); // 校验存在 xxConfig.json 路径是否正确且该文件的目录下是否存在 app.js
