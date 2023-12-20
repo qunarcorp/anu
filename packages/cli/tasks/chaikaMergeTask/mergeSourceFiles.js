@@ -144,7 +144,6 @@ function addImportAndAlias(map, appJsonPath) {
     }
 }
 function default_1() {
-    console.log('mergeFilesQueue:', mergeFilesQueue);
     let queue = Array.from(mergeFilesQueue);
     mergeUtils_1.validateAppJsFileCount(queue);
     mergeUtils_1.validateConfigFileCount(queue);

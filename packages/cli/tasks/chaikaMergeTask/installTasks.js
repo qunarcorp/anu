@@ -16,11 +16,9 @@ function getNodeModulesList(config) {
     }, []);
 }
 function execSyncInstallTasks(map) {
-    console.log('map.pkgDependencies:', map.pkgDependencies);
-    console.log('map.pkgDevDep:', map.pkgDevDep);
     let installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
     installList = Array.from(new Set(installList));
-    console.log('installList:', installList.join('\n'));
+    console.log('installList1:', installList.join('\n'));
     if (ANU_ENV !== 'quick') {
         installList = installList.filter((dep) => {
             return !/hap\-toolkit/.test(dep);
@@ -41,6 +39,7 @@ function execSyncInstallTasks(map) {
             return !ignoreInstallReg.test(el);
         });
     }
+    console.log('installList2:', installList.join('\n'));
     let installPkgList = installList.reduce(function (needInstall, pkg) {
         const pkgMeta = pkg.split('@');
         const pkgName = pkgMeta[0] === '' ? '@' + pkgMeta[1] : pkgMeta[0];
@@ -49,11 +48,15 @@ function execSyncInstallTasks(map) {
         if (!isExit) {
             needInstall.push(pkg);
         }
+        else {
+            console.log(`[execSyncInstallTasks] 依赖 ${pkg} 在目录 ${p} 下已存在，跳过安装`);
+        }
         return needInstall;
     }, []);
     installPkgList = installPkgList.filter(function (dep) {
         return !ignoreExt.includes('.' + dep.split('.').pop());
     });
+    console.log('installList3:', installPkgList.join('\n'));
     if (installPkgList.length) {
         let installList = installPkgList.join(' ');
         let installListLog = installPkgList.join('\n');
