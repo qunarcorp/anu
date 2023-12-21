@@ -31,9 +31,6 @@ const buildType = get_buildType();
 const ANU_ENV = get_ANU_ENV();
 const BUILD_ENV = get_BUILD_ENV();
 
-type checkJsonImportSyntaxObject = {
-
-}
 
 /**
  * 将指定内容插入到 app.js 中

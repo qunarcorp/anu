@@ -18,7 +18,6 @@ function getNodeModulesList(config) {
 function execSyncInstallTasks(map) {
     let installList = [...getNodeModulesList(map.pkgDependencies), ...getNodeModulesList(map.pkgDevDep)];
     installList = Array.from(new Set(installList));
-    console.log('installList1:', installList.join('\n'));
     if (ANU_ENV !== 'quick') {
         installList = installList.filter((dep) => {
             return !/hap\-toolkit/.test(dep);
@@ -39,7 +38,6 @@ function execSyncInstallTasks(map) {
             return !ignoreInstallReg.test(el);
         });
     }
-    console.log('installList2:', installList.join('\n'));
     let installPkgList = installList.reduce(function (needInstall, pkg) {
         const pkgMeta = pkg.split('@');
         const pkgName = pkgMeta[0] === '' ? '@' + pkgMeta[1] : pkgMeta[0];
@@ -56,7 +54,6 @@ function execSyncInstallTasks(map) {
     installPkgList = installPkgList.filter(function (dep) {
         return !ignoreExt.includes('.' + dep.split('.').pop());
     });
-    console.log('installList3:', installPkgList.join('\n'));
     if (installPkgList.length) {
         let installList = installPkgList.join(' ');
         let installListLog = installPkgList.join('\n');
