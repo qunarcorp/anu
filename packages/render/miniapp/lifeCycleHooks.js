@@ -16,6 +16,11 @@ function usePageEvent(eventName, callback) {
     }
 
     const pageInstance = Renderer.currentOwner;
+    if (eventName === 'onShareAppMessage'){
+        pageInstance.onShare = callback;
+        return;
+    }
+
     useLayoutEffect(() => {
         return registerLifecycle(pageInstance, eventName, callback);
     });

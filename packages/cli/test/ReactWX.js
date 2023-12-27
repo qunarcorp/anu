@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2023-08-09T07
+ * 运行于微信小程序的React by 司徒正美 Copyright 2023-12-27T10
  * IE9+
  */
 
@@ -2832,6 +2832,10 @@ function usePageEvent(eventName, callback) {
         return;
     }
     var pageInstance = Renderer.currentOwner;
+    if (eventName === 'onShareAppMessage') {
+        pageInstance.onShare = callback;
+        return;
+    }
     useLayoutEffect(function () {
         return registerLifecycle(pageInstance, eventName, callback);
     });

@@ -1,5 +1,5 @@
 /**
- * 运行于快应用的React by 司徒正美 Copyright 2023-08-09
+ * 运行于快应用的React by 司徒正美 Copyright 2023-12-27
  */
 
 var arrayPush = Array.prototype.push;
@@ -3674,6 +3674,10 @@ function usePageEvent(eventName, callback) {
         return;
     }
     var pageInstance = Renderer.currentOwner;
+    if (eventName === 'onShareAppMessage') {
+        pageInstance.onShare = callback;
+        return;
+    }
     useLayoutEffect(function () {
         return registerLifecycle(pageInstance, eventName, callback);
     });
