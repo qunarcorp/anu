@@ -77,16 +77,6 @@ const temp = `window.addEventListener('popstate', function ({
 });
 React.registerApp(this);
 this.onLaunch();
-CLASS_NAME.config.pages.forEach((path) => {
-    React.registerPage(
-        Loadable({
-            loader: () => import("." + path),
-            loading: QunarDefaultLoading,
-            delay: 300
-        }),
-        path
-    );
-});
 `;
 let registerTemplate = temp;
 let renderDeclared = false;
@@ -126,6 +116,24 @@ module.exports = function () {
             },
             ClassBody: {
                 exit(astPath) {
+                    const registerPageArr = importedPages.elements.map((v) => {
+                        const p = v.value;
+                        return `{
+                            loader: () => import('.${p}'),
+                        }`;
+                    });
+                    const registerPageTemplate = `[${registerPageArr.join(',')}].forEach((item,index) => {
+                        React.registerPage(
+                            Loadable({
+                                loader: item.loader,
+                                loading: QunarDefaultLoading,
+                                delay: 300
+                            }),
+                            CLASS_NAME.config.pages[index]
+                        );
+                    })
+                    `;
+                    registerTemplate += registerPageTemplate;
                     registerTemplate += `const pathname = location.pathname.replace(/^\\/web/, '');
                     const search = location.search;
                     if (React.__isTab(pathname)) {
@@ -209,8 +217,6 @@ module.exports = function () {
                             }
                             if (name === 'tabBar') {
                                 let buildType = process.env.ANU_ENV;
-                                if (buildType === 'web')
-                                    buildType = 'h5';
                                 let tabBarPros = value.properties, defaultList = null, buildTypeList = null;
                                 let newTabBarPros = tabBarPros.filter((el) => {
                                     if (el.key.name === 'list') {

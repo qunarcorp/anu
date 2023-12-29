@@ -16,12 +16,16 @@ const path = __importStar(require("path"));
 const ramda_1 = __importDefault(require("ramda"));
 const configurations_1 = require("./configurations");
 const fs = __importStar(require("fs-extra"));
-const context = path.resolve(process.cwd(), 'dist');
-const h5helperPath = path.resolve(process.cwd(), `node_modules/schnee-ui/h5`);
+const index_1 = __importDefault(require("../../packages/utils/index"));
+const WebpackBar = require('webpackbar');
+const projectRootPath = index_1.default.getProjectRootPath();
+const distRelativeDir = index_1.default.getDistRelativeDir();
+const context = path.resolve(projectRootPath, distRelativeDir);
+const h5helperPath = path.resolve(projectRootPath, `node_modules/schnee-ui/h5`);
 const resolveFromContext = ramda_1.default.curryN(2, path.resolve)(context);
-const resolveFromDirCwd = ramda_1.default.curryN(2, path.resolve)(process.cwd());
+const resolveFromDirCwd = ramda_1.default.curryN(2, path.resolve)(projectRootPath);
 const resolveFromH5Helper = ramda_1.default.curryN(2, path.resolve)(h5helperPath);
-const REACT_H5 = resolveFromDirCwd('./source/ReactH5.js');
+const REACT_H5 = resolveFromContext(`${configurations_1.intermediateDirectoryName}/ReactH5.js`);
 let templatePath = path.resolve(__dirname, '../../packages/h5Helpers/index.html');
 try {
     const userTemplatePath = resolveFromDirCwd('./index.html');
@@ -34,7 +38,10 @@ const plugins = [
     new HtmlWebpackPlugin({
         template: templatePath
     }),
-    new webpack_1.default.EnvironmentPlugin(Object.assign({ ANU_ENV: 'web' }, process.env)),
+    new webpack_1.default.EnvironmentPlugin(Object.assign({ ANU_ENV: 'h5' }, process.env)),
+    new WebpackBar({
+        name: 'Webpack: React -> h5',
+    }),
 ];
 const webpackConfig = {
     mode: 'development',
@@ -42,13 +49,13 @@ const webpackConfig = {
     target: 'web',
     entry: resolveFromContext(`${configurations_1.intermediateDirectoryName}/app`),
     output: {
-        path: resolveFromDirCwd(configurations_1.outputDirectory),
+        path: path.resolve(projectRootPath, 'web'),
         filename: 'bundle.[hash:10].js',
         publicPath: '/web/'
     },
     resolve: {
         alias: Object.assign(Object.assign({}, configurations_1.retrieveNanachiConfig()), { react: REACT_H5, '@react': REACT_H5, 'react-dom': REACT_H5, 'schnee-ui': resolveFromContext(`${configurations_1.intermediateDirectoryName}/npm/schnee-ui`), '@internalComponents': resolveFromH5Helper('components'), '@internalConsts': path.resolve(__dirname, '../../consts/'), '@components': resolveFromContext(`${configurations_1.intermediateDirectoryName}/components`), '@qunar-default-loading': resolveFromH5Helper('components/Loading') }),
-        modules: ['node_modules', path.resolve(__dirname, '../../node_modules'), resolveFromDirCwd('node_modules')],
+        modules: [resolveFromDirCwd('node_modules'), 'node_modules', path.resolve(__dirname, '../../node_modules')],
         extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
     },
     module: {

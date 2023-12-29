@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2023-05-05T11
+ * 运行于微信小程序的React by 司徒正美 Copyright 2023-12-27T10
  * IE9+
  */
 
@@ -1436,6 +1436,10 @@ function useEffectImpl(create, deps, EffectTag, createList, destroyList) {
         list.push(create);
     }, deps);
 }
+function useQueryImpl() {
+    var fiber = getCurrentFiber();
+    return fiber.props.query;
+}
 function getCurrentFiber() {
     return get(Renderer.currentOwner);
 }
@@ -1931,6 +1935,35 @@ var refStrategy = {
     }
 };
 
+function registerPageHook(appHooks, pageHook, app, instance, args) {
+    for (var i = 0; i < 2; i++) {
+        var method = i ? appHooks[pageHook] : pageHook;
+        var host = i ? app : instance;
+        if (host && host[method] && isFn(host[method])) {
+            var ret = host[method](args);
+            if (ret !== void 0) {
+                if (ret && ret.then && ret['catch']) {
+                    continue;
+                }
+                return ret;
+            }
+        }
+        if (i === 0 && host && host.__isStateless) {
+            return callLifecycle(host, method, args);
+        }
+    }
+}
+function callLifecycle(instance, lifecycle, args) {
+    var callbacks = instance.lifecycleCallback && instance.lifecycleCallback[lifecycle] || [];
+    var result = void 0;
+    callbacks.forEach(function (callback) {
+        result = callback(args);
+    });
+    if (result) {
+        return result;
+    }
+}
+
 var domFns = ['insertElement', 'updateContent', 'updateAttribute'];
 var domEffects = [PLACE, CONTENT, ATTR];
 var domRemoved = [];
@@ -2133,6 +2166,7 @@ function disposeFiber(fiber, force) {
             Renderer.onDispose(fiber);
             if (fiber.hasMounted) {
                 if (isStateless) {
+                    callLifecycle(stateNode, 'onUnload', null);
                     safeInvokeHooks(fiber.updateQueue, 'layout', 'unlayout');
                     safeInvokeHooks(fiber.updateQueue, 'passive', 'unpassive');
                 }
@@ -2567,6 +2601,9 @@ function onLoad(PageClass, path, query, isLoad) {
             isPageComponent: true
         }), container);
     }
+    if (pageInstance.__isStateless) {
+        callLifecycle(pageInstance, 'onLoad', query);
+    }
     if (isLoad) {
         callGlobalHook("onGlobalLoad");
     }
@@ -2583,6 +2620,9 @@ function onReady() {
     while (el = delayMounts.pop()) {
         el.fn.call(el.instance);
         el.instance.componentDidMount = el.fn;
+    }
+    if (this.reactInstance.__isStateless) {
+        callLifecycle(this.reactInstance, 'onReady', arguments);
     }
     callGlobalHook("onGlobalReady");
 }
@@ -2612,26 +2652,11 @@ function onUnload() {
     this.reactContainer = null;
 }
 
-function registerPageHook(appHooks, pageHook, app, instance, args) {
-    for (var i = 0; i < 2; i++) {
-        var method = i ? appHooks[pageHook] : pageHook;
-        var host = i ? app : instance;
-        if (host && host[method] && isFn(host[method])) {
-            var ret = host[method](args);
-            if (ret !== void 0) {
-                if (ret && ret.then && ret['catch']) {
-                    continue;
-                }
-                return ret;
-            }
-        }
-    }
-}
-
 var appHooks = {
     onShow: 'onGlobalShow',
     onHide: 'onGlobalHide'
 };
+var lifeCycleList = ['onShareAppMessage', 'onPageScroll', 'onReachBottom', 'onPullDownRefresh', 'onTabItemTap', 'onResize', 'onShow', 'onHide'];
 function registerPage(PageClass, path, testObject) {
     PageClass.reactInstances = [];
     var config = {
@@ -2643,7 +2668,7 @@ function registerPage(PageClass, path, testObject) {
         onReady: onReady,
         onUnload: onUnload
     };
-    Array('onShareAppMessage', 'onPageScroll', 'onReachBottom', 'onPullDownRefresh', 'onTabItemTap', 'onResize', 'onShow', 'onHide').forEach(function (hook) {
+    lifeCycleList.forEach(function (hook) {
         config[hook] = function (e) {
             var instance = this.reactInstance,
                 pageHook = hook,
@@ -2781,6 +2806,9 @@ function useEffect(create, deps) {
 function useLayoutEffect(create, deps) {
     return useEffectImpl(create, deps, HOOK, "layout", "unlayout");
 }
+function useQuery() {
+    return useQueryImpl();
+}
 
 var MemoComponent = miniCreateClass(function MemoComponent(obj) {
     this.render = obj.render;
@@ -2792,6 +2820,30 @@ function memo(render, shouldComponentUpdate) {
             render: render.bind(this, props),
             shouldComponentUpdate: shouldComponentUpdate
         }));
+    };
+}
+
+var allLifecycle = ['onLoad', 'onReady', 'onUnload'].concat(lifeCycleList);
+function usePageEvent(eventName, callback) {
+    if (!allLifecycle.includes(eventName)) {
+        console.error('小程序没有' + eventName + '生命周期，请仔细检查');
+        return;
+    }
+    var pageInstance = Renderer.currentOwner;
+    if (eventName === 'onShareAppMessage') {
+        pageInstance.onShare = callback;
+        return;
+    }
+    useLayoutEffect(function () {
+        return registerLifecycle(pageInstance, eventName, callback);
+    });
+}
+function registerLifecycle(pageInstance, lifecycle, callback) {
+    var lifecycleCallback = pageInstance.lifecycleCallback || (pageInstance.lifecycleCallback = {});
+    pageInstance.lifecycleCallback[lifecycle] = lifecycleCallback[lifecycle] || [];
+    pageInstance.lifecycleCallback[lifecycle].push(callback);
+    return function () {
+        pageInstance.lifecycleCallback[lifecycle].splice(pageInstance.lifecycleCallback[lifecycle].indexOf(callback), 1);
     };
 }
 
@@ -2848,4 +2900,4 @@ if (typeof wx != "undefined") {
 registerAPIs(React, apiContainer, more);
 
 export default React;
-export { Children, createElement, Component, PureComponent, memo, createRef, useState, useReducer, useCallback, useMemo, useEffect, useContext, useComponent, useRef };
+export { Children, createElement, Component, PureComponent, memo, createRef, useState, useReducer, useCallback, useMemo, useEffect, useLayoutEffect, useContext, useComponent, useRef, useQuery, usePageEvent };

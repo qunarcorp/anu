@@ -52,11 +52,7 @@ const projectConfigJsonMap: any = {
 };
 
 // 默认微信，如果是h5，则为web
-const ANU_ENV = buildType
-    ? buildType === 'h5'
-        ? 'web'
-        : buildType
-    : 'wx';
+const ANU_ENV = buildType;
 
 // 环境
 const BUILD_ENV = process.env.BUILD_ENV || '';
@@ -232,6 +228,17 @@ function getFilesMap(queue: any = []) {
                         id: file,
                         content: config
                     });
+
+                    // alias也可以根据xconfig文件来配置
+                    const {alias = {}} = config;
+                    if(alias){
+                        map['alias'] = map['alias'] || [];
+                        map['alias'].push({
+                            id: file,
+                            content: alias,
+                            type: 'alias'
+                        });
+                    }
                 }
             } catch (err) {
                 // eslint-disable-next-line

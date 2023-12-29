@@ -112,10 +112,11 @@ function bindEvent(astPath: any, attrName: string, expr: any) {
     if(expr.type === 'ArrowFunctionExpression'){
         replaceWithExpr(astPath, 'dispatchEvent', true);
     }else{
-        let eventHandle = generate(expr).code;
-        if (!/^\s*\w+\./.test(eventHandle)) {
-            throwEventValue(attrName, eventHandle);
-        }
+        // let eventHandle = generate(expr).code;
+        // 支持函数式组件写法，直接绑定函数名，所以去除检查
+        // if (!/^\s*\w+\./.test(eventHandle)) {           
+            // throwEventValue(attrName, eventHandle);
+        // }
         if (buildType == 'quick') {
             let n = attrName.charAt(0) === 'o' ? 2 : 5;
             astPath.parent.name.name = 'on' + attrName.slice(n).toLowerCase();

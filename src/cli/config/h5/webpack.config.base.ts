@@ -11,13 +11,17 @@ import {
 } from './configurations';
 
 import * as fs from 'fs-extra';
+import utils  from '../../packages/utils/index';
+const WebpackBar = require('webpackbar');
 
-const context = path.resolve(process.cwd(), 'dist');
-const h5helperPath = path.resolve(process.cwd(), `node_modules/schnee-ui/h5`);
+const projectRootPath = utils.getProjectRootPath();
+const distRelativeDir = utils.getDistRelativeDir();
+const context = path.resolve(projectRootPath, distRelativeDir);
+const h5helperPath = path.resolve(projectRootPath, `node_modules/schnee-ui/h5`);
 const resolveFromContext = R.curryN(2, path.resolve)(context);
-const resolveFromDirCwd = R.curryN(2, path.resolve)(process.cwd());
+const resolveFromDirCwd = R.curryN(2, path.resolve)(projectRootPath);
 const resolveFromH5Helper = R.curryN(2, path.resolve)(h5helperPath);
-const REACT_H5 = resolveFromDirCwd('./source/ReactH5.js');
+const REACT_H5 = resolveFromContext(`${intermediateDirectoryName}/ReactH5.js`);
 
 let templatePath = path.resolve(__dirname, '../../packages/h5Helpers/index.html');
 try {
@@ -33,8 +37,11 @@ const plugins = [
         template: templatePath
     }),
     new webpack.EnvironmentPlugin({
-        ANU_ENV: 'web',
+        ANU_ENV: 'h5',
         ...process.env
+    }),
+    new WebpackBar({
+        name: 'Webpack: React -> h5',
     }),
     // new CleanWebpackPlugin()
 ]
@@ -45,7 +52,8 @@ const webpackConfig: webpack.Configuration = {
     target: 'web',
     entry: resolveFromContext(`${intermediateDirectoryName}/app`),
     output: {
-        path: resolveFromDirCwd(outputDirectory),
+        // path: resolveFromDirCwd(distRelativeDir),
+        path: path.resolve(projectRootPath,'web'),
         filename: 'bundle.[hash:10].js',
         publicPath: '/web/'
     },
@@ -64,7 +72,7 @@ const webpackConfig: webpack.Configuration = {
             // '@pageConfig': resolveFromContext(`${intermediateDirectoryName}/pageConfig.js`),
             '@qunar-default-loading': resolveFromH5Helper('components/Loading'),
         },
-        modules: ['node_modules', path.resolve(__dirname, '../../node_modules'), resolveFromDirCwd('node_modules')],
+        modules: [resolveFromDirCwd('node_modules'), 'node_modules', path.resolve(__dirname, '../../node_modules') ],
         extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
     },
     module: {

@@ -29,7 +29,7 @@ function getRubbishFiles(buildType: string){
                 return path.join(projectRootPath, dir);
             })
         )
-        : fileList = fileList.concat([utils.getDistDir()]);
+        : fileList = fileList.concat([utils.getDistDir(), path.join(projectRootPath, 'web')]);
    
    
     let libList = Array.from(new Set(Object.values(REACT_LIB_MAP)));

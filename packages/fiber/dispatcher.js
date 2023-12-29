@@ -96,7 +96,10 @@ export function useEffectImpl(create, deps, EffectTag, createList, destroyList) 
     }, deps)
 }
 
-
+export function useQueryImpl(){
+    let fiber = getCurrentFiber();
+    return fiber.props.query;
+}
 
 export function useImperativeHandle(ref, create, deps) {
     useEffectImpl(() => {

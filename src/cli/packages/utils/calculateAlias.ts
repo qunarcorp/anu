@@ -93,6 +93,12 @@ function calculateAlias(srcPath: string, importerSource: string, ignoredPaths?: 
         process.exit(1);
     }
 
+    // 考虑到@qnpm/qmark在wx和h5的情况
+    if (aliasMap[importerSource]) {
+        let from = getDistPath(path.dirname(srcPath));
+        let to = getDistPath(aliasMap[importerSource]);
+        return fixPath(path.relative(from, to));
+    }
 
     let rsegments = importerSource.split('/');
     //import a from './a';

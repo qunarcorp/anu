@@ -59,6 +59,7 @@ module.exports = {
         }
 
         if (astPath.parent.type === 'Program') {
+            astPath.scope.removeBinding(modules.className);
             astPath.insertBefore(modules.ctorFn);
         } else {
             // 支持mobx装饰器逻辑，let P = xxx 转为 P = xxx。因为let声明变量后不能声明同名function
@@ -73,6 +74,7 @@ module.exports = {
             let tempExp = tempPath.get('declarations')[0];
             let left = tempExp.get('id').node, right = tempExp.get('init').node;
             tempPath.replaceWith(t.expressionStatement(t.assignmentExpression('=', left, right)));
+            tempPath.scope.removeBinding(modules.className);
             tempPath.insertBefore(modules.ctorFn);
         }
         // console.log(astPath.findParent(function(astPath) {

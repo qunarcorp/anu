@@ -13,6 +13,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const webpack_config_base_1 = __importDefault(require("./webpack.config.base"));
 const path = __importStar(require("path"));
 const webpack_merge_1 = __importDefault(require("webpack-merge"));
+const utils = require('../../packages/utils/index');
+const projectRootPath = utils.getProjectRootPath();
 const pageWrapper = path.resolve(process.cwd(), "node_modules/schnee-ui/h5/components/pageWrapper");
 const config = webpack_merge_1.default(webpack_config_base_1.default, {
     mode: 'development',
@@ -29,7 +31,24 @@ const config = webpack_merge_1.default(webpack_config_base_1.default, {
                         require.resolve('@babel/plugin-syntax-dynamic-import'),
                         require.resolve('@babel/plugin-proposal-object-rest-spread'),
                         [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
-                        [require.resolve('@babel/plugin-proposal-class-properties'), { loose: true }]
+                        [require.resolve('@babel/plugin-proposal-class-properties')],
+                    ],
+                    presets: [
+                        require.resolve('@babel/preset-react'),
+                    ]
+                }
+            },
+            {
+                test: /\.[jt]sx?$/,
+                loader: require.resolve('babel-loader'),
+                exclude: [/node_modules/],
+                options: {
+                    plugins: [
+                        require.resolve('@babel/plugin-transform-runtime'),
+                        require.resolve('@babel/plugin-syntax-dynamic-import'),
+                        require.resolve('@babel/plugin-proposal-object-rest-spread'),
+                        [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
+                        [require.resolve('@babel/plugin-proposal-class-properties')],
                     ],
                     presets: [require.resolve('@babel/preset-react')]
                 }

@@ -122,6 +122,8 @@ async function nanachi(options: NanachiOptions = {}) {
                     )
                 }
             }
+
+            console.log('webpackH5Config',webpackH5Config)
             const compilerH5 = webpack(webpackH5Config);
             if (watch) {
                 createH5Server(compilerH5);
@@ -226,7 +228,6 @@ async function nanachi(options: NanachiOptions = {}) {
             // maxAssetSize
         });
 
-       
         const compiler = webpack(webpackConfig);
 
         if (watch) {
@@ -240,7 +241,7 @@ async function nanachi(options: NanachiOptions = {}) {
 }
 
 function injectBuildEnv({ platform, compress, huawei, typescript }: NanachiOptions) {
-    process.env.ANU_ENV = (platform === 'h5' ? 'web' : platform);
+    process.env.ANU_ENV = platform;
     Object.assign(globalConfig, {
         buildType: platform,
         compress,

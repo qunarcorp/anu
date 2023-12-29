@@ -11,7 +11,7 @@ class LessParser extends StyleParser {
             require('postcss-import')({
                 resolve: function(importer: string, baseDir: string){
                     //如果@import的值没有文件后缀
-                    if (!/\.less$/.test(importer)) {
+                    if (!/\.less$|\.css$/.test(importer)) {
                         importer = importer + '.less';
                     }
                     //处理alias路径

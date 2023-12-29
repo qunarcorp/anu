@@ -75,6 +75,11 @@ function calculateAlias(srcPath, importerSource, ignoredPaths, importSpecifierNa
         console.error(`计算alias中的 ${srcPath} 必须为绝对路径.`);
         process.exit(1);
     }
+    if (aliasMap[importerSource]) {
+        let from = getDistPath(path.dirname(srcPath));
+        let to = getDistPath(aliasMap[importerSource]);
+        return fixPath(path.relative(from, to));
+    }
     let rsegments = importerSource.split('/');
     if (/^\./.test(rsegments[0])) {
         return importerSource;

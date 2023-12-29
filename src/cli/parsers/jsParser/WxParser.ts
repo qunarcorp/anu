@@ -42,13 +42,17 @@ class WxParser extends JavascriptParser{
                 require('../../packages/babelPlugins/collectTitleBarConfig'),
                 require('../../packages/babelPlugins/patchComponents'),
                 ...require('../../packages/babelPlugins/transformEnv'),
-                [ require('@babel/plugin-transform-template-literals'), { loose: true }],
+                // [ require('@babel/plugin-transform-template-literals'), { loose: true }],
+                // 根据@babel/plugin-transform-template-literals改版而成
+                [ require('../../packages/babelPlugins/transformTemplateLiterals'), { loose: true }],
                 require('../../packages/babelPlugins/transformIfImport'),
                 require('../../packages/babelPlugins/transformIfFun'),
                 ...this.filterCommonFile,
-                require('@babel/plugin-proposal-optional-chaining'),
+                // require('@babel/plugin-proposal-optional-chaining'),
+                // 根据@babel/@babel/plugin-proposal-optional-chaining改版而成
+                require('../../packages/babelPlugins/proposalOptionalChaining'),
                 ...require('../../packages/babelPlugins/patchAsyncAwait'),
-                ...(buildType === 'wx' ? [require('../../packages/babelPlugins/collectCommonCode')] : [])
+                require('../../packages/babelPlugins/collectCommonCode'),
             ]
         };
     }

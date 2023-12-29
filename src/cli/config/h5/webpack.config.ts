@@ -2,6 +2,8 @@ import developmentConfig from './webpack.config.base';
 import * as path from 'path';
 import merge from 'webpack-merge';
 import webpack = require('webpack');
+const utils = require('../../packages/utils/index');
+const projectRootPath = utils.getProjectRootPath();
 
 const pageWrapper: string = path.resolve(process.cwd(), "node_modules/schnee-ui/h5/components/pageWrapper");
 
@@ -13,7 +15,6 @@ const config: webpack.Configuration = merge(developmentConfig, {
                 test: /\.[jt]sx?$/,
                 loader: require.resolve('babel-loader'),
                 options: {
-                    // exclude: [/node_modules/],
                     cacheDirectory: true,
                     root: pageWrapper,
                     plugins: [
@@ -21,7 +22,24 @@ const config: webpack.Configuration = merge(developmentConfig, {
                         require.resolve('@babel/plugin-syntax-dynamic-import'),
                         require.resolve('@babel/plugin-proposal-object-rest-spread'),
                         [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
-                        [require.resolve('@babel/plugin-proposal-class-properties'), { loose: true }]
+                        [require.resolve('@babel/plugin-proposal-class-properties')],
+                    ],
+                    presets: [
+                        require.resolve('@babel/preset-react'),
+                    ]
+                }
+            },
+            {
+                test: /\.[jt]sx?$/,
+                loader: require.resolve('babel-loader'),
+                exclude: [/node_modules/],
+                options: {
+                    plugins: [
+                        require.resolve('@babel/plugin-transform-runtime'),
+                        require.resolve('@babel/plugin-syntax-dynamic-import'),
+                        require.resolve('@babel/plugin-proposal-object-rest-spread'),
+                        [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
+                        [require.resolve('@babel/plugin-proposal-class-properties')],
                     ],
                     presets: [require.resolve('@babel/preset-react')]
                 }

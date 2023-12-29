@@ -18,7 +18,6 @@ const copy_webpack_plugin_1 = __importDefault(require("copy-webpack-plugin"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const { exec } = require('child_process');
-const webpack_1 = __importDefault(require("webpack"));
 const utils = require('../packages/utils/index');
 const configurations_1 = require("./h5/configurations");
 const quickAPIList_1 = __importDefault(require("../consts/quickAPIList"));
@@ -30,7 +29,7 @@ const nodeLoader = require.resolve('../nanachi-loader/loaders/nodeLoader');
 const reactLoader = require.resolve('../nanachi-loader/loaders/reactLoader');
 const nanachiStyleLoader = require.resolve('../nanachi-loader/loaders/nanachiStyleLoader');
 const cwd = process.cwd();
-const H5AliasList = ['react', '@react', 'react-dom', 'react-loadable', '@qunar-default-loading', '@dynamic-page-loader', /^@internalComponents/];
+const H5AliasList = ['react-dom', 'react-loadable', '@qunar-default-loading', '@dynamic-page-loader', /^@internalComponents/];
 const isChaikaMode = function () {
     return process.env.NANACHI_CHAIK_MODE === 'CHAIK_MODE';
 };
@@ -188,11 +187,6 @@ function default_1({ watch, platform, compress, compressOption, plugins, rules, 
         }
         catch (err) {
         }
-    }
-    if (platform === 'h5') {
-        mergePlugins.push(new webpack_1.default.IgnorePlugin({
-            resourceRegExp: /\.(\w?ux|pem)$/,
-        }));
     }
     let entry = path.join(cwd, 'source/app');
     if (typescript) {

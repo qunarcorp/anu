@@ -56,6 +56,58 @@ function registerPageOrComponent(name, path, modules) {
         path.insertBefore(modules.registerStatement);
     }
 }
+function checkIsJSXExpressionContainer(astPath) {
+    const parentPath = astPath.parentPath;
+    if (!parentPath) {
+        return false;
+    }
+    const parent = astPath.parent;
+    if (t.isJSXExpressionContainer(parent)) {
+        return true;
+    }
+    else if (t.isCallExpression(parent)) {
+        const code = generator_1.default(parent.callee).code;
+        if (code === 'React.toStyle') {
+            return true;
+        }
+    }
+    else {
+        return checkIsJSXExpressionContainer(parentPath);
+    }
+    ;
+}
+function geMemExp(x) {
+    var list = x.split('.');
+    if (list.length === 1) {
+        return t.identifier(list[0]);
+    }
+    var memEpr = t.memberExpression(list[0] === 'this' ? t.thisExpression() : t.identifier(list[0]), t.identifier(list[1]));
+    var ret = list.slice(2);
+    while (ret.length) {
+        memEpr = t.memberExpression(memEpr, t.identifier(ret.shift()));
+    }
+    return memEpr;
+}
+function getLogic(opSepList) {
+    var left = opSepList[0];
+    var right = opSepList[1];
+    var logicExp = t.logicalExpression('&&', left, right);
+    var ret = opSepList.slice(2);
+    while (ret.length) {
+        logicExp = t.logicalExpression('&&', logicExp, ret.shift());
+    }
+    return logicExp;
+}
+function transOptionalChain(node) {
+    var opSepList = generator_1.default(node).code.split('?.');
+    opSepList = opSepList.map(function (el, idx) {
+        return opSepList.slice(0, idx + 1).join('.');
+    });
+    opSepList = opSepList.map(function (el) {
+        return geMemExp(el);
+    });
+    return opSepList;
+}
 const visitor = {
     ClassDeclaration: helpers.classDeclaration,
     ClassExpression: helpers.classDeclaration,
@@ -149,25 +201,68 @@ const visitor = {
             }
             let modules = utils_1.default.getAnu(state);
             if (/^[A-Z]/.test(name) &&
-                modules.componentType === 'Component' &&
+                modules.componentType !== 'App' &&
                 !modules.parentName &&
                 !modules.registerStatement) {
                 modules.className = name;
                 helpers.render.exit(astPath, '无状态组件', name, modules);
-                modules.registerStatement = utils_1.default.createRegisterStatement(name, name);
+                if (modules.componentType === 'Page') {
+                    modules.registerStatement = utils_1.default.createRegisterStatement(name, modules.current
+                        .replace(/.+pages/, 'pages')
+                        .replace(/\.js$/, ''), true);
+                }
+                else {
+                    modules.registerStatement = utils_1.default.createRegisterStatement(name, name);
+                }
                 let funData = [];
+                function getNameFromArrayPattern(elements) {
+                    elements.forEach(ele => {
+                        if (t.isIdentifier(ele)) {
+                            funData.push(ele.name);
+                        }
+                        else if (t.isArrayPattern(ele)) {
+                            getNameFromArrayPattern(ele.elements);
+                        }
+                        else if (t.isAssignmentPattern(ele)) {
+                            funData.push(ele.left.name);
+                        }
+                    });
+                }
+                ;
+                function getNameFromObjectPattern(id) {
+                    id.properties.forEach((property) => {
+                        if (t.isAssignmentPattern(property.value)) {
+                            const left = property.value.left;
+                            if (t.isObjectProperty(left)) {
+                                getNameFromObjectPattern(left);
+                            }
+                            else if (t.isIdentifier(left)) {
+                                funData.push(left.name);
+                            }
+                        }
+                        else if (t.isObjectPattern(property.value)) {
+                            getNameFromObjectPattern(property.value);
+                        }
+                        else if (t.isIdentifier(property.value)) {
+                            funData.push(property.value.name);
+                        }
+                    });
+                }
                 let body = astPath.node.body.body;
                 for (let i = 0; i < body.length; i++) {
                     const element = body[i];
-                    if (element.type == 'VariableDeclaration') {
+                    if (t.isVariableDeclaration(element)) {
                         element.declarations.forEach(declaration => {
-                            if (declaration.id.type == 'ArrayPattern') {
-                                funData.push(declaration.id.elements[0].name);
+                            if (t.isArrayPattern(declaration.id)) {
+                                if (t.isCallExpression(declaration.init) && ['useState', 'useReducer'].includes(declaration.init.callee.name)) {
+                                    funData.push(declaration.id.elements[0].name);
+                                }
+                                else {
+                                    getNameFromArrayPattern(declaration.id.elements);
+                                }
                             }
-                            else if (declaration.id.type == 'ObjectPattern') {
-                                declaration.id.properties.forEach(property => {
-                                    funData.push(property.value.name);
-                                });
+                            else if (t.isObjectPattern(declaration.id)) {
+                                getNameFromObjectPattern(declaration.id);
                             }
                             else {
                                 funData.push(declaration.id.name);
@@ -411,58 +506,24 @@ const visitor = {
     },
     OptionalCallExpression: {
         enter(astPath, state) {
-            if (!t.isJSXExpressionContainer(astPath.parentPath))
+            if (!checkIsJSXExpressionContainer(astPath))
                 return;
-            let modules = utils_1.default.getAnu(state);
             var { node } = astPath;
             var callee = node.callee;
             var args = node.arguments;
-            var opSepList = generator_1.default(callee).code.split('?.');
-            opSepList = opSepList.map(function (el, idx) {
-                return opSepList.slice(0, idx + 1).join('.');
-            });
-            function geMemExp(x) {
-                var list = x.split('.');
-                var memEpr = t.memberExpression(list[0] === 'this' ? t.thisExpression() : t.identifier(list[0]), t.identifier(list[1]));
-                var ret = list.slice(2);
-                while (ret.length) {
-                    memEpr = t.memberExpression(memEpr, t.identifier(ret.shift()));
-                }
-                return memEpr;
-            }
-            function getLogic(opSepList) {
-                var left = opSepList[0];
-                var right = opSepList[1];
-                var logicExp = t.logicalExpression('&&', left, right);
-                var ret = opSepList.slice(2);
-                while (ret.length) {
-                    logicExp = t.logicalExpression('&&', logicExp, ret.shift());
-                }
-                return logicExp;
-            }
-            opSepList = opSepList.map(function (el) {
-                return geMemExp(el);
-            });
-            if (!args[1] && args[0].type === 'FunctionExpression') {
-                args[1] = t.identifier('this');
-            }
-            let params = args[0].params;
-            if (!params[0]) {
-                params[0] = t.identifier('j' + astPath.node.start);
-            }
-            if (!params[1]) {
-                params[1] = t.identifier('i' + astPath.node.start);
-            }
-            var indexName = args[0].params[1].name;
-            if (modules.indexArr) {
-                modules.indexArr.push(indexName);
-            }
-            else {
-                modules.indexArr = [indexName];
-            }
-            modules.indexName = indexName;
+            var opSepList = transOptionalChain(callee);
             var m = getLogic(opSepList);
             m.right = t.callExpression(m.right, args);
+            m.right.start = node.start;
+            astPath.replaceWith(m);
+        },
+    },
+    OptionalMemberExpression: {
+        enter(astPath, state) {
+            if (!checkIsJSXExpressionContainer(astPath))
+                return;
+            var opSepList = transOptionalChain(astPath.node);
+            var m = getLogic(opSepList);
             astPath.replaceWith(m);
         }
     },
@@ -680,12 +741,7 @@ const visitor = {
     },
     JSXFragment: {
         enter(astPath) {
-            if (astPath.parentPath.node.type == 'ReturnStatement') {
-                astPath.replaceWith(t.jSXElement(t.jsxOpeningElement(t.jsxIdentifier('view'), []), t.jSXClosingElement(t.jsxIdentifier('view')), astPath.node.children));
-            }
-            else {
-                astPath.replaceWithMultiple(astPath.node.children);
-            }
+            astPath.replaceWith(t.jSXElement(t.jsxOpeningElement(t.jsxIdentifier('view'), []), t.jSXClosingElement(t.jsxIdentifier('view')), astPath.node.children));
         }
     },
     JSXText(astPath) {

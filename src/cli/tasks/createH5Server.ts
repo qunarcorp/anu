@@ -12,7 +12,7 @@ export default async function(compiler: webpack.Compiler) {
         });
         app = new webpackDevServer(compiler, {
             publicPath: webpackH5Config.output.publicPath,
-            host: '0.0.0.0',
+            host: '127.0.0.1',
             port,
             historyApiFallback: {
                 rewrites: [{

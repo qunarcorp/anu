@@ -38,7 +38,7 @@ export const errorLog = ( {id, msg, loc = {line: '0', column: '1'}}: Log ) => {
     let result = '';
     result = chalk`{underline ${id}}\n{grey ${loc.line}:${loc.column}}\t{red error}\t${msg}\n`; 
     // eslint-disable-next-line
-    console.log(result);
+    console.log(result, msg);
 };
 
 export const resetNum = () => {

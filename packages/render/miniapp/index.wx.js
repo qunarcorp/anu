@@ -37,10 +37,13 @@ import {
     useEffect,
     useLayoutEffect,
     useContext,
-    useRef
+    useRef,
+    useQuery,
 } from "react-core/hooks";
 
 import { memo } from "react-fiber/memo";
+
+import { usePageEvent } from './lifeCycleHooks';
 
 let { render } = Renderer;
 
@@ -114,7 +117,10 @@ export {
     useCallback,
     useMemo,
     useEffect,
+    useLayoutEffect,
     useContext,
     useComponent,
-    useRef 
+    useRef,
+    useQuery,
+    usePageEvent,
 };

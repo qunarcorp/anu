@@ -74,6 +74,77 @@ function registerPageOrComponent(name: string, path: NodePath<t.ExportDefaultDec
     }
 }
 
+/**
+ * 检查是否是jsx包裹的
+ * @param astPath 
+ * @returns 
+ */
+function checkIsJSXExpressionContainer(astPath: NodePath) {
+    const parentPath = astPath.parentPath;
+    if (!parentPath) {
+        return false;
+    }
+
+    const parent = astPath.parent;
+    if (t.isJSXExpressionContainer(parent)) {
+        return true;
+    } else if(t.isCallExpression(parent)){//考虑到有属性可能是动态的写法，比如style={{}}
+        const code = generate(parent.callee).code;
+        if(code === 'React.toStyle'){
+            return true;
+        }
+    } else {
+        return checkIsJSXExpressionContainer(parentPath);
+    };
+}
+
+function geMemExp(x: string) {            
+    var list = x.split('.');
+    if(list.length === 1){
+        return t.identifier(list[0]);
+    }
+    var memEpr = t.memberExpression(
+        list[0] === 'this' ? t.thisExpression() : t.identifier(list[0]),
+        t.identifier(list[1])
+    );
+    var ret = list.slice(2);
+    while (ret.length) {
+        memEpr = t.memberExpression(
+            memEpr,
+            t.identifier(ret.shift())
+        )
+    }
+    return memEpr;
+}
+
+function getLogic(opSepList: any) {
+    var left = opSepList[0];
+    var right = opSepList[1];
+    var logicExp = t.logicalExpression('&&', left, right);
+    var ret = opSepList.slice(2);
+    while (ret.length) {
+        logicExp = t.logicalExpression('&&', logicExp, ret.shift())
+    }
+    return logicExp;
+}
+
+function transOptionalChain(node: t.Node){
+    var opSepList: any = generate(node).code.split('?.');
+    // [ 'this.state.a',
+    //   'this.state.a.b',
+    //   'this.state.a.b.c',
+    //   'this.state.a.b.c.d.map' ]
+    opSepList = opSepList.map(function (el: string, idx: number) {
+        return opSepList.slice(0, idx + 1).join('.');
+    });
+
+    opSepList = opSepList.map(function (el: any) {
+        return geMemExp(el);
+    })
+
+    return opSepList;
+}
+
 const visitor: babel.Visitor = {
     ClassDeclaration: helpers.classDeclaration,
     //babel 6 没有ClassDeclaration，只有ClassExpression
@@ -214,7 +285,7 @@ const visitor: babel.Visitor = {
             // let name = astPath.node.id.name;
             if (
                 /^[A-Z]/.test(name) && //组件肯定是大写开头
-                modules.componentType === 'Component' &&
+                modules.componentType !== 'App' &&
                 !modules.parentName &&
                 !modules.registerStatement //防止重复进入
             ) {
@@ -222,25 +293,67 @@ const visitor: babel.Visitor = {
                 modules.className = name;
 
                 helpers.render.exit(astPath, '无状态组件', name, modules);
-                modules.registerStatement = utils.createRegisterStatement(
-                    name,
-                    name
-                );
+                if (modules.componentType === 'Page') {
+                    modules.registerStatement = utils.createRegisterStatement(
+                        name,
+                        modules.current
+                            .replace(/.+pages/, 'pages')
+                            .replace(/\.js$/, ''),
+                        true
+                    );
+                }else{
+                    modules.registerStatement = utils.createRegisterStatement(
+                        name,
+                        name,
+                    );
+                }
+        
 
 
                 // 给useState或自定义的变量增加输出
                 let funData: any = [];
+
+                function getNameFromArrayPattern(elements: t.PatternLike[]){
+                    elements.forEach(ele=>{
+                        if(t.isIdentifier(ele)){
+                            funData.push(ele.name);
+                        }else if(t.isArrayPattern(ele)){
+                            getNameFromArrayPattern(ele.elements);
+                        }else if(t.isAssignmentPattern(ele)){
+                            funData.push(ele.left.name);
+                        }
+                    })
+                };
+                function getNameFromObjectPattern(id: t.ObjectPattern){
+                    id.properties.forEach((property:t.ObjectProperty) => {
+                        if(t.isAssignmentPattern(property.value)){
+                            const left = property.value.left;
+                            if(t.isObjectProperty(left)){
+                                getNameFromObjectPattern(left);
+                            }else if(t.isIdentifier(left)){
+                                funData.push(left.name);
+                            }
+                        }else if(t.isObjectPattern(property.value)){
+                            getNameFromObjectPattern(property.value);
+                        }else if(t.isIdentifier(property.value)){
+                            funData.push(property.value.name)
+                        }
+                    });
+                }
+                    
                 let body = astPath.node.body.body;
                 for (let i = 0; i < body.length; i++) {
                     const element = body[i];
-                    if (element.type == 'VariableDeclaration') {
+                    if (t.isVariableDeclaration(element)) {
                         element.declarations.forEach(declaration => {
-                            if (declaration.id.type == 'ArrayPattern') {
-                                funData.push(declaration.id.elements[0].name);
-                            } else if (declaration.id.type == 'ObjectPattern') {
-                                declaration.id.properties.forEach(property => {
-                                    funData.push(property.value.name)
-                                });
+                            if (t.isArrayPattern(declaration.id)) {
+                                if(t.isCallExpression(declaration.init) && ['useState','useReducer'].includes(declaration.init.callee.name)){
+                                    funData.push(declaration.id.elements[0].name);
+                                }else{
+                                    getNameFromArrayPattern(declaration.id.elements);
+                                }
+                            } else if (t.isObjectPattern(declaration.id)) {
+                                getNameFromObjectPattern(declaration.id);
                             } else {
                                 funData.push(declaration.id.name);
                             }
@@ -593,77 +706,26 @@ const visitor: babel.Visitor = {
     OptionalCallExpression: {
         enter(astPath, state) {
             // 反解析可选链， 解析成 && 逻辑表达式
-            if (!t.isJSXExpressionContainer(astPath.parentPath)) return;
-            let modules = utils.getAnu(state);
+            if(!checkIsJSXExpressionContainer(astPath)) return;
             var { node } = astPath;
             var callee = node.callee;
             var args = node.arguments;
 
-            var opSepList: any = generate(callee).code.split('?.');
-            // [ 'this.state.a',
-            //   'this.state.a.b',
-            //   'this.state.a.b.c',
-            //   'this.state.a.b.c.d.map' ]
-            opSepList = opSepList.map(function (el: string, idx: number) {
-                return opSepList.slice(0, idx + 1).join('.');
-            });
-
-            function geMemExp(x: string) {
-                var list = x.split('.');
-                var memEpr = t.memberExpression(
-                    list[0] === 'this' ? t.thisExpression() : t.identifier(list[0]),
-                    t.identifier(list[1])
-                );
-                var ret = list.slice(2);
-                while (ret.length) {
-                    memEpr = t.memberExpression(
-                        memEpr,
-                        t.identifier(ret.shift())
-                    )
-                }
-                return memEpr;
-            }
-
-            function getLogic(opSepList: any) {
-                var left = opSepList[0];
-                var right = opSepList[1];
-                var logicExp = t.logicalExpression('&&', left, right);
-                var ret = opSepList.slice(2);
-                while (ret.length) {
-                    logicExp = t.logicalExpression('&&', logicExp, ret.shift())
-                }
-                return logicExp;
-            }
-
-            opSepList = opSepList.map(function (el: any) {
-                return geMemExp(el);
-            })
-
-            //添加上第二参数
-            if (!args[1] && args[0].type === 'FunctionExpression') {
-                args[1] = t.identifier('this');
-            }
-            //为callback添加参数
-            let params = (args[0] as any).params; // tsc todo
-            if (!params[0]) {
-                params[0] = t.identifier('j' + astPath.node.start);
-            }
-            if (!params[1]) {
-                params[1] = t.identifier('i' + astPath.node.start);
-            }
-            var indexName = (args[0] as any).params[1].name;
-            if (modules.indexArr) {
-                modules.indexArr.push(indexName);
-            } else {
-                modules.indexArr = [indexName];
-            }
-            modules.indexName = indexName;
-
+            var opSepList: any = transOptionalChain(callee);
+            
             var m = getLogic(opSepList);
             m.right = t.callExpression(m.right, args);
+            m.right.start = node.start;
             astPath.replaceWith(m);
-
-
+        },
+    },
+    OptionalMemberExpression:{
+        enter(astPath: NodePath<t.OptionalMemberExpression>, state: any) {
+            // 反解析可选链， 解析成 && 逻辑表达式
+            if(!checkIsJSXExpressionContainer(astPath)) return;
+            var opSepList: any = transOptionalChain(astPath.node);
+            var m = getLogic(opSepList);
+            astPath.replaceWith(m);
         }
     },
     CallExpression: {
@@ -991,18 +1053,25 @@ const visitor: babel.Visitor = {
     },
     JSXFragment: {
         // 兼容空标签
-        enter(astPath: NodePath<t.JSXFragment>) {
-            if (astPath.parentPath.node.type == 'ReturnStatement') {
-                astPath.replaceWith(
-                    t.jSXElement(
-                        t.jsxOpeningElement(t.jsxIdentifier('view'), []),
-                        t.jSXClosingElement(t.jsxIdentifier('view')),
-                        astPath.node.children,
-                    ),
-                )
-            } else {
-                astPath.replaceWithMultiple(astPath.node.children);
-            }
+        enter(astPath: NodePath<t.JSXFragment>){
+            astPath.replaceWith(
+                t.jSXElement(
+                    t.jsxOpeningElement(t.jsxIdentifier('view'), []),
+                    t.jSXClosingElement(t.jsxIdentifier('view')),
+                    astPath.node.children,
+                ),
+            )
+            // if(astPath.parentPath.node.type == 'ReturnStatement'){
+            //     astPath.replaceWith(
+            //         t.jSXElement(
+            //             t.jsxOpeningElement(t.jsxIdentifier('view'), []),
+            //             t.jSXClosingElement(t.jsxIdentifier('view')),
+            //             astPath.node.children,
+            //         ),
+            //     )
+            // }else{
+            //     astPath.replaceWithMultiple(astPath.node.children);
+            // }
         }
     },
     JSXText(astPath: NodePath<t.JSXText>) {

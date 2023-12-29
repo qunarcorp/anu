@@ -72,6 +72,7 @@ function nanachi(options = {}) {
                         fs.copySync(path.resolve(__dirname, './packages/360helpers/template'), path.resolve(cwd, 'src'));
                     }
                 }
+                console.log('webpackH5Config', webpackH5Config);
                 const compilerH5 = webpack_1.default(webpackH5Config);
                 if (watch) {
                     createH5Server_1.default(compilerH5);
@@ -171,7 +172,7 @@ function nanachi(options = {}) {
     });
 }
 function injectBuildEnv({ platform, compress, huawei, typescript }) {
-    process.env.ANU_ENV = (platform === 'h5' ? 'web' : platform);
+    process.env.ANU_ENV = platform;
     Object.assign(config_1.default, {
         buildType: platform,
         compress,

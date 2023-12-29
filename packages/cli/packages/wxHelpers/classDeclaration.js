@@ -45,6 +45,7 @@ module.exports = {
             });
         }
         if (astPath.parent.type === 'Program') {
+            astPath.scope.removeBinding(modules.className);
             astPath.insertBefore(modules.ctorFn);
         }
         else {
@@ -59,6 +60,7 @@ module.exports = {
             let tempExp = tempPath.get('declarations')[0];
             let left = tempExp.get('id').node, right = tempExp.get('init').node;
             tempPath.replaceWith(t.expressionStatement(t.assignmentExpression('=', left, right)));
+            tempPath.scope.removeBinding(modules.className);
             tempPath.insertBefore(modules.ctorFn);
         }
         modules.thisMethods.push(t.objectProperty(t.identifier('classUid'), t.stringLiteral(modules.classUid)));

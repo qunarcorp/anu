@@ -43,11 +43,7 @@ const projectConfigJsonMap = {
         fileName: 'mini.config.json',
     },
 };
-const ANU_ENV = buildType
-    ? buildType === 'h5'
-        ? 'web'
-        : buildType
-    : 'wx';
+const ANU_ENV = buildType;
 const BUILD_ENV = process.env.BUILD_ENV || '';
 function getMergedAppJsConent(appJsSrcPath, pages = [], importSyntax = []) {
     function getAppImportSyntaxCode(importSyntax = []) {
@@ -188,6 +184,15 @@ function getFilesMap(queue = []) {
                         id: file,
                         content: config
                     });
+                    const { alias = {} } = config;
+                    if (alias) {
+                        map['alias'] = map['alias'] || [];
+                        map['alias'].push({
+                            id: file,
+                            content: alias,
+                            type: 'alias'
+                        });
+                    }
                 }
             }
             catch (err) {

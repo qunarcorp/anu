@@ -23,43 +23,44 @@ function needInstall( pkgName: string ): boolean{
     }
 }
 
-
+/**
+ * 支持async语法转化为generator语法
+ */
 module.exports  = [
     require('@babel/plugin-transform-async-to-generator'),
     function(): PluginObj{
         return {
             visitor: {
-                FunctionDeclaration: {
-                    exit(astPath: NodePath<t.FunctionDeclaration>) {
-                      
-                        let name = astPath.node.id.name;
-                        if ( !(name === '_asyncToGenerator' && hackList.includes(config.buildType))  ) {
-                            return;
-                        }
+                Program: {
+                    exit(astPathP, state){
+                        // 改为从program转化为，而不是直接对FunctionDeclaration，是因为直接写FunctionDeclaration和其他babel插件有一些冲突，导致_asyncToGenerator函数找不到。
+                        astPathP.traverse({
+                            FunctionDeclaration: {
+                                enter: (astPath) => {                        
+                                    let name = astPath.node.id.name;
+                                    if ( !(name === '_asyncToGenerator' && hackList.includes(config.buildType))  ) {
+                                        return;
+                                    }
 
-                        let root = astPath.findParent(t.isProgram);
-                        (root as NodePath<t.Program>).node.body.unshift(
-                            t.importDeclaration(
-                                [
-                                    t.importDefaultSpecifier(
-                                        t.identifier('regeneratorRuntime')
-                                    )
-                                ],
-                                t.stringLiteral('regenerator-runtime/runtime')
-                            )
+                                    astPathP.node.body.unshift(
+                                        t.importDeclaration(
+                                            [
+                                                t.importDefaultSpecifier(
+                                                    t.identifier('regeneratorRuntime')
+                                                )
+                                            ],
+                                            t.stringLiteral('regenerator-runtime/runtime')
+                                        )
 
-                            // t.variableDeclaration('var', [
-                            //     t.variableDeclarator(
-                            //         t.identifier('regeneratorRuntime'),
-                            //         t.callExpression(t.identifier('require'), [
-                            //             t.stringLiteral('regenerator-runtime/runtime')
-                            //         ])
-                            //     )
-                            // ])
-                        );
-                        needPatch = true;
+                                    );
+                                    needPatch = true;
+                                    // 跳出
+                                    astPath.stop();
+                                }
+                            }
+                        });
                     }
-                }
+                },
             },
             post: function(){
                 if ( needPatch && needInstall(pkgName.split('@')[0]) && !installFlag) {
