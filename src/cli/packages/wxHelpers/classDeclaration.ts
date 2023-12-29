@@ -5,8 +5,34 @@ import template from '@babel/template';
 import utils from '../utils';
 
 module.exports = {
+
     enter(astPath: NodePath<t.ClassDeclaration>, state: any) {
         //重置数据
+        const className = astPath.node.id.name;
+        // 查找 render 方法
+        const renderMethod = astPath.get('body').get('body').find(
+            (method) => method.isClassMethod() && method.get('key').isIdentifier({ name: 'render' })
+        );
+
+        if (renderMethod) {
+            // 获取 render 方法的返回语句
+            const returnStatement = renderMethod.get('body').get('body').find(
+                (statement) => statement.isReturnStatement()
+            );
+
+            if (returnStatement) {
+                // 获取返回语句的内容
+                const renderContent = returnStatement.get('argument');
+                const { type, test, consequent, alternate } = renderContent.node
+                if (type === 'ConditionalExpression' && consequent.type === 'NullLiteral') {
+                    if (consequent.type === 'NullLiteral') {
+                        const newConditionalExpression = t.conditionalExpression(test, t.stringLiteral(''), alternate)
+                        renderContent.replaceWith(newConditionalExpression)
+                    }
+                }
+            }
+        }
+
         let modules = utils.getAnu(state);
         modules.className = astPath.node.id.name;
         modules.parentName = generate(astPath.node.superClass).code || 'Object';
