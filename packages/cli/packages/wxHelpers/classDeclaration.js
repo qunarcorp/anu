@@ -16,6 +16,21 @@ const template_1 = __importDefault(require("@babel/template"));
 const utils_1 = __importDefault(require("../utils"));
 module.exports = {
     enter(astPath, state) {
+        const className = astPath.node.id.name;
+        const renderMethod = astPath.get('body').get('body').find((method) => method.isClassMethod() && method.get('key').isIdentifier({ name: 'render' }));
+        if (renderMethod) {
+            const returnStatement = renderMethod.get('body').get('body').find((statement) => statement.isReturnStatement());
+            if (returnStatement) {
+                const renderContent = returnStatement.get('argument');
+                const { type, test, consequent, alternate } = renderContent.node;
+                if (type === 'ConditionalExpression' && consequent.type === 'NullLiteral') {
+                    if (consequent.type === 'NullLiteral') {
+                        const newConditionalExpression = t.conditionalExpression(test, t.stringLiteral(''), alternate);
+                        renderContent.replaceWith(newConditionalExpression);
+                    }
+                }
+            }
+        }
         let modules = utils_1.default.getAnu(state);
         modules.className = astPath.node.id.name;
         modules.parentName = generator_1.default(astPath.node.superClass).code || 'Object';

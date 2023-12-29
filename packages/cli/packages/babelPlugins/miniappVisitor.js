@@ -133,8 +133,21 @@ const visitor = {
     },
     FunctionDeclaration: {
         exit(astPath, state) {
-            let modules = utils_1.default.getAnu(state);
             let name = astPath.node.id.name;
+            const functionBody = astPath.get('body');
+            const node = functionBody.get('body');
+            const newBody = node[node.length - 1];
+            if (newBody) {
+                const returnValue = newBody.get('argument');
+                if (t.isConditionalExpression(returnValue.node)) {
+                    const { test, consequent, alternate } = returnValue.node;
+                    if (consequent.type === 'NullLiteral') {
+                        const newConditionalExpression = t.conditionalExpression(test, t.stringLiteral(''), alternate);
+                        returnValue.replaceWith(newConditionalExpression);
+                    }
+                }
+            }
+            let modules = utils_1.default.getAnu(state);
             if (/^[A-Z]/.test(name) &&
                 modules.componentType === 'Component' &&
                 !modules.parentName &&
