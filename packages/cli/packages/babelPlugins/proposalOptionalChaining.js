@@ -63,6 +63,7 @@ module.exports = ((api, options) => {
                             const { object } = chain;
                             let context = scope.maybeGenerateMemoised(object);
                             if (context) {
+                                scope.removeBinding(context.name);
                                 chain.object = core_1.types.assignmentExpression('=', context, object);
                             }
                             else if (core_1.types.isSuper(object)) {

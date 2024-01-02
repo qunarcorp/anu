@@ -86,6 +86,8 @@ module.exports = ((api, options: Options) => {
                             let context = scope.maybeGenerateMemoised(object);
 
                             if (context) {
+                                // 移除关联关系
+                                scope.removeBinding(context.name);
                                 chain.object = t.assignmentExpression('=', context, object);
                             } else if (t.isSuper(object)) {
                                 context = t.thisExpression();
