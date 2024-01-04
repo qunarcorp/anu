@@ -294,6 +294,7 @@ const visitor: babel.Visitor = {
 
                 helpers.render.exit(astPath, '无状态组件', name, modules);
                 if (modules.componentType === 'Page') {
+                    modules.classUid = 'c' + utils.createUUID(astPath);
                     modules.registerStatement = utils.createRegisterStatement(
                         name,
                         modules.current
@@ -368,6 +369,15 @@ const visitor: babel.Visitor = {
                         FUN_DATA: 'FUN_DATA'
                     }) as any)
                 }
+
+                // 只给页面加classUid
+                if(modules.componentType === 'Page'){
+                    const left = t.memberExpression(t.thisExpression(), t.identifier('classUid'));
+                    const right = t.stringLiteral(modules.classUid);
+                    body.unshift(
+                        t.expressionStatement(t.assignmentExpression('=', left, right))
+                    );
+                };
 
                 body.unshift(
                     template(utils.shortcutOfCreateElement())() as any
