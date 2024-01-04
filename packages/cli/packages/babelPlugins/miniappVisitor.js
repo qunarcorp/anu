@@ -194,6 +194,7 @@ const visitor = {
                 modules.className = name;
                 helpers.render.exit(astPath, '无状态组件', name, modules);
                 if (modules.componentType === 'Page') {
+                    modules.classUid = 'c' + utils_1.default.createUUID(astPath);
                     modules.registerStatement = utils_1.default.createRegisterStatement(name, modules.current
                         .replace(/.+pages/, 'pages')
                         .replace(/\.js$/, ''), true);
@@ -263,6 +264,12 @@ const visitor = {
                         FUN_DATA: 'FUN_DATA'
                     }));
                 }
+                if (modules.componentType === 'Page') {
+                    const left = t.memberExpression(t.thisExpression(), t.identifier('classUid'));
+                    const right = t.stringLiteral(modules.classUid);
+                    body.unshift(t.expressionStatement(t.assignmentExpression('=', left, right)));
+                }
+                ;
                 body.unshift(template_1.default(utils_1.default.shortcutOfCreateElement())());
             }
         }
