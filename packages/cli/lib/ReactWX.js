@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2023-12-27T10
+ * 运行于微信小程序的React by 司徒正美 Copyright 2024-01-11T10
  * IE9+
  */
 
@@ -2362,7 +2362,7 @@ function pushChildQueue(fiber, queue) {
     while (p.return) {
         p = p.return;
         var instance = p.stateNode;
-        if (instance.refs && !instance.__isStateless && p.type !== Unbatch) {
+        if (instance && instance.refs && !instance.__isStateless && p.type !== Unbatch) {
             hackSCU.push(p);
             var u = instance.updater;
             if (maps[u.mountOrder]) {

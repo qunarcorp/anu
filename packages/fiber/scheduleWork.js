@@ -225,7 +225,7 @@ function pushChildQueue(fiber, queue) {
     while (p.return) {
         p = p.return;
         var instance = p.stateNode;
-        if (instance.refs && !instance.__isStateless && p.type !== Unbatch) {
+        if (instance && instance.refs && !instance.__isStateless && p.type !== Unbatch) {
             hackSCU.push(p);
             var u = instance.updater;
             if (maps[u.mountOrder]) {
