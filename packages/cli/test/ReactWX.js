@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2024-01-11T10
+ * 运行于微信小程序的React by 司徒正美 Copyright 2024-01-19T11
  * IE9+
  */
 
@@ -2290,9 +2290,10 @@ function workLoop(deadline) {
             info = fiber.return;
         } else {
             var dom = getContainer(fiber);
+            var __unmaskedContext = fiber && fiber.stateNode && fiber.stateNode.__unmaskedContext || {};
             info = {
                 containerStack: [dom],
-                contextStack: [fiber.stateNode.__unmaskedContext]
+                contextStack: [__unmaskedContext]
             };
         }
         reconcileDFS(fiber, info, deadline, ENOUGH_TIME);
