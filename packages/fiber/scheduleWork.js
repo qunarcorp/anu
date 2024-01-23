@@ -133,9 +133,11 @@ function workLoop(deadline) {
             info = fiber.return;
         } else {
             let dom = getContainer(fiber);
+            // 考虑到有可能页面还没有完全实例化，用户就退出页面的情况。就会报错。
+            const __unmaskedContext = fiber && fiber.stateNode && fiber.stateNode.__unmaskedContext || {};
             info = {
                 containerStack: [dom],
-                contextStack: [fiber.stateNode.__unmaskedContext]
+                contextStack: [__unmaskedContext]
             };
         }
 

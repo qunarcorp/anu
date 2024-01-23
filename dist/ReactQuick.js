@@ -1,5 +1,5 @@
 /**
- * 运行于快应用的React by 司徒正美 Copyright 2024-01-11
+ * 运行于快应用的React by 司徒正美 Copyright 2024-01-19
  */
 
 var arrayPush = Array.prototype.push;
@@ -3112,9 +3112,10 @@ function workLoop(deadline) {
             info = fiber.return;
         } else {
             var dom = getContainer(fiber);
+            var __unmaskedContext = fiber && fiber.stateNode && fiber.stateNode.__unmaskedContext || {};
             info = {
                 containerStack: [dom],
-                contextStack: [fiber.stateNode.__unmaskedContext]
+                contextStack: [__unmaskedContext]
             };
         }
         reconcileDFS(fiber, info, deadline, ENOUGH_TIME);
