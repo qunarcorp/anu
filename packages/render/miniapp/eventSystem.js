@@ -24,7 +24,9 @@ export function dispatchEvent(e) {
     if (dataset[eventType + "Alias"]) {
         eventType = dataset[eventType + "Alias"];
     }
-    const eventUid = dataset[eventType + "Uid"];
+    // 有 onXxxx 的场合， onSkylineXxxx 不会触发
+    const eventUid = dataset[eventType + "Uid"] || dataset['skyline' + eventType + "Uid"];
+
     const fiber = instance.$$eventCached[eventUid + "Fiber"] || {
         props: {},
         type: "unknown"

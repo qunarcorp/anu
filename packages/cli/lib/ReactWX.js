@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2024-03-19T09
+ * 运行于微信小程序的React by 司徒正美 Copyright 2024-03-19T11
  * IE9+
  */
 
@@ -1084,7 +1084,7 @@ function dispatchEvent(e) {
     if (dataset[eventType + "Alias"]) {
         eventType = dataset[eventType + "Alias"];
     }
-    var eventUid = dataset[eventType + "Uid"];
+    var eventUid = dataset[eventType + "Uid"] || dataset['skyline' + eventType + "Uid"];
     var fiber = instance.$$eventCached[eventUid + "Fiber"] || {
         props: {},
         type: "unknown"

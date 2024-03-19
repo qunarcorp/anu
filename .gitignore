@@ -11,3 +11,4 @@ stand.js
 react-dom.js
 .DS_Store
 packages/cli/packages/lib/
+.idea/
