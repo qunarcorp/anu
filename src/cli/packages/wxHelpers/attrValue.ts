@@ -11,6 +11,8 @@ module.exports = function (astPath: any) {
   
     let expr = astPath.node.expression;
     let attrName = astPath.parent.name.name;
+     // 2024.03.19 wx 加入 worklet 开头的属性为关键字，触发 dispatchEvent 的编译
+    // bind:scroll="{{this.handleNewHomeOnScroll}}" => bind:scroll="dispatchEvent"
     let isEventRegex =
         buildType == 'ali' || buildType == 'quick'
             ? /^(on|catch)/

@@ -16,6 +16,9 @@ module.exports = function mapPropName(astPath, attrName, parentName) {
     if (/^catch[A-Z]/.test(attrName)) {
         attrNameNode.name = 'catch' + attrName.slice(5).toLowerCase();
     }
+    else if (/^onSkyline[A-Z]/.test(attrName)) {
+        attrNameNode.name = 'bind' + ':' + attrName.slice(9).toLowerCase();
+    }
     else if (/^on[A-Z]/.test(attrName)) {
         attrNameNode.name = 'bind' + attrName.slice(2).toLowerCase();
     }

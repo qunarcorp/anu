@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2024-01-19T11
+ * 运行于微信小程序的React by 司徒正美 Copyright 2024-03-19T09
  * IE9+
  */
 
@@ -2899,12 +2899,6 @@ if (typeof wx != "undefined") {
     React.appType = "tt";
 }
 registerAPIs(React, apiContainer, more);
-var fn  =  React.api.setStorageSync;
-React.api.setStorageSync = function(...args) {
-  fn(...args)
-  if (typeof args[0] === 'string') {
-    React.api.getStorageSync(args[0])
-  }
-}
+
 export default React;
 export { Children, createElement, Component, PureComponent, memo, createRef, useState, useReducer, useCallback, useMemo, useEffect, useLayoutEffect, useContext, useComponent, useRef, useQuery, usePageEvent };

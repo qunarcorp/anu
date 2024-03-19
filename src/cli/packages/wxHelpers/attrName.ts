@@ -13,9 +13,16 @@ module.exports = function mapPropName(astPath: any, attrName: any, parentName: a
     }
     if (/^catch[A-Z]/.test(attrName)) {
         attrNameNode.name = 'catch' + attrName.slice(5).toLowerCase();
-    } else if (/^on[A-Z]/.test(attrName)) {
+    } 
+    else if (/^onSkyline[A-Z]/.test(attrName)) {
+        // 2024.03.19 支持部分 skyline 渲染模式下的特有组件属性值
+        //  onSkylineScroll => bind:scroll
+        attrNameNode.name = 'bind' + ':' + attrName.slice(9).toLowerCase();
+    }  
+    else if (/^on[A-Z]/.test(attrName)) {
         attrNameNode.name = 'bind' + attrName.slice(2).toLowerCase();
-    } else {
+    } 
+    else {
         if (attrName === 'className') {
             attrNameNode.name = 'class';
         }
