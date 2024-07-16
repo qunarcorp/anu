@@ -1,5 +1,5 @@
 /**
- * 运行于微信小程序的React by 司徒正美 Copyright 2024-03-19T11
+ * 运行于微信小程序的React by 司徒正美 Copyright 2024-07-16T07
  * IE9+
  */
 
@@ -2697,6 +2697,12 @@ function registerPage(PageClass, path, testObject) {
             return registerPageHook(appHooks, pageHook, app, instance, param);
         };
     });
+    if (PageClass && PageClass.prototype && typeof PageClass.prototype.onShareTimeline === 'function') {
+        config.onShareTimeline = function () {
+            var instance = this.reactInstance;
+            return instance.onShareTimeline.apply(this.reactInstance, arguments);
+        };
+    }
     if (testObject) {
         config.setData = function (obj) {
             config.data = obj;

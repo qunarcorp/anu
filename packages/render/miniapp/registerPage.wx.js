@@ -1,9 +1,9 @@
-import { dispatchEvent } from './eventSystem';
-import { onLoad, onUnload, onReady } from './registerPage.all';
-import { registerPageHook } from './registerPageHook';
+import {dispatchEvent} from './eventSystem';
+import {onLoad, onReady, onUnload} from './registerPage.all';
+import {registerPageHook} from './registerPageHook';
 import {  noop } from "react-core/util";
 
-import { _getApp } from './utils';
+import {_getApp} from './utils';
 
 var appHooks = {
     onShow: 'onGlobalShow',
@@ -21,9 +21,7 @@ export const lifeCycleList = [
     'onShow',
     'onHide'
 ];
-
 export function registerPage(PageClass, path, testObject) {
-   
     PageClass.reactInstances = [];
     let config = {
         data: {},
@@ -37,23 +35,23 @@ export function registerPage(PageClass, path, testObject) {
     lifeCycleList.forEach(function(hook) {
         config[hook] = function(e) {
             let instance = this.reactInstance,
-             pageHook = hook,
-             app =  _getApp(),
-             param = e 
+                pageHook = hook,
+                app =  _getApp(),
+                param = e;
             if (pageHook === 'onShareAppMessage'){
-                if( !instance.onShare){
+                if (!instance.onShare){
                     instance.onShare = instance[pageHook];
                 }
                 var shareObject = instance.onShare && instance.onShare(param);
-                if(!shareObject){
+                if (!shareObject){
                     shareObject = app.onGlobalShare && app.onGlobalShare(param);
                 }
                 return shareObject;
             } else if (pageHook === 'onShow'){
-                if(this.options){ //支付宝小程序不存在this.options
-                   instance.props.query = this.options ;
+                if (this.options){ //支付宝小程序不存在this.options
+                    instance.props.query = this.options ;
                 }
-                param = instance.props.query
+                param = instance.props.query;
                 //在百度小程序，从A页面跳转到B页面，模拟器下是先触发A的onHide再触发B的onShow
                 //真机下，却是先触发B的onShow再触发A的onHide,其他小程序可能也有这问题，因此我们只在onShow
                 //里修改全局对象的属性
@@ -62,11 +60,22 @@ export function registerPage(PageClass, path, testObject) {
                 // if(this.needReRender){
                 //    onLoad.call(this, PageClass, path, param);
                 // }
-            }  
+            }
             //调用onShare/onHide/onGlobalShow/onGlobalHide/onPageScroll
-            return registerPageHook(appHooks, pageHook, app, instance, param)
+            return registerPageHook(appHooks, pageHook, app, instance, param);
         };
     });
+
+    // 微信加入 onShareTimeline， 同时又保证不像过去一样所有页面都默认注册 onShareTimeline，必须定义了该函数才会注册在 config 上
+    // 判断注册的构造函数原型上是否有定义，如果有在 config 绑定处理函数，然后在该函数运行时调用实例上的 onShareTimeline
+    if (PageClass && PageClass.prototype && typeof PageClass.prototype.onShareTimeline === 'function') {
+        // 通用处理函数定义类似上边的函数，但是不会有 global 之类的全局处理函数兜底
+        config.onShareTimeline = function() {
+            let instance = this.reactInstance;
+            return instance.onShareTimeline.apply(this.reactInstance, arguments);
+        };
+    }
+
 
     if (testObject) {
         config.setData = function(obj) {
